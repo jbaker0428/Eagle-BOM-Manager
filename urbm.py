@@ -24,15 +24,13 @@ def getFileName(url,openUrl):
 class Product:
 	vendors = enum('DK', 'ME', 'SFE')
 	def __init__(self, vendor, vendor_pn)
-		self.vendor = vendors.vendor
+		self.vendor = vendor
 		self.vendor_pn = vendor_pn
 		self.mfg_pn = ""
 		self.prices = {}
 		self.inventory = 0
 		self.datasheet = ""
 	
-	def __init__(self, vendor, vendor_pn, db_file)
-		
 	def scrape(self)
 		# Proceed based on vendor
 		if self.vendor == vendors.DK:
