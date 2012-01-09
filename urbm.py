@@ -29,7 +29,7 @@ class Product:
 		self.mfg_pn = ""
 		self.prices = {}
 		self.inventory = 0
-		datasheet = ""
+		self.datasheet = ""
 	
 	def scrape(self)
 		# Proceed based on vendor
