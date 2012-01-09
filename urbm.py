@@ -87,4 +87,20 @@ class Product:
 		else:
 			print 'Error: %s has invalid vendor: %s' % (self.pn, self.vendor)
 
+# Database header: 	vendor, vendor_pn, mfg_pn, prices, inventory, datasheet
+# Ex: 
+# "DK", "445-5146-1-ND", "C1608X5R1E105K", "1:0.27,10:0.18,100:0.072,250:0.05176,500:0.0369,1000:0.027", "434671", "general_B11.pdf"
+
+	def writeToDB(self, databaseFile)
+		# TODO: Find any existing entry for this part and remove it
+		db = csv.writer(open(databaseFile, 'wb'), delimiter',', quotechar = '"', quoting=csv.QUOTE_ALL)
+		iter = 0
+		for key in sorted(self.prices.iterkeys(), reverse=True):
+			pricesStr = pricesStr + key + ":" + self.prices[key]
+			iter++
+			if iter < len(self.prices):
+				pricesStr = pricesStr + ","
+		writer.writerow(self.vendor, self.vendor_pn, self.mfg_pn, pricesStr, self.inventory, self.datasheet)
+
+
 #call sorted(prices.keys(), reverse=True) on prices.keys() to evaluate the price breaks in order
