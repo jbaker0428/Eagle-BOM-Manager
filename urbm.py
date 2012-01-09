@@ -31,6 +31,8 @@ class Product:
 		self.inventory = 0
 		self.datasheet = ""
 	
+	def __init__(self, vendor, vendor_pn, db_file)
+		
 	def scrape(self)
 		# Proceed based on vendor
 		if self.vendor == vendors.DK:
@@ -93,14 +95,15 @@ class Product:
 
 	def writeToDB(self, databaseFile)
 		# TODO: Find any existing entry for this part and remove it
-		db = csv.writer(open(databaseFile, 'wb'), delimiter',', quotechar = '"', quoting=csv.QUOTE_ALL)
-		iter = 0
-		for key in sorted(self.prices.iterkeys(), reverse=True):
-			pricesStr = pricesStr + key + ":" + self.prices[key]
-			iter++
-			if iter < len(self.prices):
-				pricesStr = pricesStr + ","
-		writer.writerow(self.vendor, self.vendor_pn, self.mfg_pn, pricesStr, self.inventory, self.datasheet)
+		with open(databaseFile, 'wb') as f:
+			db = csv.writer(f, delimiter',', quotechar = '"', quoting=csv.QUOTE_ALL)
+			iter = 0
+			for key in sorted(self.prices.iterkeys(), reverse=True):
+				pricesStr = pricesStr + key + ":" + self.prices[key]
+				iter++
+				if iter < len(self.prices):
+					pricesStr = pricesStr + ","
+			writer.writerow(self.vendor, self.vendor_pn, self.mfg_pn, pricesStr, self.inventory, self.datasheet)
 
 
 #call sorted(prices.keys(), reverse=True) on prices.keys() to evaluate the price breaks in order
