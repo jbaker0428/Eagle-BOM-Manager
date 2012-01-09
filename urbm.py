@@ -87,22 +87,4 @@ class Product:
 		else:
 			print 'Error: %s has invalid vendor: %s' % (self.pn, self.vendor)
 
-<tr><th align=right valign=top>Datasheets</th><td>
-	<a href="http://www.tdk.co.jp/tefe02/e4941_fk.pdf" target="_blank">FK Series General Use</a><br />
-</td></tr>
-
-<table id=pricing frame=void rules=all border=1 cellspacing=0 cellpadding=1>
-<tr><th>Price Break</th><th>Unit Price</th><th>Extended Price
-</th></tr>
-<tr><td align=center >1</td><td align=right >1.25000</td><td align=right >1.25</td></tr>
-<tr><td align=center >10</td><td align=right >0.99000</td><td align=right >9.90</td></tr>
-<tr><td align=center >100</td><td align=right >0.74250</td><td align=right >74.25</td></tr>
-<tr><td align=center >250</td><td align=right >0.66000</td><td align=right >165.00</td></tr>
-<tr><td align=center >500</td><td align=right >0.56100</td><td align=right >280.50</td></tr>
-<tr><td align=center >1,000</td><td align=right >0.49500</td><td align=right >495.00</td></tr>
-<tr><td align=center >5,000</td><td align=right >0.44550</td><td align=right >2,227.50</td></tr>
-<tr><td align=center >10,000</td><td align=right >0.42900</td><td align=right >4,290.00</td></tr>
-<tr><td align=center >25,000</td><td align=right >0.41250</td><td align=right >10,312.50</td></tr>
-</table>
-
 #call sorted(prices.keys(), reverse=True) on prices.keys() to evaluate the price breaks in order
