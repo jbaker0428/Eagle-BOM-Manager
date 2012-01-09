@@ -31,6 +31,25 @@ class Product:
 		self.inventory = 0
 		self.datasheet = ""
 	
+	def __init__(self, vendor, vendor_pn, databaseFile)
+		with open(databaseFile, 'wb') as f:
+			db = csv.reader(f, delimiter',', quotechar = '"', quoting=csv.QUOTE_ALL)
+			rownum = 0
+			for row in db:
+				if row[0] == vendor and row[1] == vendor_pn:
+					self.vendor = vendor
+					self.vendor_pn = vendor_pn
+					self.mfg_pn = row[2]
+					
+					# prices... need to split the string two ways
+					pricesStr = row[3].split(",")
+					for pair in pricesStr:
+						keyVal = pair.split(":")
+						self.prices[keyVal[0]] = keyVal[1]
+					
+					self.inventory = row[4]
+					self.datasheet = row[5]
+	
 	def scrape(self)
 		# Proceed based on vendor
 		if self.vendor == vendors.DK:
