@@ -119,6 +119,12 @@ class Product:
 # Database header: 	vendor, vendor_pn, mfg_pn, prices, inventory, datasheet
 # Ex: 
 # "DK", "445-5146-1-ND", "C1608X5R1E105K", "1:0.27,10:0.18,100:0.072,250:0.05176,500:0.0369,1000:0.027", "434671", "general_B11.pdf"
+	def isInDB(self, db)
+		dict = db.selectdic(self.vendor_pn, 'products')
+		if len(dict) == 0:
+			return False
+		else:
+			return True
 	def findInDB(self, databaseFile)
 		with open(databaseFile, 'wb') as f:
 			db = csv.reader(f, delimiter',', quotechar = '"', quoting=csv.QUOTE_ALL)
