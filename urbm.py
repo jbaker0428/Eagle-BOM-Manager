@@ -152,3 +152,6 @@ class BOM:
 	def __init__(self, name, inputFile="bom.csv")
 		self.name = name
 		self.input = inputFile
+		
+	def delete(self, db)
+		db.droptable(self.name)
