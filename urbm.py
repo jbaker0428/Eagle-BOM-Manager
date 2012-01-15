@@ -4,6 +4,9 @@ from BeautifulSoup import BeautifulSoup
 import shutil
 import os
 import urlparse
+import pygtk
+pygtk.require('2.0')
+import gtk
 
 def enum(*sequential, **named):
 	enums = dict(zip(sequential, range(len(sequential))), **named)
@@ -139,3 +142,11 @@ class Product:
 
 
 #call sorted(prices.keys(), reverse=True) on prices.keys() to evaluate the price breaks in order
+
+class bomPart:
+	def __init__(self, name, value, device, package)
+		self.name = name
+		self.value = value
+		self.device = device
+		self.package = package
+		self.product = ""
