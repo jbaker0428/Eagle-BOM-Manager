@@ -173,6 +173,12 @@ class URBM:
 		bomVPane = gtk.VPaned()	# Goes in notebook BOM tab
 		bomHPane = gtk.HPaned()	# Goes in one half of bomVPane
 		
+		bomFrame = gtk.Frame("BOM") # Goes in left side of bomHPane
+		partInfoFrame = gtk.Frame("Part information") # Goes in right side of bomHPane
+		partDBFRame = gtk.Frame("Product database")
+		pricingFrame = gtk.frame("Pricing") # Third tab in notebook
+		
+		
 		bomSortName = gtk.RadioButton(None, "Name")
 		bomSortName.connect("toggled", self.callback, "BOM sort name")
 		bomSortValue = gtk.RadioButton(bomSortName, "Value")
