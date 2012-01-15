@@ -146,3 +146,9 @@ class bomPart:
 					return rownum
 				rownum++
 			return -1
+
+'''For determining the name of a project's bomPart table.'''			
+class BOM:
+	def __init__(self, name, inputFile="bom.csv")
+		self.name = name
+		self.input = inputFile
