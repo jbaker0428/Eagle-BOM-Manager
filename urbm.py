@@ -146,7 +146,11 @@ class bomPart:
 					return rownum
 				rownum++
 			return -1
-
+			
+	def writeToDB(self, db, bom):
+		db.delete(self.name, bom.name)
+		db.insert(self, "#" + self.name, bom.name)
+		
 '''For determining the name of a project's bomPart table.'''			
 class BOM:
 	def __init__(self, name, inputFile="bom.csv"):
