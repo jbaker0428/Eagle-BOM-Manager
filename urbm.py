@@ -9,7 +9,7 @@ pygtk.require('2.0')
 import gtk
 import y_serial_v060 as y_serial
 
-urbmDB = y_serial.Main(os.getcwd() + "/urbm.sqlite")
+urbmDB = y_serial.Main(os.path.join(os.getcwd() + "urbm.sqlite"))
 
 def enum(*sequential, **named):
 	enums = dict(zip(sequential, range(len(sequential))), **named)
