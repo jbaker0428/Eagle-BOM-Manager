@@ -116,9 +116,6 @@ class Product:
 		else:
 			print 'Error: %s has invalid vendor: %s' % (self.pn, self.vendor)
 
-# Database header: 	vendor, vendor_pn, mfg_pn, prices, inventory, datasheet
-# Ex: 
-# "DK", "445-5146-1-ND", "C1608X5R1E105K", "1:0.27,10:0.18,100:0.072,250:0.05176,500:0.0369,1000:0.027", "434671", "general_B11.pdf"
 	def isInDB(self, db)
 		dict = db.selectdic(self.vendor_pn, 'products')
 		if len(dict) == 0:
@@ -130,7 +127,6 @@ class Product:
 		db.delete(self.vendor_pn, 'products')
 		db.insert(self, "#" + self.vendor_pn, 'products')
 
-
 #call sorted(prices.keys(), reverse=True) on prices.keys() to evaluate the price breaks in order
 
 class bomPart:
@@ -140,5 +136,13 @@ class bomPart:
 		self.device = device
 		self.package = package
 		self.product = product
-	
-	
+
+	def findInBOM(self, bomFile)
+		with open(bomFile, 'rb') as f:
+			db = csv.reader(f, delimiter',', quotechar = '"', quoting=csv.QUOTE_ALL)
+			rownum = 0
+			for row in db:
+				if row[0] == self.name:
+					return rownum
+				rownum++
+			return -1
