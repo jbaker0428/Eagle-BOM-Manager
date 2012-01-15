@@ -125,15 +125,6 @@ class Product:
 			return False
 		else:
 			return True
-	def findInDB(self, databaseFile)
-		with open(databaseFile, 'wb') as f:
-			db = csv.reader(f, delimiter',', quotechar = '"', quoting=csv.QUOTE_ALL)
-			rownum = 0
-			for row in db:
-				if row[0] == self.vendor and row[1] == self.vendor_pn:
-					return rownum
-				rownum++
-			return -1
 	
 	def writeToDB(self, db)
 		db.delete(self.vendor_pn, 'products')
@@ -149,4 +140,5 @@ class bomPart:
 		self.device = device
 		self.package = package
 		self.product = product
-		
+	
+	
