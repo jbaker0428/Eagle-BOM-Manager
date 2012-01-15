@@ -161,3 +161,14 @@ class BOM:
 		
 	def delete(self):
 		urbmDB.droptable(self.name)
+
+'''GUI class'''
+class URBM:
+	def __init__(self):
+		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+		self.notebook = gtk.Notebook()
+		notebook.set_tab_pos(POS_TOP)
+		bomToolbar = gtk.Toolbar()
+		dbToolbar = gtk.Toolbar()
+		bomVPane = gtk.VPaned()	# Goes in notebook BOM tab
+		bomHPane = gtk.HPaned()	# Goes in one half of bomVPane
