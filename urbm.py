@@ -102,7 +102,13 @@ class Product:
 		elif self.vendor == vendors.ME:
 			
 		elif self.vendor == vendors.SFE:
+			# Clear previous pricing data (in case price break keys change)
+			self.prices.clear()
 			
+			# The URL contains the numeric portion of the part number, minus any leading zeroes
+			url = "http://www.sparkfun.com/products/" + str(int(self.pn.split("-")))
+			page = urllib2.urlopen(url)
+			soup = BeautifulSoup(page)
 		else:
 			print 'Error: %s has invalid vendor: %s' % (self.pn, self.vendor)
 
