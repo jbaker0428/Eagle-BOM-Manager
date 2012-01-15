@@ -172,3 +172,10 @@ class URBM:
 		dbToolbar = gtk.Toolbar()
 		bomVPane = gtk.VPaned()	# Goes in notebook BOM tab
 		bomHPane = gtk.HPaned()	# Goes in one half of bomVPane
+		
+def main():
+	gtk.main()
+	
+if __name__ == "__main__":
+	URBM()
+	main()
