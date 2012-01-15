@@ -9,6 +9,8 @@ pygtk.require('2.0')
 import gtk
 import y_serial_v060 as y_serial
 
+urbmDB = y_serial.Main(os.getcwd() + "/urbm.sqlite")
+
 def enum(*sequential, **named):
 	enums = dict(zip(sequential, range(len(sequential))), **named)
 	return type('Enum', (), enums)
@@ -116,16 +118,16 @@ class Product:
 		else:
 			print 'Error: %s has invalid vendor: %s' % (self.pn, self.vendor)
 
-	def isInDB(self, db):
-		dict = db.selectdic(self.vendor_pn, 'products')
+	def isInDB(self):
+		dict = urbmDB.selectdic(self.vendor_pn, 'products')
 		if len(dict) == 0:
 			return False
 		else:
 			return True
 	
-	def writeToDB(self, db):
-		db.delete(self.vendor_pn, 'products')
-		db.insert(self, "#" + self.vendor_pn, 'products')
+	def writeToDB(self):
+		urbmDB.delete(self.vendor_pn, 'products')
+		urbmDB.insert(self, "#" + self.vendor_pn, 'products')
 
 #call sorted(prices.keys(), reverse=True) on prices.keys() to evaluate the price breaks in order
 
@@ -147,9 +149,9 @@ class bomPart:
 				rownum++
 			return -1
 			
-	def writeToDB(self, db, bom):
-		db.delete(self.name, bom.name)
-		db.insert(self, "#" + self.name, bom.name)
+	def writeToDB(self, bom):
+		urbmDB.delete(self.name, bom.name)
+		urbmDB.insert(self, "#" + self.name, bom.name)
 		
 '''For determining the name of a project's bomPart table.'''			
 class BOM:
@@ -157,5 +159,5 @@ class BOM:
 		self.name = name
 		self.input = inputFile
 		
-	def delete(self, db):
-		db.droptable(self.name)
+	def delete(self):
+		urbmDB.droptable(self.name)
