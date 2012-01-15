@@ -7,6 +7,7 @@ import urlparse
 import pygtk
 pygtk.require('2.0')
 import gtk
+import y_serial_v060 as y_serial
 
 def enum(*sequential, **named):
 	enums = dict(zip(sequential, range(len(sequential))), **named)
@@ -127,18 +128,10 @@ class Product:
 					return rownum
 				rownum++
 			return -1
-
-	def writeToDB(self, databaseFile)
-		# TODO: Find any existing entry for this part and remove it
-		with open(databaseFile, 'wb') as f:
-			db = csv.writer(f, delimiter',', quotechar = '"', quoting=csv.QUOTE_ALL)
-			iter = 0
-			for key in sorted(self.prices.iterkeys(), reverse=True):
-				pricesStr = pricesStr + key + ":" + self.prices[key]
-				iter++
-				if iter < len(self.prices):
-					pricesStr = pricesStr + ","
-			writer.writerow(self.vendor, self.vendor_pn, self.mfg_pn, pricesStr, self.inventory, self.datasheet)
+	
+	def writeToDB(self, db)
+		db.delete(self.vendor_pn, 'products')
+		db.insert(self, "#" + self.vendor_pn, 'products')
 
 
 #call sorted(prices.keys(), reverse=True) on prices.keys() to evaluate the price breaks in order
