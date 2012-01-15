@@ -27,7 +27,7 @@ def getFileName(url,openUrl):
 
 class Product:
 	vendors = enum('DK', 'ME', 'SFE')
-	def __init__(self, vendor, vendor_pn)
+	def __init__(self, vendor, vendor_pn):
 		self.vendor = vendor
 		self.vendor_pn = vendor_pn
 		self.mfg_pn = ""
@@ -35,7 +35,7 @@ class Product:
 		self.inventory = 0
 		self.datasheet = ""
 	
-	def __init__(self, vendor, vendor_pn, databaseFile)
+	def __init__(self, vendor, vendor_pn, databaseFile):
 		with open(databaseFile, 'wb') as f:
 			db = csv.reader(f, delimiter',', quotechar = '"', quoting=csv.QUOTE_ALL)
 			rownum = 0
@@ -54,7 +54,7 @@ class Product:
 					self.inventory = row[4]
 					self.datasheet = row[5]
 	
-	def scrape(self)
+	def scrape(self):
 		# Proceed based on vendor
 		if self.vendor == vendors.DK:
 			# Clear previous pricing data (in case price break keys change)
@@ -116,28 +116,28 @@ class Product:
 		else:
 			print 'Error: %s has invalid vendor: %s' % (self.pn, self.vendor)
 
-	def isInDB(self, db)
+	def isInDB(self, db):
 		dict = db.selectdic(self.vendor_pn, 'products')
 		if len(dict) == 0:
 			return False
 		else:
 			return True
 	
-	def writeToDB(self, db)
+	def writeToDB(self, db):
 		db.delete(self.vendor_pn, 'products')
 		db.insert(self, "#" + self.vendor_pn, 'products')
 
 #call sorted(prices.keys(), reverse=True) on prices.keys() to evaluate the price breaks in order
 
 class bomPart:
-	def __init__(self, name, value, device, package, product = "none")
+	def __init__(self, name, value, device, package, product = "none"):
 		self.name = name
 		self.value = value
 		self.device = device
 		self.package = package
 		self.product = product
 
-	def findInBOM(self, bomFile)
+	def findInBOM(self, bomFile):
 		with open(bomFile, 'rb') as f:
 			db = csv.reader(f, delimiter',', quotechar = '"', quoting=csv.QUOTE_ALL)
 			rownum = 0
@@ -149,9 +149,9 @@ class bomPart:
 
 '''For determining the name of a project's bomPart table.'''			
 class BOM:
-	def __init__(self, name, inputFile="bom.csv")
+	def __init__(self, name, inputFile="bom.csv"):
 		self.name = name
 		self.input = inputFile
 		
-	def delete(self, db)
+	def delete(self, db):
 		db.droptable(self.name)
