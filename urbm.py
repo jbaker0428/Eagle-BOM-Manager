@@ -174,6 +174,7 @@ class URBM:
 		bomVPane = gtk.VPaned()	# Goes in right side of bomHPane
 		
 		bomFrame = gtk.Frame("BOM") # Goes in left side of bomHPane
+		bomTable = gtk.Table(50, 6, False) # call Table.resize(rows, cols) later
 		bomSortName = gtk.RadioButton(None, "Name")
 		bomSortName.connect("toggled", self.callback, "BOM sort name")
 		bomSortValue = gtk.RadioButton(bomSortName, "Value")
