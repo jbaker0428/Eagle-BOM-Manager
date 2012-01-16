@@ -170,8 +170,8 @@ class URBM:
 		notebook.set_tab_pos(POS_TOP)
 		
 		bomToolbar = gtk.Toolbar()
-		bomVPane = gtk.VPaned()	# First tab in notebook
-		bomHPane = gtk.HPaned()	# Goes in one half of bomVPane
+		bomHPane = gtk.HPaned()	# First tab in notebook
+		bomVPane = gtk.VPaned()	# Goes in right side of bomHPane
 		
 		bomFrame = gtk.Frame("BOM") # Goes in left side of bomHPane
 		bomSortName = gtk.RadioButton(None, "Name")
@@ -181,12 +181,12 @@ class URBM:
 		bomSortPN = gtk.RadioButton(bomSortName, "Part Number")
 		bomSortPN.connect("toggled", self.callback, "BOM sort PN")
 		
-		partInfoFrame = gtk.Frame("Part information") # Goes in right side of bomHPane
 		
-		pricingFrame = gtk.frame("Pricing") # Second tab in notebook
-		pricingToolbar = gtk.Toolbar()
+		partInfoFrame = gtk.Frame("Part information") # Goes in top half of bomVPane
 		
-		partDBFRame = gtk.Frame("Product database") # Third tab in notebook
+		pricingFrame = gtk.frame("Pricing") # Goes in bottom half of bomVPane
+		
+		partDBFRame = gtk.Frame("Product database") # Second tab in notebook
 		dbToolbar = gtk.Toolbar()
 		
 def main():
