@@ -185,6 +185,9 @@ class URBM:
 		partInfoFrame = gtk.Frame("Part information") # Goes in top half of bomVPane
 		
 		pricingFrame = gtk.frame("Pricing") # Goes in bottom half of bomVPane
+		orderSizeScaleAdj = gtk.Adjustment(1, 1, 10000, 1, 10, 200)
+		orderSizeScale = gtk.HScale(orderSizeScaleAdj)
+		orderSizeText = gtk.Entry(10000)
 		
 		partDBFRame = gtk.Frame("Product database") # Second tab in notebook
 		dbToolbar = gtk.Toolbar()
