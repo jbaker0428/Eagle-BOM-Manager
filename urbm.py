@@ -166,12 +166,13 @@ class BOM:
 '''GUI class'''
 class URBM:
 	def __init__(self):
+		# Declarations
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
 		self.window.connect("delete event", self.delete_event)
 		self.mainBox = gtk.VBox(False, 0)
 		self.menuBar = gtk.MenuBar()
 		self.notebook = gtk.Notebook()
-		notebook.set_tab_pos(POS_TOP)
+		
 		
 		self.bomTabBox = gtk.VBox(False, 0)
 		self.bomToolbar = gtk.Toolbar()
@@ -184,12 +185,8 @@ class URBM:
 		# first table row will be column labels
 		self.bomRadioBox = gtk.HBox(False, 0)
 		self.bomSortName = gtk.RadioButton(None, "Name")
-		bomSortName.connect("toggled", self.callback, "BOM sort name")
 		self.bomSortValue = gtk.RadioButton(bomSortName, "Value")
-		bomSortValue.connect("toggled", self.callback, "BOM sort value")
 		self.bomSortPN = gtk.RadioButton(bomSortName, "Part Number")
-		bomSortPN.connect("toggled", self.callback, "BOM sort PN")
-		
 		
 		self.partInfoFrame = gtk.Frame("Part information") # Goes in top half of bomVPane
 		self.partInfoRowBox = gtk.VBox(False, 0) # Fill with HBoxes
@@ -204,6 +201,15 @@ class URBM:
 		self.dbBox = gtk.VBox(False, 0)
 		self.dbToolbar = gtk.Toolbar()
 		self.dbTable = gtk.Table(50, 6, False)
+		
+		# Configuration
+		notebook.set_tab_pos(POS_TOP)
+		
+		bomSortName.connect("toggled", self.callback, "BOM sort name")
+		bomSortValue.connect("toggled", self.callback, "BOM sort value")
+		bomSortPN.connect("toggled", self.callback, "BOM sort PN")
+		
+		# Packing
 		
 def main():
 	gtk.main()
