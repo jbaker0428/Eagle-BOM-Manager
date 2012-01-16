@@ -224,6 +224,9 @@ class URBM:
 		self.bomTabBox.pack_start(self.bomToolbar)
 		self.bomTabBox.pack_start(self.bomHPane)
 		
+		self.bomTableBox.pack_start(self.bomTable)
+		self.bomTableBox.pack_start(self.bomRadioBox)
+		
 def main():
 	gtk.main()
 	
