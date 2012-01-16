@@ -208,6 +208,11 @@ class URBM:
 		self.notebook.append_page(dbBox, "Product Database")
 		self.notebook.set_show_tabs(True)
 		
+		self.bomHPane.add1(self.bomFrame)
+		self.bomHPane.add2(self.bomVPane)
+		self.bomVPane.add1(self.partInfoFrame)
+		self.bomVPane.add2(self.pricingFrame)
+		
 		self.bomSortName.connect("toggled", self.callback, "BOM sort name")
 		self.bomSortValue.connect("toggled", self.callback, "BOM sort value")
 		self.bomSortPN.connect("toggled", self.callback, "BOM sort PN")
