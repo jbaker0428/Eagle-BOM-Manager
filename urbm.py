@@ -197,8 +197,8 @@ class URBM:
 		orderSizeScale = gtk.HScale(orderSizeScaleAdj)
 		orderSizeText = gtk.Entry(10000)
 		
-		partDBFRame = gtk.Frame("Product database") # Second tab in notebook
-		partDBBox = gtk.VBox(False, 0)
+		dbFrame = gtk.Frame("Product database") # Second tab in notebook
+		dbBox = gtk.VBox(False, 0)
 		dbToolbar = gtk.Toolbar()
 		
 def main():
