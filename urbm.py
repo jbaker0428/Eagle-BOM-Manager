@@ -191,6 +191,7 @@ class URBM:
 		
 		self.partInfoFrame = gtk.Frame("Part information") # Goes in top half of bomVPane
 		self.partInfoRowBox = gtk.VBox(False, 0) # Fill with HBoxes
+		self.scrapeButton = gtk.Button("Scrape", GTK_STOCK_REFRESH)
 		self.partDatasheetButton = gtk.Button("Datasheet", GTK_STOCK_PROPERTIES)
 		
 		self.pricingFrame = gtk.frame("Pricing") # Goes in bottom half of bomVPane
@@ -232,6 +233,9 @@ class URBM:
 		self.bomRadioBox.pack_start(self.bomSortName)
 		self.bomRadioBox.pack_start(self.bomSortValue)
 		self.bomRadioBox.pack_start(self.bomSortPN)
+		
+		self.dbBox.pack_start(self.dbToolbar)
+		self.dbBox.pack_start(self.dbFrame)
 		
 def main():
 	gtk.main()
