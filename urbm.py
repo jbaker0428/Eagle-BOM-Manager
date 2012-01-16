@@ -167,6 +167,7 @@ class BOM:
 class URBM:
 	def __init__(self):
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+		self.window.connect("delete event", self.delete_event)
 		self.notebook = gtk.Notebook()
 		notebook.set_tab_pos(POS_TOP)
 		
