@@ -174,9 +174,9 @@ class URBM:
 		self.notebook = gtk.Notebook()
 		
 		
-		self.bomTabBox = gtk.VBox(False, 0)
+		self.bomTabBox = gtk.VBox(False, 0) # First tab in notebook
 		self.bomToolbar = gtk.Toolbar()
-		self.bomHPane = gtk.HPaned()	# First tab in notebook
+		self.bomHPane = gtk.HPaned()	
 		self.bomVPane = gtk.VPaned()	# Goes in right side of bomHPane
 		
 		self.bomFrame = gtk.Frame("BOM") # Goes in left side of bomHPane
@@ -197,13 +197,16 @@ class URBM:
 		self.orderSizeScale = gtk.HScale(orderSizeScaleAdj)
 		self.orderSizeText = gtk.Entry(10000)
 		
-		self.dbFrame = gtk.Frame("Product database") # Second tab in notebook
-		self.dbBox = gtk.VBox(False, 0)
+		self.dbBox = gtk.VBox(False, 0) # Second tab in notebook
 		self.dbToolbar = gtk.Toolbar()
+		self.dbFrame = gtk.Frame("Product database") 
 		self.dbTable = gtk.Table(50, 6, False)
 		
 		# Configuration
 		notebook.set_tab_pos(POS_TOP)
+		notebook.append_page(bomTabBox, "BOM Editor")
+		notebook.append_page(dbBox, "Product Database")
+		notebook.set_show_tabs(True)
 		
 		bomSortName.connect("toggled", self.callback, "BOM sort name")
 		bomSortValue.connect("toggled", self.callback, "BOM sort value")
