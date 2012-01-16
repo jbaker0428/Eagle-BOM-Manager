@@ -221,6 +221,9 @@ class URBM:
 		self.mainBox.pack_start(menuBar)
 		self.mainBox.pack_start(notebook)
 		
+		self.bomTabBox.pack_start(self.bomToolbar)
+		self.bomTabBox.pack_start(self.bomHPane)
+		
 def main():
 	gtk.main()
 	
