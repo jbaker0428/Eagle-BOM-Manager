@@ -173,7 +173,6 @@ class URBM:
 		self.menuBar = gtk.MenuBar()
 		self.notebook = gtk.Notebook()
 		
-		
 		self.bomTabBox = gtk.VBox(False, 0) # First tab in notebook
 		self.bomToolbar = gtk.Toolbar()
 		self.bomHPane = gtk.HPaned()	
@@ -183,6 +182,12 @@ class URBM:
 		self.bomTableBox = gtk.VBox(False, 0) # Holds bomTable and bomRadioBox
 		self.bomTable = gtk.Table(50, 6, False) # call Table.resize(rows, cols) later
 		# first table row will be column labels
+		self.bomColLabel1 = gtk.Label("Part")
+		self.bomColLabel2 = gtk.Label("Value")
+		self.bomColLabel3 = gtk.Label("Device")
+		self.bomColLabel4 = gtk.Label("Package")
+		self.bomColLabel5 = gtk.Label("Description")
+		self.bomColLabel6 = gtk.Label("Part Number")
 		self.bomRadioBox = gtk.HBox(False, 0)
 		self.bomRadioLabel = gtk.Label("Group by:")
 		self.bomSortName = gtk.RadioButton(None, "Name")
