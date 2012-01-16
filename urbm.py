@@ -213,6 +213,8 @@ class URBM:
 		bomSortPN.connect("toggled", self.callback, "BOM sort PN")
 		
 		# Packing
+		mainBox.pack_start(menuBar)
+		mainBox.pack_start(notebook)
 		
 def main():
 	gtk.main()
