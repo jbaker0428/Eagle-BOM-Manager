@@ -206,25 +206,28 @@ class URBM:
 		
 		# Configuration
 		self.notebook.set_tab_pos(POS_TOP)
-		self.notebook.append_page(bomTabBox, "BOM Editor")
-		self.notebook.append_page(dbBox, "Product Database")
+		self.notebook.append_page(self.bomTabBox, "BOM Editor")
+		self.notebook.append_page(self.dbBox, "Product Database")
 		self.notebook.set_show_tabs(True)
+		
+		self.bomSortName.connect("toggled", self.callback, "BOM sort name")
+		self.bomSortValue.connect("toggled", self.callback, "BOM sort value")
+		self.bomSortPN.connect("toggled", self.callback, "BOM sort PN")
+		
+		# Packing and adding
+		self.mainBox.pack_start(self.menuBar)
+		self.mainBox.pack_start(self.notebook)
+		
+		self.bomTabBox.pack_start(self.bomToolbar)
+		self.bomTabBox.pack_start(self.bomHPane)
 		
 		self.bomHPane.add1(self.bomFrame)
 		self.bomHPane.add2(self.bomVPane)
 		self.bomVPane.add1(self.partInfoFrame)
 		self.bomVPane.add2(self.pricingFrame)
 		
-		self.bomSortName.connect("toggled", self.callback, "BOM sort name")
-		self.bomSortValue.connect("toggled", self.callback, "BOM sort value")
-		self.bomSortPN.connect("toggled", self.callback, "BOM sort PN")
-		
-		# Packing
-		self.mainBox.pack_start(menuBar)
-		self.mainBox.pack_start(notebook)
-		
-		self.bomTabBox.pack_start(self.bomToolbar)
-		self.bomTabBox.pack_start(self.bomHPane)
+		self.bomFrame.add(self.bomTableBox)
+		# TODO: add things to partInfoFrame and pricingFrame
 		
 		self.bomTableBox.pack_start(self.bomTable)
 		self.bomTableBox.pack_start(self.bomRadioBox)
@@ -236,6 +239,7 @@ class URBM:
 		
 		self.dbBox.pack_start(self.dbToolbar)
 		self.dbBox.pack_start(self.dbFrame)
+		self.dbFrame.add(self.dbTable)
 		
 def main():
 	gtk.main()
