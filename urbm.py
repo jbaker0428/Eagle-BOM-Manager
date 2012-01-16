@@ -203,18 +203,18 @@ class URBM:
 		self.dbTable = gtk.Table(50, 6, False)
 		
 		# Configuration
-		notebook.set_tab_pos(POS_TOP)
-		notebook.append_page(bomTabBox, "BOM Editor")
-		notebook.append_page(dbBox, "Product Database")
-		notebook.set_show_tabs(True)
+		self.notebook.set_tab_pos(POS_TOP)
+		self.notebook.append_page(bomTabBox, "BOM Editor")
+		self.notebook.append_page(dbBox, "Product Database")
+		self.notebook.set_show_tabs(True)
 		
-		bomSortName.connect("toggled", self.callback, "BOM sort name")
-		bomSortValue.connect("toggled", self.callback, "BOM sort value")
-		bomSortPN.connect("toggled", self.callback, "BOM sort PN")
+		self.bomSortName.connect("toggled", self.callback, "BOM sort name")
+		self.bomSortValue.connect("toggled", self.callback, "BOM sort value")
+		self.bomSortPN.connect("toggled", self.callback, "BOM sort PN")
 		
 		# Packing
-		mainBox.pack_start(menuBar)
-		mainBox.pack_start(notebook)
+		self.mainBox.pack_start(menuBar)
+		self.mainBox.pack_start(notebook)
 		
 def main():
 	gtk.main()
