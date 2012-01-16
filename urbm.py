@@ -185,6 +185,7 @@ class URBM:
 		
 		
 		partInfoFrame = gtk.Frame("Part information") # Goes in top half of bomVPane
+		partDatasheetButton = gtk.Button("Datasheet", GTK_STOCK_PROPERTIES)
 		
 		pricingFrame = gtk.frame("Pricing") # Goes in bottom half of bomVPane
 		orderSizeScaleAdj = gtk.Adjustment(1, 1, 10000, 1, 10, 200)
