@@ -200,6 +200,7 @@ class URBM:
 		dbFrame = gtk.Frame("Product database") # Second tab in notebook
 		dbBox = gtk.VBox(False, 0)
 		dbToolbar = gtk.Toolbar()
+		dbTable = gtk.Table(50, 6, False)
 		
 def main():
 	gtk.main()
