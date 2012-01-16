@@ -171,37 +171,37 @@ class URBM:
 		self.notebook = gtk.Notebook()
 		notebook.set_tab_pos(POS_TOP)
 		
-		bomTabBox = gtk.VBox(False, 0)
-		bomToolbar = gtk.Toolbar()
-		bomHPane = gtk.HPaned()	# First tab in notebook
-		bomVPane = gtk.VPaned()	# Goes in right side of bomHPane
+		self.bomTabBox = gtk.VBox(False, 0)
+		self.bomToolbar = gtk.Toolbar()
+		self.bomHPane = gtk.HPaned()	# First tab in notebook
+		self.bomVPane = gtk.VPaned()	# Goes in right side of bomHPane
 		
-		bomFrame = gtk.Frame("BOM") # Goes in left side of bomHPane
-		bomTableBox = gtk.VBox(False, 0) # Holds bomTable and bomRadioBox
-		bomTable = gtk.Table(50, 6, False) # call Table.resize(rows, cols) later
+		self.bomFrame = gtk.Frame("BOM") # Goes in left side of bomHPane
+		self.bomTableBox = gtk.VBox(False, 0) # Holds bomTable and bomRadioBox
+		self.bomTable = gtk.Table(50, 6, False) # call Table.resize(rows, cols) later
 		# first table row will be column labels
-		bomRadioBox = gtk.HBox(False, 0)
-		bomSortName = gtk.RadioButton(None, "Name")
+		self.bomRadioBox = gtk.HBox(False, 0)
+		self.bomSortName = gtk.RadioButton(None, "Name")
 		bomSortName.connect("toggled", self.callback, "BOM sort name")
-		bomSortValue = gtk.RadioButton(bomSortName, "Value")
+		self.bomSortValue = gtk.RadioButton(bomSortName, "Value")
 		bomSortValue.connect("toggled", self.callback, "BOM sort value")
-		bomSortPN = gtk.RadioButton(bomSortName, "Part Number")
+		self.bomSortPN = gtk.RadioButton(bomSortName, "Part Number")
 		bomSortPN.connect("toggled", self.callback, "BOM sort PN")
 		
 		
-		partInfoFrame = gtk.Frame("Part information") # Goes in top half of bomVPane
-		partInfoRowBox = gtk.VBox(False, 0) # Fill with HBoxes
-		partDatasheetButton = gtk.Button("Datasheet", GTK_STOCK_PROPERTIES)
+		self.partInfoFrame = gtk.Frame("Part information") # Goes in top half of bomVPane
+		self.partInfoRowBox = gtk.VBox(False, 0) # Fill with HBoxes
+		self.partDatasheetButton = gtk.Button("Datasheet", GTK_STOCK_PROPERTIES)
 		
-		pricingFrame = gtk.frame("Pricing") # Goes in bottom half of bomVPane
-		orderSizeScaleAdj = gtk.Adjustment(1, 1, 10000, 1, 10, 200)
-		orderSizeScale = gtk.HScale(orderSizeScaleAdj)
-		orderSizeText = gtk.Entry(10000)
+		self.pricingFrame = gtk.frame("Pricing") # Goes in bottom half of bomVPane
+		self.orderSizeScaleAdj = gtk.Adjustment(1, 1, 10000, 1, 10, 200)
+		self.orderSizeScale = gtk.HScale(orderSizeScaleAdj)
+		self.orderSizeText = gtk.Entry(10000)
 		
-		dbFrame = gtk.Frame("Product database") # Second tab in notebook
-		dbBox = gtk.VBox(False, 0)
-		dbToolbar = gtk.Toolbar()
-		dbTable = gtk.Table(50, 6, False)
+		self.dbFrame = gtk.Frame("Product database") # Second tab in notebook
+		self.dbBox = gtk.VBox(False, 0)
+		self.dbToolbar = gtk.Toolbar()
+		self.dbTable = gtk.Table(50, 6, False)
 		
 def main():
 	gtk.main()
