@@ -170,12 +170,16 @@ class URBM:
 		self.notebook = gtk.Notebook()
 		notebook.set_tab_pos(POS_TOP)
 		
+		bomTabBox = gtk.VBox(False, 0)
 		bomToolbar = gtk.Toolbar()
 		bomHPane = gtk.HPaned()	# First tab in notebook
 		bomVPane = gtk.VPaned()	# Goes in right side of bomHPane
 		
 		bomFrame = gtk.Frame("BOM") # Goes in left side of bomHPane
+		bomTableBox = gtk.VBox(False, 0) # Holds bomTable and bomRadioBox
 		bomTable = gtk.Table(50, 6, False) # call Table.resize(rows, cols) later
+		# first table row will be column labels
+		bomRadioBox = gtk.HBox(False, 0)
 		bomSortName = gtk.RadioButton(None, "Name")
 		bomSortName.connect("toggled", self.callback, "BOM sort name")
 		bomSortValue = gtk.RadioButton(bomSortName, "Value")
@@ -185,6 +189,7 @@ class URBM:
 		
 		
 		partInfoFrame = gtk.Frame("Part information") # Goes in top half of bomVPane
+		partInfoRowBox = gtk.VBox(False, 0) # Fill with HBoxes
 		partDatasheetButton = gtk.Button("Datasheet", GTK_STOCK_PROPERTIES)
 		
 		pricingFrame = gtk.frame("Pricing") # Goes in bottom half of bomVPane
@@ -193,6 +198,7 @@ class URBM:
 		orderSizeText = gtk.Entry(10000)
 		
 		partDBFRame = gtk.Frame("Product database") # Second tab in notebook
+		partDBBox = gtk.VBox(False, 0)
 		dbToolbar = gtk.Toolbar()
 		
 def main():
