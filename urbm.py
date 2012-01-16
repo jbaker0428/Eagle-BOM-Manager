@@ -132,11 +132,12 @@ class Product:
 #call sorted(prices.keys(), reverse=True) on prices.keys() to evaluate the price breaks in order
 
 class bomPart:
-	def __init__(self, name, value, device, package, product = "none"):
+	def __init__(self, name, value, device, package, description="", product="none"):
 		self.name = name
 		self.value = value
 		self.device = device
 		self.package = package
+		self.description = description
 		self.product = product
 
 	def findInBOM(self, bomFile):
