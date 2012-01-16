@@ -184,6 +184,7 @@ class URBM:
 		self.bomTable = gtk.Table(50, 6, False) # call Table.resize(rows, cols) later
 		# first table row will be column labels
 		self.bomRadioBox = gtk.HBox(False, 0)
+		self.bomRadioLabel = gtk.Label("Group by:")
 		self.bomSortName = gtk.RadioButton(None, "Name")
 		self.bomSortValue = gtk.RadioButton(bomSortName, "Value")
 		self.bomSortPN = gtk.RadioButton(bomSortName, "Part Number")
@@ -226,6 +227,11 @@ class URBM:
 		
 		self.bomTableBox.pack_start(self.bomTable)
 		self.bomTableBox.pack_start(self.bomRadioBox)
+		
+		self.bomRadioBox.pack_start(self.bomRadioLabel)
+		self.bomRadioBox.pack_start(self.bomSortName)
+		self.bomRadioBox.pack_start(self.bomSortValue)
+		self.bomRadioBox.pack_start(self.bomSortPN)
 		
 def main():
 	gtk.main()
