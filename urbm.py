@@ -246,6 +246,9 @@ class URBM:
 		self.dbBox.pack_start(self.dbFrame)
 		self.dbFrame.add(self.dbTable)
 		
+		# Show everything
+		self.mainBox.show_all()
+		self.window.show()
 def main():
 	gtk.main()
 	
