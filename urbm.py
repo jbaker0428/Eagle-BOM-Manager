@@ -165,10 +165,16 @@ class BOM:
 
 '''GUI class'''
 class URBM:
+	def delete_event(self, widget, event, data=None):
+		print "delete event occurred"
+		return False
+		
+	def destroy(self, widget, data=None):
+		gtk.main_quit()
+
 	def __init__(self):
 		# Declarations
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-		self.window.connect("delete event", self.delete_event)
 		self.mainBox = gtk.VBox(False, 0)
 		self.menuBar = gtk.MenuBar()
 		self.notebook = gtk.Notebook()
@@ -210,6 +216,9 @@ class URBM:
 		self.dbTable = gtk.Table(50, 6, False)
 		
 		# Configuration
+		self.window.connect("delete event", self.delete_event)
+		self.window.connect("destroy", self.destroy)
+		
 		self.notebook.set_tab_pos(POS_TOP)
 		self.notebook.append_page(self.bomTabBox, "BOM Editor")
 		self.notebook.append_page(self.dbBox, "Product Database")
