@@ -179,6 +179,8 @@ class URBM:
 		self.mainBox = gtk.VBox(False, 0)
 		self.menuBar = gtk.MenuBar()
 		self.notebook = gtk.Notebook()
+		self.bomTabLabel = gtk.Label("BOM Editor")
+		self.dbTabLabel = gtk.Label("Product Database")
 		
 		self.bomTabBox = gtk.VBox(False, 0) # First tab in notebook
 		self.bomToolbar = gtk.Toolbar()
@@ -217,12 +219,12 @@ class URBM:
 		self.dbTable = gtk.Table(50, 6, False)
 		
 		# Configuration
-		self.window.connect("delete event", self.delete_event)
+		self.window.connect("delete_event", self.delete_event)
 		self.window.connect("destroy", self.destroy)
 		
-		self.notebook.set_tab_pos(POS_TOP)
-		self.notebook.append_page(self.bomTabBox, "BOM Editor")
-		self.notebook.append_page(self.dbBox, "Product Database")
+		# self.notebook.set_tab_pos(POS_TOP)
+		self.notebook.append_page(self.bomTabBox, self.bomTabLabel)
+		self.notebook.append_page(self.dbBox, self.dbTabLabel)
 		self.notebook.set_show_tabs(True)
 		
 		self.bomSortName.connect("toggled", self.callback, "BOM sort name")
