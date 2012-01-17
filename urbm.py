@@ -243,15 +243,15 @@ class URBM:
 		self.bomTabBox.pack_start(self.bomToolbar)
 		self.bomTabBox.pack_start(self.bomHPane)
 		
-		self.bomHPane.add1(self.bomFrame)
+		self.bomHPane.add1(self.bomTableBox)
 		self.bomHPane.add2(self.bomVPane)
 		self.bomVPane.add1(self.partInfoFrame)
 		self.bomVPane.add2(self.pricingFrame)
 		
-		self.bomFrame.add(self.bomTableBox)
+		self.bomFrame.add(self.bomTable)
 		# TODO: add things to partInfoFrame and pricingFrame
 		
-		self.bomTableBox.pack_start(self.bomTable)
+		self.bomTableBox.pack_start(self.bomFrame)
 		self.bomTableBox.pack_start(self.bomRadioBox)
 
 		self.bomTable.attach(self.bomColLabel1, 0, 1, 0, 1)
