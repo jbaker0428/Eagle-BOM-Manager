@@ -238,6 +238,7 @@ class URBM:
 		# Packing and adding
 		self.mainBox.pack_start(self.menuBar)
 		self.mainBox.pack_start(self.notebook)
+		self.window.add(self.mainBox)
 		
 		self.bomTabBox.pack_start(self.bomToolbar)
 		self.bomTabBox.pack_start(self.bomHPane)
