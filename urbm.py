@@ -212,7 +212,7 @@ class URBM:
 		self.scrapeButton = gtk.Button("Scrape") # , GTK_STOCK_REFRESH
 		self.partDatasheetButton = gtk.Button("Datasheet") # , GTK_STOCK_PROPERTIES
 		
-		self.pricingFrame = gtk.Frame("Pricing") # Goes in bottom half of bomVPane
+		self.pricingFrame = gtk.Frame("Project pricing") # Goes in bottom half of bomVPane
 		self.orderSizeScaleAdj = gtk.Adjustment(1, 1, 10000, 1, 10, 200)
 		self.orderSizeScale = gtk.HScale(self.orderSizeScaleAdj)
 		self.orderSizeText = gtk.Entry(10000)
@@ -253,6 +253,14 @@ class URBM:
 		
 		self.bomTableBox.pack_start(self.bomTable)
 		self.bomTableBox.pack_start(self.bomRadioBox)
+
+		self.bomTable.attach(self.bomColLabel1, 0, 1, 0, 1)
+		self.bomTable.attach(self.bomColLabel2, 1, 2, 0, 1)
+		self.bomTable.attach(self.bomColLabel3, 2, 3, 0, 1)
+		self.bomTable.attach(self.bomColLabel4, 3, 4, 0, 1)
+		self.bomTable.attach(self.bomColLabel5, 4, 5, 0, 1)
+		self.bomTable.attach(self.bomColLabel6, 5, 6, 0, 1)
+		self.bomTable.set_col_spacings(10)
 		
 		self.bomRadioBox.pack_start(self.bomRadioLabel)
 		self.bomRadioBox.pack_start(self.bomSortName)
