@@ -173,6 +173,10 @@ class URBM:
 	def destroy(self, widget, data=None):
 		gtk.main_quit()
 
+	def bomSortCallback(self, widget, data=None):
+		print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
+		# TODO : Resize/redraw table
+
 	def __init__(self):
 		# Declarations
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
@@ -227,9 +231,9 @@ class URBM:
 		self.notebook.append_page(self.dbBox, self.dbTabLabel)
 		self.notebook.set_show_tabs(True)
 		
-		self.bomSortName.connect("toggled", self.callback, "BOM sort name")
-		self.bomSortValue.connect("toggled", self.callback, "BOM sort value")
-		self.bomSortPN.connect("toggled", self.callback, "BOM sort PN")
+		self.bomSortName.connect("toggled", self.bomSortCallback, "BOM sort name")
+		self.bomSortValue.connect("toggled", self.bomSortCallback, "BOM sort value")
+		self.bomSortPN.connect("toggled", self.bomSortCallback, "BOM sort PN")
 		
 		# Packing and adding
 		self.mainBox.pack_start(self.menuBar)
