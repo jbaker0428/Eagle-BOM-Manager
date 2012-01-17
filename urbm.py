@@ -39,7 +39,7 @@ class Product:
 	
 	def __init__(self, vendor, vendor_pn, databaseFile):
 		with open(databaseFile, 'wb') as f:
-			db = csv.reader(f, delimiter',', quotechar = '"', quoting=csv.QUOTE_ALL)
+			db = csv.reader(f, delimiter=',', quotechar = '"', quoting=csv.QUOTE_ALL)
 			rownum = 0
 			for row in db:
 				if row[0] == vendor and row[1] == vendor_pn:
@@ -72,7 +72,7 @@ class Product:
 			for r in priceTable.contents:
 				# r.contents should be td Tags... except the first!
 				if r.contents[0].name == 'th':
-					;	# do nothing
+					pass	# do nothing
 				else:
 					newBreakString = r.contents[0].string
 					# Remove commas
@@ -106,7 +106,8 @@ class Product:
 			
 			# TODO: Write to persistent database
 		elif self.vendor == vendors.ME:
-			
+			pass
+		
 		elif self.vendor == vendors.SFE:
 			# Clear previous pricing data (in case price break keys change)
 			self.prices.clear()
@@ -142,12 +143,12 @@ class bomPart:
 
 	def findInBOM(self, bomFile):
 		with open(bomFile, 'rb') as f:
-			db = csv.reader(f, delimiter',', quotechar = '"', quoting=csv.QUOTE_ALL)
+			db = csv.reader(f, delimiter=',', quotechar = '"', quoting=csv.QUOTE_ALL)
 			rownum = 0
 			for row in db:
 				if row[0] == self.name:
 					return rownum
-				rownum++
+				rownum = rownum + 1
 			return -1
 			
 	def writeToDB(self, bom):
@@ -197,17 +198,17 @@ class URBM:
 		self.bomRadioBox = gtk.HBox(False, 0)
 		self.bomRadioLabel = gtk.Label("Group by:")
 		self.bomSortName = gtk.RadioButton(None, "Name")
-		self.bomSortValue = gtk.RadioButton(bomSortName, "Value")
-		self.bomSortPN = gtk.RadioButton(bomSortName, "Part Number")
+		self.bomSortValue = gtk.RadioButton(self.bomSortName, "Value")
+		self.bomSortPN = gtk.RadioButton(self.bomSortName, "Part Number")
 		
 		self.partInfoFrame = gtk.Frame("Part information") # Goes in top half of bomVPane
 		self.partInfoRowBox = gtk.VBox(False, 0) # Fill with HBoxes
-		self.scrapeButton = gtk.Button("Scrape", GTK_STOCK_REFRESH)
-		self.partDatasheetButton = gtk.Button("Datasheet", GTK_STOCK_PROPERTIES)
+		self.scrapeButton = gtk.Button("Scrape") # , GTK_STOCK_REFRESH
+		self.partDatasheetButton = gtk.Button("Datasheet") # , GTK_STOCK_PROPERTIES
 		
-		self.pricingFrame = gtk.frame("Pricing") # Goes in bottom half of bomVPane
+		self.pricingFrame = gtk.Frame("Pricing") # Goes in bottom half of bomVPane
 		self.orderSizeScaleAdj = gtk.Adjustment(1, 1, 10000, 1, 10, 200)
-		self.orderSizeScale = gtk.HScale(orderSizeScaleAdj)
+		self.orderSizeScale = gtk.HScale(self.orderSizeScaleAdj)
 		self.orderSizeText = gtk.Entry(10000)
 		
 		self.dbBox = gtk.VBox(False, 0) # Second tab in notebook
