@@ -230,7 +230,7 @@ class URBM:
 		self.bomFrame = gtk.Frame("BOM") # Goes in left side of bomHPane
 		self.bomTableBox = gtk.VBox(False, 0) # Holds bomScrollWin and bomRadioBox
 		self.bomScrollWin = gtk.ScrolledWindow() # Holds bomTable
-		self.bomTable = gtk.Table(50, 6, False) # call Table.resize(rows, cols) later
+		self.bomTable = gtk.Table(50, 7, False) # call Table.resize(rows, cols) later
 		# first table row will be column labels
 		self.bomColLabel1 = gtk.Label("Part")
 		self.bomColLabel2 = gtk.Label("Value")
@@ -238,6 +238,7 @@ class URBM:
 		self.bomColLabel4 = gtk.Label("Package")
 		self.bomColLabel5 = gtk.Label("Description")
 		self.bomColLabel6 = gtk.Label("Part Number")
+		self.bomColLabel7 = gtk.Label("Amount")
 		self.bomRadioBox = gtk.HBox(False, 0)
 		self.bomRadioLabel = gtk.Label("Group by:")
 		self.bomSortName = gtk.RadioButton(None, "Name")
@@ -356,6 +357,7 @@ class URBM:
 		self.bomTable.attach(self.bomColLabel4, 3, 4, 0, 1)
 		self.bomTable.attach(self.bomColLabel5, 4, 5, 0, 1)
 		self.bomTable.attach(self.bomColLabel6, 5, 6, 0, 1)
+		self.bomTable.attach(self.bomColLabel7, 6, 7, 0, 1)
 		self.bomTable.set_col_spacings(10)
 		
 		# The following commented lines are kept (for now) as a reference for
@@ -366,10 +368,10 @@ class URBM:
 		#self.testRadio2 = gtk.RadioButton(self.testRadio1)
 		#self.bLabel1 = gtk.Label("C1")
 		#self.bLabel2 = gtk.Label("10 uF")
-		#self.bomTable.attach(self.testRadio1, 0, 6, 1, 2)
+		#self.bomTable.attach(self.testRadio1, 0, 7, 1, 2)
 		#self.bomTable.attach(self.aLabel1, 0, 1, 1, 2)
 		#self.bomTable.attach(self.aLabel2, 1, 2, 1, 2)
-		#self.bomTable.attach(self.testRadio2, 0, 6, 2, 3)
+		#self.bomTable.attach(self.testRadio2, 0, 7, 2, 3)
 		#self.bomTable.attach(self.bLabel1, 0, 1, 2, 3)
 		#self.bomTable.attach(self.bLabel2, 1, 2, 2, 3)
 		
