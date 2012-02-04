@@ -278,6 +278,17 @@ class URBM:
 		self.dbFrame = gtk.Frame("Product database") 
 		self.dbScrollWin = gtk.ScrolledWindow()
 		self.dbTable = gtk.Table(50, 6, False)
+		self.dbVendorLabel = gtk.Label("Vendor")
+		self.dbVendorPNLabel = gtk.Label("Vendor Part Number")
+		self.dbInventoryLabel = gtk.Label("Inventory")
+		self.dbManufacturerLabel = gtk.Label("Manufacturer")
+		self.dbManufacturerPNLabel = gtk.Label("Manufacturer Part Number")
+		self.dbDescriptionLabel = gtk.Label("Description")
+		self.dbDatasheetLabel = gtk.Label("Datasheet filename")
+		self.dbCategoryLabel = gtk.Label("Category")
+		self.dbFamilyLabel = gtk.Label("Family")
+		self.dbSeriesLabel = gtk.Label("Series")
+		self.dbPackageLabel = gtk.Label("Package/case")
 		
 		# Configuration
 		self.window.connect("delete_event", self.delete_event)
@@ -290,7 +301,7 @@ class URBM:
 		
 		self.bomScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
 		
-		self.dbScrollWin.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+		self.dbScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
 		
 		self.bomSortName.connect("toggled", self.bomSortCallback, "BOM sort name")
 		self.bomSortValue.connect("toggled", self.bomSortCallback, "BOM sort value")
@@ -377,6 +388,18 @@ class URBM:
 		self.dbBox.pack_start(self.dbFrame)
 		self.dbFrame.add(self.dbScrollWin)
 		self.dbScrollWin.add_with_viewport(self.dbTable)
+		self.dbTable.attach(self.dbVendorLabel, 0, 1, 0, 1)
+		self.dbTable.attach(self.dbVendorPNLabel, 1, 2, 0, 1)
+		self.dbTable.attach(self.dbInventoryLabel, 2, 3, 0, 1)
+		self.dbTable.attach(self.dbManufacturerLabel, 3, 4, 0, 1)
+		self.dbTable.attach(self.dbManufacturerPNLabel, 4, 5, 0, 1)
+		self.dbTable.attach(self.dbDescriptionLabel, 5, 6, 0, 1)
+		self.dbTable.attach(self.dbDatasheetLabel, 6, 7, 0, 1)
+		self.dbTable.attach(self.dbCategoryLabel, 7, 8, 0, 1)
+		self.dbTable.attach(self.dbFamilyLabel, 8, 9, 0, 1)
+		self.dbTable.attach(self.dbSeriesLabel, 9, 10, 0, 1)
+		self.dbTable.attach(self.dbPackageLabel, 10, 11, 0, 1)
+		self.dbTable.set_col_spacings(10)
 		
 		# Show everything
 		self.mainBox.show_all()
