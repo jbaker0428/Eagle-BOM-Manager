@@ -27,6 +27,9 @@ def getFileName(url,openUrl):
 	# if no filename was found above, parse it out of the final URL.
 	return os.path.basename(urlparse.urlsplit(openUrl.url)[2])
 
+def getProductDBSize():
+	dict = urbmDB.selectdic("?", 'products')
+
 class Product:
 	vendors = enum('DK', 'ME', 'SFE')
 	def __init__(self, vendor, vendor_pn):
@@ -208,7 +211,12 @@ class URBM:
 		self.bomSortPN = gtk.RadioButton(self.bomSortName, "Part Number")
 		
 		self.partInfoFrame = gtk.Frame("Part information") # Goes in top half of bomVPane
-		self.partInfoRowBox = gtk.VBox(False, 0) # Fill with HBoxes
+		self.partInfoRowBox = gtk.VBox(False, 0) # Fill with HBoxes 
+		
+		self.partInfoInfoTable = gtk.Table(5, 2, False) # Vendor, PNs, inventory, etc
+		self.partInfoPricingTable = gtk.Table(8, 3 , False) # Price breaks
+		self.partInfoButtonBox = gtk.HBox(False, 0)
+
 		self.scrapeButton = gtk.Button("Scrape") # , GTK_STOCK_REFRESH
 		self.partDatasheetButton = gtk.Button("Datasheet") # , GTK_STOCK_PROPERTIES
 		
