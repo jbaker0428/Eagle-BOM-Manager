@@ -276,6 +276,7 @@ class URBM:
 		self.dbBox = gtk.VBox(False, 0) # Second tab in notebook
 		self.dbToolbar = gtk.Toolbar()
 		self.dbFrame = gtk.Frame("Product database") 
+		self.dbScrollWin = gtk.ScrolledWindow()
 		self.dbTable = gtk.Table(50, 6, False)
 		
 		# Configuration
@@ -288,6 +289,8 @@ class URBM:
 		self.notebook.set_show_tabs(True)
 		
 		self.bomScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
+		
+		self.dbScrollWin.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
 		
 		self.bomSortName.connect("toggled", self.bomSortCallback, "BOM sort name")
 		self.bomSortValue.connect("toggled", self.bomSortCallback, "BOM sort value")
