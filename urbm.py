@@ -331,10 +331,6 @@ class URBM:
 		self.bomRadioBox.pack_start(self.bomSortValue)
 		self.bomRadioBox.pack_start(self.bomSortPN)
 		
-		self.dbBox.pack_start(self.dbToolbar)
-		self.dbBox.pack_start(self.dbFrame)
-		self.dbFrame.add(self.dbTable)
-		
 		# Part info frame elements
 		self.partInfoFrame.add(self.partInfoRowBox)
 		self.partInfoRowBox.pack_start(self.partInfoInfoTable)
@@ -376,6 +372,11 @@ class URBM:
 			self.extPriceLabels[i].set_alignment(1.0, 0.5)
 			
 		self.partInfoRowBox.pack_start(self.partInfoButtonBox)
+		
+		self.dbBox.pack_start(self.dbToolbar)
+		self.dbBox.pack_start(self.dbFrame)
+		self.dbFrame.add(self.dbScrollWin)
+		self.dbScrollWin.add_with_viewport(self.dbTable)
 		
 		# Show everything
 		self.mainBox.show_all()
