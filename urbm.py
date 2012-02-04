@@ -185,11 +185,17 @@ class BOM:
 	def __init__(self, name, inputFile="bom.csv"):
 		self.name = name
 		self.input = inputFile
+		self.parts = set() # Set of part name strings for selecting from DB
 		
 	def delete(self):
 		urbmDB.droptable(self.name)
 		
+	def writeToDB(self):
+		urbmDB.delete("bomparts", self.name)
+		urbmDB.inset(self.parts, "bomparts", self.name)
+		
 	def readFromFile(self):
+		newParts = set()
 		with open(self.input, 'rb') as f:
 			reader = csv.reader(f, delimiter=',', quotechar = '"', quoting=csv.QUOTE_ALL)
 			for row in data:
@@ -202,6 +208,8 @@ class BOM:
 					and part.package == oldPart.package):
 						part.product = oldPart.product
 				part.writeToDB(self.name)
+				newParts.update(part.name)
+		parts.intersection_update(newParts)	
 
 '''GUI class'''
 class URBM:
@@ -217,7 +225,7 @@ class URBM:
 		# TODO : Resize/redraw table
 
 	def __init__(self):
-		# Declarations
+		# -------- DECLARATIONS --------
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
 		self.mainBox = gtk.VBox(False, 0)
 		self.menuBar = gtk.MenuBar()
@@ -315,7 +323,9 @@ class URBM:
 		self.dbSeriesLabel = gtk.Label("Series")
 		self.dbPackageLabel = gtk.Label("Package/case")
 		
-		# Configuration
+		# -------- CONFIGURATION --------
+		self.window.set_title("Unified Robotics BOM Manager") 
+		# TODO: Add project name to window title on file open
 		self.window.connect("delete_event", self.delete_event)
 		self.window.connect("destroy", self.destroy)
 		
@@ -332,7 +342,7 @@ class URBM:
 		self.bomSortValue.connect("toggled", self.bomSortCallback, "BOM sort value")
 		self.bomSortPN.connect("toggled", self.bomSortCallback, "BOM sort PN")
 		
-		# Packing and adding
+		# -------- PACKING AND ADDING --------
 		self.mainBox.pack_start(self.menuBar)
 		self.mainBox.pack_start(self.notebook)
 		self.window.add(self.mainBox)
