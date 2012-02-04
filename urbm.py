@@ -218,7 +218,7 @@ class URBM:
 		self.partInfoFrame = gtk.Frame("Part information") # Goes in top half of bomVPane
 		self.partInfoRowBox = gtk.VBox(False, 0) # Fill with HBoxes 
 		
-		self.partInfoInfoTable = gtk.Table(5, 2, False) # Vendor, PNs, inventory, etc
+		self.partInfoInfoTable = gtk.Table(11, 2, False) # Vendor, PNs, inventory, etc
 		self.partInfoVendorLabel = gtk.Label("Vendor: ")
 		self.partInfoVendorPNLabel = gtk.Label("Vendor Part Number: ")
 		self.partInfoInventoryLabel = gtk.Label("Inventory: ")
@@ -266,15 +266,16 @@ class URBM:
 		self.window.add(self.mainBox)
 		
 		self.bomTabBox.pack_start(self.bomToolbar)
-		self.bomTabBox.pack_start(self.bomHPane)
+		# TODO : Add toolbar elements
 		
+		self.bomTabBox.pack_start(self.bomHPane)
 		self.bomHPane.add1(self.bomTableBox)
 		self.bomHPane.add2(self.bomVPane)
 		self.bomVPane.add1(self.partInfoFrame)
 		self.bomVPane.add2(self.pricingFrame)
 		
+		# BOM Frame elements
 		self.bomFrame.add(self.bomTable)
-		# TODO: add things to partInfoFrame and pricingFrame
 		
 		self.bomTableBox.pack_start(self.bomFrame)
 		self.bomTableBox.pack_start(self.bomRadioBox)
@@ -295,6 +296,24 @@ class URBM:
 		self.dbBox.pack_start(self.dbToolbar)
 		self.dbBox.pack_start(self.dbFrame)
 		self.dbFrame.add(self.dbTable)
+		
+		# Part info frame elements
+		self.partInfoFrame.add(self.partInfoRowBox)
+		self.partInfoRowBox.pack_start(self.partInfoInfoTable)
+		self.partInfoInfoTable.attach(self.PartInfoVendorLabel, 0, 1, 0, 1)
+		self.partInfoInfoTable.attach(self.PartInfoVendorPNLabel, 0, 1, 1, 2)
+		self.partInfoInfoTable.attach(self.PartInfoInventoryLabel, 0, 1, 2, 3)
+		self.partInfoInfoTable.attach(self.PartInfoManufacturerLabel, 0, 1, 3, 4)
+		self.partInfoInfoTable.attach(self.PartInfoManufacturerPNLabel, 0, 1, 4, 5)
+		self.partInfoInfoTable.attach(self.PartInfoDescriptionLabel, 0, 1, 5, 6)
+		self.partInfoInfoTable.attach(self.PartInfoDatasheetLabel, 0, 1, 6, 7)
+		self.partInfoInfoTable.attach(self.PartInfoCategoryLabel, 0, 1, 7, 8)
+		self.partInfoInfoTable.attach(self.PartInfoFamilyLabel, 0, 1, 8, 9)
+		self.partInfoInfoTable.attach(self.PartInfoSeriesLabel, 0, 1, 9, 10)
+		self.partInfoInfoTable.attach(self.PartInfoPackageLabel, 0, 1, 10, 11)
+		
+		self.partInfoRowBox.pack_start(self.partInfoPricingTable)
+		self.partInfoRowBox.pack_start(self.partInfoButtonBox)
 		
 		# Show everything
 		self.mainBox.show_all()
