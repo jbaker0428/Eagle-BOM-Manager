@@ -335,6 +335,18 @@ class URBM:
 		self.partInfoInfoTable.attach(self.partInfoSeriesLabel1, 0, 1, 9, 10)
 		self.partInfoInfoTable.attach(self.partInfoPackageLabel1, 0, 1, 10, 11)
 		
+		self.partInfoInfoTable.attach(self.partInfoVendorLabel2, 1, 2, 0, 1)
+		self.partInfoInfoTable.attach(self.partInfoVendorPNLabel2, 1, 2, 1, 2)
+		self.partInfoInfoTable.attach(self.partInfoInventoryLabel2, 1, 2, 2, 3)
+		self.partInfoInfoTable.attach(self.partInfoManufacturerLabel2, 1, 2, 3, 4)
+		self.partInfoInfoTable.attach(self.partInfoManufacturerPNLabel2, 1, 2, 4, 5)
+		self.partInfoInfoTable.attach(self.partInfoDescriptionLabel2, 1, 2, 5, 6)
+		self.partInfoInfoTable.attach(self.partInfoDatasheetLabel2, 1, 2, 6, 7)
+		self.partInfoInfoTable.attach(self.partInfoCategoryLabel2, 1, 2, 7, 8)
+		self.partInfoInfoTable.attach(self.partInfoFamilyLabel2, 1, 2, 8, 9)
+		self.partInfoInfoTable.attach(self.partInfoSeriesLabel2, 1, 2, 9, 10)
+		self.partInfoInfoTable.attach(self.partInfoPackageLabel2, 1, 2, 10, 11)
+		
 		self.partInfoRowBox.pack_start(self.partInfoPricingTable)
 		for i in range(len(self.priceBreakLabels)):
 			self.partInfoPricingTable.attach(self.priceBreakLabels[i], 0, 1, i, i+1)
