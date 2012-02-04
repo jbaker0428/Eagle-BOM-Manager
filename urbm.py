@@ -220,16 +220,27 @@ class URBM:
 		
 		self.partInfoInfoTable = gtk.Table(11, 2, False) # Vendor, PNs, inventory, etc
 		self.partInfoVendorLabel1 = gtk.Label("Vendor: ")
+		self.partInfoVendorLabel2 = gtk.Label(None)
 		self.partInfoVendorPNLabel1 = gtk.Label("Vendor Part Number: ")
+		self.partInfoVendorPNLabel2 = gtk.Label(None)
 		self.partInfoInventoryLabel1 = gtk.Label("Inventory: ")
+		self.partInfoInventoryLabel2 = gtk.Label(None)
 		self.partInfoManufacturerLabel1 = gtk.Label("Manufacturer: ")
+		self.partInfoManufacturerLabel2 = gtk.Label(None)
 		self.partInfoManufacturerPNLabel1 = gtk.Label("Manufacturer Part Number: ")
+		self.partInfoManufacturerPNLabel2 = gtk.Label(None)
 		self.partInfoDescriptionLabel1 = gtk.Label("Description: ")
+		self.partInfoDescriptionLabel2 = gtk.Label(None)
 		self.partInfoDatasheetLabel1 = gtk.Label("Datasheet filename: ")
+		self.partInfoDatasheetLabel2 = gtk.Label(None)
 		self.partInfoCategoryLabel1 = gtk.Label("Category: ")
+		self.partInfoCategoryLabel2 = gtk.Label(None)
 		self.partInfoFamilyLabel1 = gtk.Label("Family: ")
+		self.partInfoFamilyLabel2 = gtk.Label(None)
 		self.partInfoSeriesLabel1 = gtk.Label("Series: ")
+		self.partInfoSeriesLabel2 = gtk.Label(None)
 		self.partInfoPackageLabel1 = gtk.Label("Package/case: ")
+		self.partInfoPackageLabel2 = gtk.Label(None)
 		
 		self.partInfoPricingTable = gtk.Table(8, 3 , False) # Price breaks
 		self.priceBreakLabels = []
