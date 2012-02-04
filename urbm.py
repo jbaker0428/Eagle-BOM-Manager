@@ -232,12 +232,12 @@ class URBM:
 		# Figure out which button is now selected
 		if widget.get_active():
 			if 'name' in data:
-				bom.parts = sorted(bom.parts, key=lambda part: part[0])
+				bom.parts = sorted(bom.parts, key=itemgetter(0))
 				self.bomTable.resize(len(bom.parts)+1, 7)
 			elif 'value' in data:
-				bom.parts = sorted(bom.parts, key=lambda part: part[1])
+				bom.parts = sorted(bom.parts, key=itemgetter(1))
 			elif 'product' in data:
-				bom.parts = sorted(bom.parts, key=lambda part: part[2].name)
+				bom.parts = sorted(bom.parts, key=itemgetter(2).name)
 
 	def bomTableHeaders(self):
 		self.bomTable.attach(self.bomColLabel1, 0, 1, 0, 1)
