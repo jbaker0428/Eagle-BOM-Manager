@@ -373,7 +373,6 @@ class URBM:
 		self.bomVPane.add2(self.pricingFrame)
 		
 		# BOM Frame elements
-		#self.bomFrame.add(self.bomTable)
 		self.bomFrame.add(self.bomTableBox)
 		
 		self.bomTableBox.pack_start(self.bomScrollWin, True, True, 0)
