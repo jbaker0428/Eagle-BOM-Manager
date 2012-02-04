@@ -112,6 +112,13 @@ class Product:
 			finally:
 				r.close()
 			
+			# Get remaining strings (desc, category, family, series, package)
+			self.description = soup.body('th', text="Description").nextSibling.string
+			self.category = soup.body('th', text="Category").nextSibling.string
+			self.family = soup.body('th', text="Family").nextSibling.string
+			self.series = soup.body('th', text="Series").nextSibling.string
+			self.package = soup.body('th', text="Package / Case").nextSibling.string
+			
 			# TODO: Write to persistent database
 		elif self.vendor == vendors.ME:
 			pass
