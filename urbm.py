@@ -211,6 +211,7 @@ class BOM:
 				part.writeToDB(self.name)
 				newParts.append((part.name, part.value. part.product.name))
 		parts = newParts
+		self.writeToDB()
 
 '''GUI class'''
 class URBM:
