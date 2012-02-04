@@ -219,17 +219,17 @@ class URBM:
 		self.partInfoRowBox = gtk.VBox(False, 0) # Fill with HBoxes 
 		
 		self.partInfoInfoTable = gtk.Table(11, 2, False) # Vendor, PNs, inventory, etc
-		self.partInfoVendorLabel = gtk.Label("Vendor: ")
-		self.partInfoVendorPNLabel = gtk.Label("Vendor Part Number: ")
-		self.partInfoInventoryLabel = gtk.Label("Inventory: ")
-		self.partInfoManufacturerLabel = gtk.Label("Manufacturer: ")
-		self.partInfoManufacturerPNLabel = gtk.Label("Manufacturer Part Number: ")
-		self.partInfoDescriptionLabel = gtk.Label("Description: ")
-		self.partInfoDatasheetLabel = gtk.Label("Datasheet filename: ")
-		self.partInfoCategoryLabel = gtk.Label("Category: ")
-		self.partInfoFamilyLabel = gtk.Label("Family: ")
-		self.partInfoSeriesLabel = gtk.Label("Series: ")
-		self.partInfoPackageLabel = gtk.Label("Package/case: ")
+		self.partInfoVendorLabel1 = gtk.Label("Vendor: ")
+		self.partInfoVendorPNLabel1 = gtk.Label("Vendor Part Number: ")
+		self.partInfoInventoryLabel1 = gtk.Label("Inventory: ")
+		self.partInfoManufacturerLabel1 = gtk.Label("Manufacturer: ")
+		self.partInfoManufacturerPNLabel1 = gtk.Label("Manufacturer Part Number: ")
+		self.partInfoDescriptionLabel1 = gtk.Label("Description: ")
+		self.partInfoDatasheetLabel1 = gtk.Label("Datasheet filename: ")
+		self.partInfoCategoryLabel1 = gtk.Label("Category: ")
+		self.partInfoFamilyLabel1 = gtk.Label("Family: ")
+		self.partInfoSeriesLabel1 = gtk.Label("Series: ")
+		self.partInfoPackageLabel1 = gtk.Label("Package/case: ")
 		
 		self.partInfoPricingTable = gtk.Table(8, 3 , False) # Price breaks
 		self.priceBreakLabels = []
@@ -312,17 +312,17 @@ class URBM:
 		# Part info frame elements
 		self.partInfoFrame.add(self.partInfoRowBox)
 		self.partInfoRowBox.pack_start(self.partInfoInfoTable)
-		self.partInfoInfoTable.attach(self.partInfoVendorLabel, 0, 1, 0, 1)
-		self.partInfoInfoTable.attach(self.partInfoVendorPNLabel, 0, 1, 1, 2)
-		self.partInfoInfoTable.attach(self.partInfoInventoryLabel, 0, 1, 2, 3)
-		self.partInfoInfoTable.attach(self.partInfoManufacturerLabel, 0, 1, 3, 4)
-		self.partInfoInfoTable.attach(self.partInfoManufacturerPNLabel, 0, 1, 4, 5)
-		self.partInfoInfoTable.attach(self.partInfoDescriptionLabel, 0, 1, 5, 6)
-		self.partInfoInfoTable.attach(self.partInfoDatasheetLabel, 0, 1, 6, 7)
-		self.partInfoInfoTable.attach(self.partInfoCategoryLabel, 0, 1, 7, 8)
-		self.partInfoInfoTable.attach(self.partInfoFamilyLabel, 0, 1, 8, 9)
-		self.partInfoInfoTable.attach(self.partInfoSeriesLabel, 0, 1, 9, 10)
-		self.partInfoInfoTable.attach(self.partInfoPackageLabel, 0, 1, 10, 11)
+		self.partInfoInfoTable.attach(self.partInfoVendorLabel1, 0, 1, 0, 1)
+		self.partInfoInfoTable.attach(self.partInfoVendorPNLabel1, 0, 1, 1, 2)
+		self.partInfoInfoTable.attach(self.partInfoInventoryLabel1, 0, 1, 2, 3)
+		self.partInfoInfoTable.attach(self.partInfoManufacturerLabel1, 0, 1, 3, 4)
+		self.partInfoInfoTable.attach(self.partInfoManufacturerPNLabel1, 0, 1, 4, 5)
+		self.partInfoInfoTable.attach(self.partInfoDescriptionLabel1, 0, 1, 5, 6)
+		self.partInfoInfoTable.attach(self.partInfoDatasheetLabel1, 0, 1, 6, 7)
+		self.partInfoInfoTable.attach(self.partInfoCategoryLabel1, 0, 1, 7, 8)
+		self.partInfoInfoTable.attach(self.partInfoFamilyLabel1, 0, 1, 8, 9)
+		self.partInfoInfoTable.attach(self.partInfoSeriesLabel1, 0, 1, 9, 10)
+		self.partInfoInfoTable.attach(self.partInfoPackageLabel1, 0, 1, 10, 11)
 		
 		self.partInfoRowBox.pack_start(self.partInfoPricingTable)
 		for i in range(len(self.priceBreakLabels)):
