@@ -238,8 +238,16 @@ class URBM:
 				sorted(bom.parts, key=lambda part: part[1])
 			elif 'product' in data:
 				sorted(bom.parts, key=lambda part: part[2].name)
-		# TODO : Resize/redraw table
 
+	def bomTableHeaders(self):
+		self.bomTable.attach(self.bomColLabel1, 0, 1, 0, 1)
+		self.bomTable.attach(self.bomColLabel2, 1, 2, 0, 1)
+		self.bomTable.attach(self.bomColLabel3, 2, 3, 0, 1)
+		self.bomTable.attach(self.bomColLabel4, 3, 4, 0, 1)
+		self.bomTable.attach(self.bomColLabel5, 4, 5, 0, 1)
+		self.bomTable.attach(self.bomColLabel6, 5, 6, 0, 1)
+		self.bomTable.attach(self.bomColLabel7, 6, 7, 0, 1)
+		
 	def __init__(self):
 		# -------- DECLARATIONS --------
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
@@ -257,7 +265,8 @@ class URBM:
 		self.bomFrame = gtk.Frame("BOM") # Goes in left side of bomHPane
 		self.bomTableBox = gtk.VBox(False, 0) # Holds bomScrollWin and bomRadioBox
 		self.bomScrollWin = gtk.ScrolledWindow() # Holds bomTable
-		self.bomTable = gtk.Table(50, 7, False) # call Table.resize(rows, cols) later
+		self.bomTable = gtk.Table(50, 7, False) 
+		
 		# first table row will be column labels
 		self.bomColLabel1 = gtk.Label("Part")
 		self.bomColLabel2 = gtk.Label("Value")
@@ -379,14 +388,8 @@ class URBM:
 		self.bomScrollWin.add_with_viewport(self.bomTable)
 		self.bomTableBox.pack_end(self.bomRadioBox, False, False, 0)
 
-		self.bomTable.attach(self.bomColLabel1, 0, 1, 0, 1)
-		self.bomTable.attach(self.bomColLabel2, 1, 2, 0, 1)
-		self.bomTable.attach(self.bomColLabel3, 2, 3, 0, 1)
-		self.bomTable.attach(self.bomColLabel4, 3, 4, 0, 1)
-		self.bomTable.attach(self.bomColLabel5, 4, 5, 0, 1)
-		self.bomTable.attach(self.bomColLabel6, 5, 6, 0, 1)
-		self.bomTable.attach(self.bomColLabel7, 6, 7, 0, 1)
 		self.bomTable.set_col_spacings(10)
+		self.bomTableHeaders()
 		
 		# The following commented lines are kept (for now) as a reference for
 		# how to display the BOM in the table
