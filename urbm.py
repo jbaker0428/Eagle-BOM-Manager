@@ -143,7 +143,8 @@ class Product:
 	
 	def writeToDB(self):
 		urbmDB.delete(self.vendor_pn, 'products')
-		urbmDB.insert(self, self.vendor_pn, 'products')
+		urbmDB.insert(self, self.vendor_pn + " #" + self.vendor + " #" + \
+		self.mfg_pn, 'products')
 
 #call sorted(prices.keys(), reverse=True) on prices.keys() to evaluate the price breaks in order
 
