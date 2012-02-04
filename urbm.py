@@ -189,6 +189,7 @@ class BOM:
 		self.parts = [] # List of 3-element lists of part name, value, and product.name
 		# This is used for sorting in the BOM table in the GUI
 		self.valCounts = {}
+		self.prodCounts = {}
 		
 	def delete(self):
 		urbmDB.droptable(self.name)
@@ -205,7 +206,20 @@ class BOM:
 				self.valCounts[x[1]] = 1
 						
 			prev = x;
-	
+
+	'''Sort self.parts by product BEFORE calling setProdCounts()!'''
+	def setProdCounts(self):
+		prev = "previous"
+		for x in self.parts:
+			if x[2] != prev[2]:
+				tableLen += 1
+				if x[2] in self.prodCounts:
+					self.prodCounts[x[2]] += 1
+			else:
+				self.prodCounts[x[2]] = 1
+						
+			prev = x;
+			
 	def writeToDB(self):
 		urbmDB.delete("bomparts", self.name)
 		urbmDB.inset(self.parts, "bomparts", self.name)
@@ -250,12 +264,14 @@ class URBM:
 				self.bomTable.resize(len(bom.parts)+1, 7)
 			elif 'value' in data:
 				bom.parts = sorted(bom.parts, key=itemgetter(1))
+				bom.setValCounts()
 				tableLen = 1 + len(bom.valCounts)
-
 				self.bomTable.resize(tableLen, 7)
 			elif 'product' in data:
 				bom.parts = sorted(bom.parts, key=itemgetter(2))
-				tableLen = 1
+				bom.setProdCounts()
+				tableLen = 1 + len(bom.prodCounts)
+				self.bomTable.resize(tableLen, 7)
 
 	def bomTableHeaders(self):
 		self.bomTable.attach(self.bomColLabel1, 0, 1, 0, 1)
