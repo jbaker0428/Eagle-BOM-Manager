@@ -39,6 +39,11 @@ class Product:
 		self.prices = {}
 		self.inventory = 0
 		self.datasheet = ""
+		self.description = ""
+		self.category = ""
+		self.family = ""
+		self.series = ""
+		self.package = ""
 	
 	def __init__(self, vendor, vendor_pn, databaseFile):
 		with open(databaseFile, 'wb') as f:
