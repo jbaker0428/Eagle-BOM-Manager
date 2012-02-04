@@ -185,7 +185,7 @@ class BOM:
 	def __init__(self, name, inputFile="bom.csv"):
 		self.name = name
 		self.input = inputFile
-		self.parts = set() # Set of part name strings for selecting from DB
+		self.parts = [] # List of 3-element lists of part name, value, and product.name
 		
 	def delete(self):
 		urbmDB.droptable(self.name)
@@ -208,8 +208,8 @@ class BOM:
 					and part.package == oldPart.package):
 						part.product = oldPart.product
 				part.writeToDB(self.name)
-				newParts.update(part.name)
-		parts.intersection_update(newParts)	
+				newParts.append((part.name, part.value. part.product.name))
+		parts = newParts
 
 '''GUI class'''
 class URBM:
