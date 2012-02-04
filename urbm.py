@@ -267,6 +267,13 @@ class URBM:
 				bom.setValCounts()
 				tableLen = 1 + len(bom.valCounts)
 				self.bomTable.resize(tableLen, 7)
+				groupName = ""
+				rowNum = 0
+				for val in valCounts.keys():
+					group = urbm.selectdic("#val=" + val, bom.name)
+					for parts in group:
+						groupName += parts.part.name + ", "
+					# TODO: Set appropriate label[rowNum] text to groupName
 			elif 'product' in data:
 				bom.parts = sorted(bom.parts, key=itemgetter(2))
 				bom.setProdCounts()
