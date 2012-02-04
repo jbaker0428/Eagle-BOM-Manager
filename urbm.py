@@ -337,6 +337,21 @@ class URBM:
 		self.bomTable.attach(self.bomColLabel6, 5, 6, 0, 1)
 		self.bomTable.set_col_spacings(10)
 		
+		# The following commented lines are kept (for now) as a reference for
+		# how to display the BOM in the table
+		#self.testRadio1 = gtk.RadioButton(None)
+		#self.aLabel1 = gtk.Label("R1")
+		#self.aLabel2 = gtk.Label("10k")
+		#self.testRadio2 = gtk.RadioButton(self.testRadio1)
+		#self.bLabel1 = gtk.Label("C1")
+		#self.bLabel2 = gtk.Label("10 uF")
+		#self.bomTable.attach(self.testRadio1, 0, 6, 1, 2)
+		#self.bomTable.attach(self.aLabel1, 0, 1, 1, 2)
+		#self.bomTable.attach(self.aLabel2, 1, 2, 1, 2)
+		#self.bomTable.attach(self.testRadio2, 0, 6, 2, 3)
+		#self.bomTable.attach(self.bLabel1, 0, 1, 2, 3)
+		#self.bomTable.attach(self.bLabel2, 1, 2, 2, 3)
+		
 		self.bomRadioBox.pack_start(self.bomRadioLabel)
 		self.bomRadioBox.pack_start(self.bomSortName)
 		self.bomRadioBox.pack_start(self.bomSortValue)
