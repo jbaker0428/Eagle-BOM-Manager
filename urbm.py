@@ -214,6 +214,17 @@ class URBM:
 		self.partInfoRowBox = gtk.VBox(False, 0) # Fill with HBoxes 
 		
 		self.partInfoInfoTable = gtk.Table(5, 2, False) # Vendor, PNs, inventory, etc
+		self.partInfoVendorLabel = gtk.Label("Vendor: ")
+		self.partInfoVendorPNLabel = gtk.Label("Vendor Part Number: ")
+		self.partInfoInventoryLabel = gtk.Label("Inventory: ")
+		self.partInfoManufacturerLabel = gtk.Label("Manufacturer: ")
+		self.partInfoManufacturerPNLabel = gtk.Label("Manufacturer Part Number: ")
+		self.partInfoDescriptionLabel = gtk.Label("Description: ")
+		self.partInfoDatasheetLabel = gtk.Label("Datasheet filename: ")
+		self.partInfoCategoryLabel = gtk.Label("Category: ")
+		self.partInfoFamilyLabel = gtk.Label("Family: ")
+		self.partInfoSeriesLabel = gtk.Label("Series: ")
+		
 		self.partInfoPricingTable = gtk.Table(8, 3 , False) # Price breaks
 		self.partInfoButtonBox = gtk.HBox(False, 0)
 
