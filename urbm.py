@@ -186,6 +186,7 @@ class BOM:
 		self.name = name
 		self.input = inputFile
 		self.parts = [] # List of 3-element lists of part name, value, and product.name
+		# This is used for sorting in the BOM table in the GUI
 		
 	def delete(self):
 		urbmDB.droptable(self.name)
@@ -249,7 +250,7 @@ class URBM:
 		self.bomColLabel4 = gtk.Label("Package")
 		self.bomColLabel5 = gtk.Label("Description")
 		self.bomColLabel6 = gtk.Label("Part Number")
-		self.bomColLabel7 = gtk.Label("Amount")
+		self.bomColLabel7 = gtk.Label("Quantity")
 		self.bomRadioBox = gtk.HBox(False, 0)
 		self.bomRadioLabel = gtk.Label("Group by:")
 		self.bomSortName = gtk.RadioButton(None, "Name")
