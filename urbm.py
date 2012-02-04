@@ -143,7 +143,7 @@ class Product:
 	
 	def writeToDB(self):
 		urbmDB.delete(self.vendor_pn, 'products')
-		urbmDB.insert(self, "#" + self.vendor_pn, 'products')
+		urbmDB.insert(self, self.vendor_pn, 'products')
 
 #call sorted(prices.keys(), reverse=True) on prices.keys() to evaluate the price breaks in order
 
@@ -167,7 +167,8 @@ class bomPart:
 			return -1
 	
 	def isInDB(self, bom):
-		dict = urbmDB.selectdic(self.name, bom)
+		dict = urbmDB.selectdic(self.nameself.name + ",#val=" + self.val + ",#dev=" + \
+		self.device + ",#pkg=" + self.package + ",#prod=" + self.product, bom)
 		if len(dict) == 0:
 			return False
 		else:
@@ -175,7 +176,8 @@ class bomPart:
 			
 	def writeToDB(self, bom):
 		urbmDB.delete(self.name, bom.name)
-		urbmDB.insert(self, "#" + self.name, bom.name)
+		urbmDB.insert(self, self.name + " #val=" + self.val + " #dev=" + \
+		self.device + " #pkg=" + self.package + " #prod=" + self.product.vendor_pn, bom.name)
 		
 '''For determining the name of a project's bomPart table.'''			
 class BOM:
