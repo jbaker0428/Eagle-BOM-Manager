@@ -10,6 +10,7 @@ import gtk
 import y_serial_v060 as y_serial
 
 urbmDB = y_serial.Main(os.path.join(os.getcwd() + "urbm.sqlite"))
+active_bom = ""
 
 def enum(*sequential, **named):
 	enums = dict(zip(sequential, range(len(sequential))), **named)
@@ -222,8 +223,21 @@ class URBM:
 	def destroy(self, widget, data=None):
 		gtk.main_quit()
 
-	def bomSortCallback(self, widget, data=None):
-		print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
+	def bomSortCallback(self, widget, data=None, bom=active_bom):
+		#print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
+		print "Data: %s" % data
+		print "Widget: %s" % widget
+		print "Active: %s" % widget.get_active()
+		
+		# Figure out which button is now selected
+		if widget.get_active():
+			if 'name' in data:
+				sorted(bom.parts, key=lambda part: part[0])
+				self.bomTable.resize(len(bom.parts)+1, 7)
+			elif 'value' in data:
+				sorted(bom.parts, key=lambda part: part[1])
+			elif 'product' in data:
+				sorted(bom.parts, key=lambda part: part[2].name)
 		# TODO : Resize/redraw table
 
 	def __init__(self):
@@ -340,9 +354,9 @@ class URBM:
 		
 		self.dbScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
 		
-		self.bomSortName.connect("toggled", self.bomSortCallback, "BOM sort name")
-		self.bomSortValue.connect("toggled", self.bomSortCallback, "BOM sort value")
-		self.bomSortPN.connect("toggled", self.bomSortCallback, "BOM sort PN")
+		self.bomSortName.connect("toggled", self.bomSortCallback, "name")
+		self.bomSortValue.connect("toggled", self.bomSortCallback, "value")
+		self.bomSortPN.connect("toggled", self.bomSortCallback, "product")
 		
 		# -------- PACKING AND ADDING --------
 		self.mainBox.pack_start(self.menuBar)
