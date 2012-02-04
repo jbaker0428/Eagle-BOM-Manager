@@ -232,17 +232,17 @@ class URBM:
 		self.partInfoPackageLabel = gtk.Label("Package/case: ")
 		
 		self.partInfoPricingTable = gtk.Table(8, 3 , False) # Price breaks
-		self.priceBreakLabels = {}
+		self.priceBreakLabels = []
 		for i in range(10):
-			self.priceBreakLabels[i] = gtk.Label(None)
+			self.priceBreakLabels.append(gtk.Label(None))
 		
-		self.unitPriceLabels = {}
+		self.unitPriceLabels = []
 		for i in range(10):
-			self.unitPriceLabels[i] = gtk.Label(None)
+			self.unitPriceLabels.append(gtk.Label(None))
 		
-		self.extPriceLabels = {}
+		self.extPriceLabels = []
 		for i in range(10):
-			self.extPriceLabels[i] = gtk.Label(None)
+			self.extPriceLabels.append(gtk.Label(None))
 		
 		self.partInfoButtonBox = gtk.HBox(False, 0)
 
@@ -325,6 +325,18 @@ class URBM:
 		self.partInfoInfoTable.attach(self.partInfoPackageLabel, 0, 1, 10, 11)
 		
 		self.partInfoRowBox.pack_start(self.partInfoPricingTable)
+		for i in range(len(self.priceBreakLabels)):
+			self.partInfoPricingTable.attach(self.priceBreakLabels[i], 0, 1, i, i+1)
+			self.priceBreakLabels[i].set_alignment(0.5, 0.5)
+			
+		for i in range(len(self.unitPriceLabels)):
+			self.partInfoPricingTable.attach(self.unitPriceLabels[i], 1, 2, i, i+1)
+			self.unitPriceLabels[i].set_alignment(1.0, 0.5)
+			
+		for i in range(len(self.extPriceLabels)):
+			self.partInfoPricingTable.attach(self.extPriceLabels[i], 2, 3, i, i+1)
+			self.extPriceLabels[i].set_alignment(1.0, 0.5)
+			
 		self.partInfoRowBox.pack_start(self.partInfoButtonBox)
 		
 		# Show everything
