@@ -200,7 +200,8 @@ class URBM:
 		self.bomVPane = gtk.VPaned()	# Goes in right side of bomHPane
 		
 		self.bomFrame = gtk.Frame("BOM") # Goes in left side of bomHPane
-		self.bomTableBox = gtk.VBox(False, 0) # Holds bomTable and bomRadioBox
+		self.bomTableBox = gtk.VBox(False, 0) # Holds bomScrollWin and bomRadioBox
+		self.bomScrollWin = gtk.ScrolledWindow() # Holds bomTable
 		self.bomTable = gtk.Table(50, 6, False) # call Table.resize(rows, cols) later
 		# first table row will be column labels
 		self.bomColLabel1 = gtk.Label("Part")
@@ -257,8 +258,8 @@ class URBM:
 		
 		self.partInfoButtonBox = gtk.HBox(False, 0)
 
-		self.scrapeButton = gtk.Button("Scrape") # , GTK_STOCK_REFRESH
-		self.partDatasheetButton = gtk.Button("Datasheet") # , GTK_STOCK_PROPERTIES
+		self.scrapeButton = gtk.Button("Scrape", stock=gtk.STOCK_REFRESH)
+		self.partDatasheetButton = gtk.Button("Datasheet", stock=gtk.STOCK_PROPERTIES)
 		
 		self.pricingFrame = gtk.Frame("Project pricing") # Goes in bottom half of bomVPane
 		self.orderSizeScaleAdj = gtk.Adjustment(1, 1, 10000, 1, 10, 200)
@@ -274,10 +275,12 @@ class URBM:
 		self.window.connect("delete_event", self.delete_event)
 		self.window.connect("destroy", self.destroy)
 		
-		# self.notebook.set_tab_pos(POS_TOP)
+		self.notebook.set_tab_pos(gtk.POS_TOP)
 		self.notebook.append_page(self.bomTabBox, self.bomTabLabel)
 		self.notebook.append_page(self.dbBox, self.dbTabLabel)
 		self.notebook.set_show_tabs(True)
+		
+		self.bomScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
 		
 		self.bomSortName.connect("toggled", self.bomSortCallback, "BOM sort name")
 		self.bomSortValue.connect("toggled", self.bomSortCallback, "BOM sort value")
@@ -292,15 +295,17 @@ class URBM:
 		# TODO : Add toolbar elements
 		
 		self.bomTabBox.pack_start(self.bomHPane)
-		self.bomHPane.add1(self.bomTableBox)
+		self.bomHPane.pack1(self.bomFrame, True, True)
 		self.bomHPane.add2(self.bomVPane)
 		self.bomVPane.add1(self.partInfoFrame)
 		self.bomVPane.add2(self.pricingFrame)
 		
 		# BOM Frame elements
-		self.bomFrame.add(self.bomTable)
+		#self.bomFrame.add(self.bomTable)
+		self.bomFrame.add(self.bomTableBox)
 		
-		self.bomTableBox.pack_start(self.bomFrame, True, True, 0)
+		self.bomTableBox.pack_start(self.bomScrollWin, True, True, 0)
+		self.bomScrollWin.add_with_viewport(self.bomTable)
 		self.bomTableBox.pack_end(self.bomRadioBox, False, False, 0)
 
 		self.bomTable.attach(self.bomColLabel1, 0, 1, 0, 1)
