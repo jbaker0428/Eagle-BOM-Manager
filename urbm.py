@@ -232,6 +232,18 @@ class URBM:
 		self.partInfoPackageLabel = gtk.Label("Package/case: ")
 		
 		self.partInfoPricingTable = gtk.Table(8, 3 , False) # Price breaks
+		self.priceBreakLabels = {}
+		for i in range(10):
+			self.priceBreakLabels[i] = gtk.Label(None)
+		
+		self.unitPriceLabels = {}
+		for i in range(10):
+			self.unitPriceLabels[i] = gtk.Label(None)
+		
+		self.extPriceLabels = {}
+		for i in range(10):
+			self.extPriceLabels[i] = gtk.Label(None)
+		
 		self.partInfoButtonBox = gtk.HBox(False, 0)
 
 		self.scrapeButton = gtk.Button("Scrape") # , GTK_STOCK_REFRESH
@@ -300,17 +312,17 @@ class URBM:
 		# Part info frame elements
 		self.partInfoFrame.add(self.partInfoRowBox)
 		self.partInfoRowBox.pack_start(self.partInfoInfoTable)
-		self.partInfoInfoTable.attach(self.PartInfoVendorLabel, 0, 1, 0, 1)
-		self.partInfoInfoTable.attach(self.PartInfoVendorPNLabel, 0, 1, 1, 2)
-		self.partInfoInfoTable.attach(self.PartInfoInventoryLabel, 0, 1, 2, 3)
-		self.partInfoInfoTable.attach(self.PartInfoManufacturerLabel, 0, 1, 3, 4)
-		self.partInfoInfoTable.attach(self.PartInfoManufacturerPNLabel, 0, 1, 4, 5)
-		self.partInfoInfoTable.attach(self.PartInfoDescriptionLabel, 0, 1, 5, 6)
-		self.partInfoInfoTable.attach(self.PartInfoDatasheetLabel, 0, 1, 6, 7)
-		self.partInfoInfoTable.attach(self.PartInfoCategoryLabel, 0, 1, 7, 8)
-		self.partInfoInfoTable.attach(self.PartInfoFamilyLabel, 0, 1, 8, 9)
-		self.partInfoInfoTable.attach(self.PartInfoSeriesLabel, 0, 1, 9, 10)
-		self.partInfoInfoTable.attach(self.PartInfoPackageLabel, 0, 1, 10, 11)
+		self.partInfoInfoTable.attach(self.partInfoVendorLabel, 0, 1, 0, 1)
+		self.partInfoInfoTable.attach(self.partInfoVendorPNLabel, 0, 1, 1, 2)
+		self.partInfoInfoTable.attach(self.partInfoInventoryLabel, 0, 1, 2, 3)
+		self.partInfoInfoTable.attach(self.partInfoManufacturerLabel, 0, 1, 3, 4)
+		self.partInfoInfoTable.attach(self.partInfoManufacturerPNLabel, 0, 1, 4, 5)
+		self.partInfoInfoTable.attach(self.partInfoDescriptionLabel, 0, 1, 5, 6)
+		self.partInfoInfoTable.attach(self.partInfoDatasheetLabel, 0, 1, 6, 7)
+		self.partInfoInfoTable.attach(self.partInfoCategoryLabel, 0, 1, 7, 8)
+		self.partInfoInfoTable.attach(self.partInfoFamilyLabel, 0, 1, 8, 9)
+		self.partInfoInfoTable.attach(self.partInfoSeriesLabel, 0, 1, 9, 10)
+		self.partInfoInfoTable.attach(self.partInfoPackageLabel, 0, 1, 10, 11)
 		
 		self.partInfoRowBox.pack_start(self.partInfoPricingTable)
 		self.partInfoRowBox.pack_start(self.partInfoButtonBox)
