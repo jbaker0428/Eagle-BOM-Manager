@@ -229,6 +229,7 @@ class URBM:
 		self.partInfoCategoryLabel = gtk.Label("Category: ")
 		self.partInfoFamilyLabel = gtk.Label("Family: ")
 		self.partInfoSeriesLabel = gtk.Label("Series: ")
+		self.partInfoPackageLabel = gtk.Label("Package/case: ")
 		
 		self.partInfoPricingTable = gtk.Table(8, 3 , False) # Price breaks
 		self.partInfoButtonBox = gtk.HBox(False, 0)
