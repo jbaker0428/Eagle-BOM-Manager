@@ -165,6 +165,13 @@ class bomPart:
 					return rownum
 				rownum = rownum + 1
 			return -1
+	
+	def isInDB(self, bom):
+		dict = urbmDB.selectdic(self.name, bom)
+		if len(dict) == 0:
+			return False
+		else:
+			return True		
 			
 	def writeToDB(self, bom):
 		urbmDB.delete(self.name, bom.name)
@@ -178,6 +185,20 @@ class BOM:
 		
 	def delete(self):
 		urbmDB.droptable(self.name)
+		
+	def readFromFile(self):
+		with open(self.input, 'rb') as f:
+			reader = csv.reader(f, delimiter=',', quotechar = '"', quoting=csv.QUOTE_ALL)
+			for row in data:
+				part = bomPart(row[0], row[1], row[2], row[3], row[4])
+				# Check if identical part is already in DB with a product
+				# If so, preserve the product entry
+				if(part.isInDB(self.name)):
+					oldPart = urbmDB.select(part.name, self.name)
+					if(part.value == oldPart.value and part.device == oldPart.device \
+					and part.package == oldPart.package):
+						part.product = oldPart.product
+				part.writeToDB(self.name)
 
 '''GUI class'''
 class URBM:
