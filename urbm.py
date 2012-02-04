@@ -279,6 +279,13 @@ class URBM:
 				bom.setProdCounts()
 				tableLen = 1 + len(bom.prodCounts)
 				self.bomTable.resize(tableLen, 7)
+				groupName = ""
+				rowNum = 0
+				for prod in prodCounts.keys():
+					group = urbm.selectdic("#prod=" + prod, bom.name)
+					for parts in group:
+						groupName += parts.part.name + ", "
+					# TODO: Set appropriate label[rowNum] text to groupName
 
 	def bomTableHeaders(self):
 		self.bomTable.attach(self.bomColLabel1, 0, 1, 0, 1)
