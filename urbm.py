@@ -296,6 +296,17 @@ class URBM:
 		self.bomTable.attach(self.bomColLabel6, 5, 6, 0, 1)
 		self.bomTable.attach(self.bomColLabel7, 6, 7, 0, 1)
 		
+	def createBomLabels(self, numRows):	
+		rows = []
+		for x in range(numRows):
+			def createBomLabelRow(self):
+				row = []
+				for i in range(7):
+					row.append(gtk.Label(None))
+				return row
+			rows.append(createBomLabelRow())
+		return rows
+		
 	def __init__(self):
 		# -------- DECLARATIONS --------
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
@@ -323,6 +334,7 @@ class URBM:
 		self.bomColLabel5 = gtk.Label("Description")
 		self.bomColLabel6 = gtk.Label("Part Number")
 		self.bomColLabel7 = gtk.Label("Quantity")
+		self.bomContentLabels = []
 		self.bomRadioBox = gtk.HBox(False, 0)
 		self.bomRadioLabel = gtk.Label("Group by:")
 		self.bomSortName = gtk.RadioButton(None, "Name")
