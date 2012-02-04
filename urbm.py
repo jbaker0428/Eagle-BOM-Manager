@@ -300,8 +300,8 @@ class URBM:
 		# BOM Frame elements
 		self.bomFrame.add(self.bomTable)
 		
-		self.bomTableBox.pack_start(self.bomFrame)
-		self.bomTableBox.pack_start(self.bomRadioBox)
+		self.bomTableBox.pack_start(self.bomFrame, True, True, 0)
+		self.bomTableBox.pack_end(self.bomRadioBox, False, False, 0)
 
 		self.bomTable.attach(self.bomColLabel1, 0, 1, 0, 1)
 		self.bomTable.attach(self.bomColLabel2, 1, 2, 0, 1)
