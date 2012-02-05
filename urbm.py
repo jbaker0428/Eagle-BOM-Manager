@@ -199,7 +199,6 @@ class BOM:
 		prev = "previous"
 		for x in self.parts:
 			if x[1] != prev[1]:
-				tableLen += 1
 				if x[1] in self.valCounts:
 					self.valCounts[x[1]] += 1
 			else:
@@ -212,7 +211,6 @@ class BOM:
 		prev = "previous"
 		for x in self.parts:
 			if x[2] != prev[2]:
-				tableLen += 1
 				if x[2] in self.prodCounts:
 					self.prodCounts[x[2]] += 1
 			else:
@@ -261,31 +259,58 @@ class URBM:
 		if widget.get_active():
 			if 'name' in data:
 				bom.parts = sorted(bom.parts, key=itemgetter(0))
+				del self.bomContentLabels[0:len(self.bomContentLabels)]
 				self.bomTable.resize(len(bom.parts)+1, 7)
+				self.bomContentLabels = createBomLabels(len(bom.parts))
+				rowNum = 0
+				for p in bom.parts:
+					# temp is a bomPart object from the DB
+					temp = urbmDB.select(p[0], bom.name)
+					self.populateBomRow(self, self.bomContentLabels[rowNum], temp)
+					self.attachBomRow(self, self.bomContentLabels[rowNum], rowNum)
+					rowNum += 1
+			
+				
 			elif 'value' in data:
 				bom.parts = sorted(bom.parts, key=itemgetter(1))
 				bom.setValCounts()
 				tableLen = 1 + len(bom.valCounts)
-				self.bomTable.resize(tableLen, 7)
+				del self.bomContentLabels[0:len(self.bomContentLabels)]
+				self.bomTable.resize(tableLen, 7)	
+				self.bomContentLabels = createBomLabels(len(bom.valCounts))
 				groupName = ""
 				rowNum = 0
 				for val in valCounts.keys():
-					group = urbm.selectdic("#val=" + val, bom.name)
+					group = urbmDB.selectdic("#val=" + val, bom.name)
 					for parts in group:
 						groupName += parts.part.name + ", "
-					# TODO: Set appropriate label[rowNum] text to groupName
+					temp = urbmDB.select("#val=" + val, bom.name)
+					self.populateBomRow(self, self.bomContentLabels[rowNum], temp, valCounts[val])
+					self.bomContentLabels[rowNum][0].set_label(groupName)
+					self.attachBomRow(self, self.bomContentLabels[rowNum], rowNum)
+					rowNum += 1
+					
 			elif 'product' in data:
 				bom.parts = sorted(bom.parts, key=itemgetter(2))
 				bom.setProdCounts()
 				tableLen = 1 + len(bom.prodCounts)
+				del self.bomContentLabels[0:len(self.bomContentLabels)]
 				self.bomTable.resize(tableLen, 7)
+				self.bomContentLabels = createBomLabels(len(bom.prodCounts))
 				groupName = ""
 				rowNum = 0
 				for prod in prodCounts.keys():
-					group = urbm.selectdic("#prod=" + prod, bom.name)
+					group = urbmDB.selectdic("#prod=" + prod, bom.name)
 					for parts in group:
 						groupName += parts.part.name + ", "
-					# TODO: Set appropriate label[rowNum] text to groupName
+					temp = urbmDB.select("#prod=" + prod, bom.name)
+					self.populateBomRow(self, self.bomContentLabels[rowNum], \
+					temp, prodCounts[prod])
+					self.bomContentLabels[rowNum][0].set_label(groupName)
+					self.attachBomRow(self, self.bomContentLabels[rowNum], rowNum)
+					rowNum += 1
+					
+			self.window.show_all()
 
 	def bomTableHeaders(self):
 		self.bomTable.attach(self.bomColLabel1, 0, 1, 0, 1)
@@ -306,6 +331,21 @@ class URBM:
 				return row
 			rows.append(createBomLabelRow())
 		return rows
+	
+	def populateBomRow(self, rowLabels, part, quantity=None):
+		rowLabels[0].set_label(part.name)
+		rowLabels[1].set_label(part.value)
+		rowLabels[2].set_label(part.device)
+		rowLabels[3].set_label(part.package)
+		rowLabels[4].set_label(part.description)
+		rowLabels[5].set_label(part.product.name)
+		rowLabels[6].set_label(quantity)
+	
+	''' @param rowNum considers index 0 to be the first row of content after headers'''
+	def attachBomRow(self, rowLabels, rowNum):
+		i = 0
+		for label in rowLabels:
+			self.bomTable.attach(label,  i, i+1, rowNum+1, rowNum+2)
 		
 	def __init__(self):
 		# -------- DECLARATIONS --------
