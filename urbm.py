@@ -8,9 +8,9 @@ import pygtk
 pygtk.require('2.0')
 import gtk
 import y_serial_v060 as y_serial
+from operator import itemgetter
 
-urbmDB = y_serial.Main(os.path.join(os.getcwd() + "urbm.sqlite"))
-active_bom = ""
+urbmDB = y_serial.Main(os.path.join(os.getcwd(), "urbm.sqlite"))
 
 def enum(*sequential, **named):
 	enums = dict(zip(sequential, range(len(sequential))), **named)
@@ -168,18 +168,21 @@ class bomPart:
 				rownum = rownum + 1
 			return -1
 	
-	def isInDB(self, bom):
-		dict = urbmDB.selectdic(self.nameself.name + ",#val=" + self.val + ",#dev=" + \
-		self.device + ",#pkg=" + self.package + ",#prod=" + self.product, bom)
+	def isInDB(self, bomName):
+		print "bomPart.isInDB"
+		dict = urbmDB.selectdic(self.name + ",#val=" + self.value + ",#dev=" + \
+		self.device + ",#pkg=" + self.package + ",#prod=" + self.product, bomName)
+		#test = urbmDB.select(self.name, bomName)
 		if len(dict) == 0:
 			return False
 		else:
 			return True		
 			
-	def writeToDB(self, bom):
-		urbmDB.delete(self.name, bom.name)
-		urbmDB.insert(self, self.name + " #val=" + self.val + " #dev=" + \
-		self.device + " #pkg=" + self.package + " #prod=" + self.product.vendor_pn, bom.name)
+	def writeToDB(self, bomName):
+		print "bomPart.writeToDB"
+		urbmDB.delete(self.name, bomName)
+		urbmDB.insert(self, self.name + " #val=" + self.value + " #dev=" + \
+		self.device + " #pkg=" + self.package + " #prod=" + self.product, bomName)
 		
 '''For determining the name of a project's bomPart table.'''			
 class BOM:
@@ -196,6 +199,7 @@ class BOM:
 	
 	'''Sort self.parts by value BEFORE calling setValCounts()!'''
 	def setValCounts(self):
+		print "BOM.setValCounts"
 		prev = "previous"
 		for x in self.parts:
 			if x[1] != prev[1]:
@@ -208,6 +212,7 @@ class BOM:
 
 	'''Sort self.parts by product BEFORE calling setProdCounts()!'''
 	def setProdCounts(self):
+		print "BOM.setProdCounts"
 		prev = "previous"
 		for x in self.parts:
 			if x[2] != prev[2]:
@@ -219,14 +224,16 @@ class BOM:
 			prev = x;
 			
 	def writeToDB(self):
+		print "BOM.writeToDB"
 		urbmDB.delete("bomparts", self.name)
-		urbmDB.inset(self.parts, "bomparts", self.name)
+		urbmDB.insert(self.parts, "bomparts", self.name)
 		
 	def readFromFile(self):
-		newParts = set()
+		print "BOM.readFromFile"
+		newParts = []
 		with open(self.input, 'rb') as f:
 			reader = csv.reader(f, delimiter=',', quotechar = '"', quoting=csv.QUOTE_ALL)
-			for row in data:
+			for row in reader:
 				part = bomPart(row[0], row[1], row[2], row[3], row[4])
 				# Check if identical part is already in DB with a product
 				# If so, preserve the product entry
@@ -236,9 +243,11 @@ class BOM:
 					and part.package == oldPart.package):
 						part.product = oldPart.product
 				part.writeToDB(self.name)
-				newParts.append((part.name, part.value. part.product.name))
+				newParts.append((part.name, part.value, part.product))
 		parts = newParts
 		self.writeToDB()
+
+active_bom = BOM("test1", os.path.join(os.getcwd(), "test.csv"))
 
 '''GUI class'''
 class URBM:
@@ -249,63 +258,69 @@ class URBM:
 	def destroy(self, widget, data=None):
 		gtk.main_quit()
 
+	def readInputCallback(self, widget, data=None):
+		active_bom.readFromFile()
+		#Read back last entry
+		urbmDB.view(0, active_bom.name)
+	
 	def bomSortCallback(self, widget, data=None, bom=active_bom):
 		#print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
-		print "Data: %s" % data
-		print "Widget: %s" % widget
-		print "Active: %s" % widget.get_active()
 		
 		# Figure out which button is now selected
 		if widget.get_active():
 			if 'name' in data:
-				bom.parts = sorted(bom.parts, key=itemgetter(0))
-				del self.bomContentLabels[0:len(self.bomContentLabels)]
-				self.bomTable.resize(len(bom.parts)+1, 7)
-				self.bomContentLabels = createBomLabels(len(bom.parts))
+				active_bom.parts = sorted(active_bom.parts, key=itemgetter(0))
+				old = len(self.bomContentLabels)
+				del self.bomContentLabels[0:old]
+				print len(active_bom.parts)
+				self.bomTable.resize(len(active_bom.parts)+1, 7)
+				self.bomContentLabels = self.createBomLabels(len(active_bom.parts))
 				rowNum = 0
 				for p in bom.parts:
 					# temp is a bomPart object from the DB
-					temp = urbmDB.select(p[0], bom.name)
+					temp = urbmDB.select(p[0], active_bom.name)
 					self.populateBomRow(self, self.bomContentLabels[rowNum], temp)
 					self.attachBomRow(self, self.bomContentLabels[rowNum], rowNum)
 					rowNum += 1
 			
 				
 			elif 'value' in data:
-				bom.parts = sorted(bom.parts, key=itemgetter(1))
-				bom.setValCounts()
-				tableLen = 1 + len(bom.valCounts)
-				del self.bomContentLabels[0:len(self.bomContentLabels)]
+				active_bom.parts = sorted(active_bom.parts, key=itemgetter(1))
+				active_bom.setValCounts()
+				tableLen = 1 + len(active_bom.valCounts)
+				old = len(self.bomContentLabels)
+				del self.bomContentLabels[0:old]
 				self.bomTable.resize(tableLen, 7)	
-				self.bomContentLabels = createBomLabels(len(bom.valCounts))
+				self.bomContentLabels = self.createBomLabels(len(active_bom.valCounts))
 				groupName = ""
 				rowNum = 0
-				for val in valCounts.keys():
-					group = urbmDB.selectdic("#val=" + val, bom.name)
+				for val in active_bom.valCounts.keys():
+					group = urbmDB.selectdic("#val=" + val, active_bom.name)
 					for parts in group:
 						groupName += parts.part.name + ", "
 					temp = urbmDB.select("#val=" + val, bom.name)
-					self.populateBomRow(self, self.bomContentLabels[rowNum], temp, valCounts[val])
+					self.populateBomRow(self, self.bomContentLabels[rowNum], temp, active_bom.valCounts[val])
 					self.bomContentLabels[rowNum][0].set_label(groupName)
 					self.attachBomRow(self, self.bomContentLabels[rowNum], rowNum)
 					rowNum += 1
 					
 			elif 'product' in data:
-				bom.parts = sorted(bom.parts, key=itemgetter(2))
-				bom.setProdCounts()
-				tableLen = 1 + len(bom.prodCounts)
-				del self.bomContentLabels[0:len(self.bomContentLabels)]
+				active_bom.parts = sorted(active_bom.parts, key=itemgetter(2))
+				active_bom.setProdCounts()
+				tableLen = 1 + len(active_bom.prodCounts)
+				old = len(self.bomContentLabels)
+				del self.bomContentLabels[0:old]
 				self.bomTable.resize(tableLen, 7)
-				self.bomContentLabels = createBomLabels(len(bom.prodCounts))
+				self.bomContentLabels = self.createBomLabels(len(bom.prodCounts))
 				groupName = ""
 				rowNum = 0
-				for prod in prodCounts.keys():
-					group = urbmDB.selectdic("#prod=" + prod, bom.name)
+				for prod in active_bom.prodCounts.keys():
+					group = urbmDB.selectdic("#prod=" + prod, active_bom.name)
 					for parts in group:
 						groupName += parts.part.name + ", "
-					temp = urbmDB.select("#prod=" + prod, bom.name)
+					temp = urbmDB.select("#prod=" + prod, active_bom.name)
 					self.populateBomRow(self, self.bomContentLabels[rowNum], \
-					temp, prodCounts[prod])
+					temp, active_bom.prodCounts[prod])
 					self.bomContentLabels[rowNum][0].set_label(groupName)
 					self.attachBomRow(self, self.bomContentLabels[rowNum], rowNum)
 					rowNum += 1
@@ -345,7 +360,7 @@ class URBM:
 	def attachBomRow(self, rowLabels, rowNum):
 		i = 0
 		for label in rowLabels:
-			self.bomTable.attach(label,  i, i+1, rowNum+1, rowNum+2)
+			self.bomTable.attach(label,  i, i+1, rowNum+1, rowNum=2)
 		
 	def __init__(self):
 		# -------- DECLARATIONS --------
@@ -358,6 +373,8 @@ class URBM:
 		
 		self.bomTabBox = gtk.VBox(False, 0) # First tab in notebook
 		self.bomToolbar = gtk.Toolbar()
+		self.readInputButtonLabel = gtk.Label("Read CSV")
+		self.readInputButton = gtk.Button("Read CSV")
 		self.bomHPane = gtk.HPaned()	
 		self.bomVPane = gtk.VPaned()	# Goes in right side of bomHPane
 		
@@ -459,6 +476,7 @@ class URBM:
 		self.notebook.append_page(self.dbBox, self.dbTabLabel)
 		self.notebook.set_show_tabs(True)
 		
+		self.readInputButton.connect("clicked", self.readInputCallback, "read")
 		self.bomScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
 		
 		self.dbScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
@@ -472,7 +490,10 @@ class URBM:
 		self.mainBox.pack_start(self.notebook)
 		self.window.add(self.mainBox)
 		
-		self.bomTabBox.pack_start(self.bomToolbar)
+		#self.bomTabBox.pack_start(self.bomToolbar)
+		#self.bomToolbar.append_item(self.readInputButton)
+		self.bomTabBox.pack_start(self.readInputButton)
+		
 		# TODO : Add toolbar elements
 		
 		self.bomTabBox.pack_start(self.bomHPane)
