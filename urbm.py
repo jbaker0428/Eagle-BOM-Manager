@@ -169,9 +169,13 @@ class bomPart:
 			return -1
 	
 	def isInDB(self, bomName):
-		print "bomPart.isInDB"
-		dict = urbmDB.selectdic(self.name + ",#val=" + self.value + ",#dev=" + \
-		self.device + ",#pkg=" + self.package + ",#prod=" + self.product, bomName)
+		print "bomPart.isInDB was passed %s" % bomName
+		if self.product == "none":
+			query = self.name + ",#val=" + self.value + ",#dev=" + self.device + ",#pkg=" + self.package
+		else:
+			query = self.name + ",#val=" + self.value + ",#dev=" + self.device + ",#pkg=" + self.package + ",#prod=" + self.product
+		print "Query: %s" % query
+		dict = urbmDB.selectdic(query, bomName)
 		#test = urbmDB.select(self.name, bomName)
 		if len(dict) == 0:
 			return False
@@ -179,7 +183,7 @@ class bomPart:
 			return True		
 			
 	def writeToDB(self, bomName):
-		print "bomPart.writeToDB"
+		print "bomPart.writeToDB was passed %s" % bomName
 		urbmDB.delete(self.name, bomName)
 		urbmDB.insert(self, self.name + " #val=" + self.value + " #dev=" + \
 		self.device + " #pkg=" + self.package + " #prod=" + self.product, bomName)
@@ -224,17 +228,20 @@ class BOM:
 			prev = x;
 			
 	def writeToDB(self):
-		print "BOM.writeToDB"
+		print "BOM.writeToDB to table %s" % self.name
 		urbmDB.delete("bomparts", self.name)
 		urbmDB.insert(self.parts, "bomparts", self.name)
 		
 	def readFromFile(self):
 		print "BOM.readFromFile"
 		newParts = []
+		urbmDB.insert(1, "touch", self.name) # Touch DB first
 		with open(self.input, 'rb') as f:
 			reader = csv.reader(f, delimiter=',', quotechar = '"', quoting=csv.QUOTE_ALL)
 			for row in reader:
+				print row
 				part = bomPart(row[0], row[1], row[2], row[3], row[4])
+				print "Part: %s %s %s %s" % (part.name, part.value, part.device, part.package)
 				# Check if identical part is already in DB with a product
 				# If so, preserve the product entry
 				if(part.isInDB(self.name)):
@@ -243,8 +250,8 @@ class BOM:
 					and part.package == oldPart.package):
 						part.product = oldPart.product
 				part.writeToDB(self.name)
-				newParts.append((part.name, part.value, part.product))
-		parts = newParts
+				self.parts.append((part.name, part.value, part.product))
+		#parts = newParts
 		self.writeToDB()
 
 active_bom = BOM("test1", os.path.join(os.getcwd(), "test.csv"))
@@ -261,26 +268,41 @@ class URBM:
 	def readInputCallback(self, widget, data=None):
 		active_bom.readFromFile()
 		#Read back last entry
-		urbmDB.view(0, active_bom.name)
+		urbmDB.view(1, active_bom.name)
 	
 	def bomSortCallback(self, widget, data=None, bom=active_bom):
 		#print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
 		
+		def populateBomRow(self, part, quantity=""):
+			print "Testing %s " % self.bomContentLabels[rowNum][0]
+			self.bomContentLabels[rowNum][0].set_label(part.name)
+			self.bomContentLabels[rowNum][1].set_label(part.value)
+			self.bomContentLabels[rowNum][2].set_label(part.device)
+			self.bomContentLabels[rowNum][3].set_label(part.package)
+			self.bomContentLabels[rowNum][4].set_label(part.description)
+			self.bomContentLabels[rowNum][5].set_label(part.product)
+			self.bomContentLabels[rowNum][6].set_label(quantity)
+			
+		def attachBomRow(self):
+			i = 0
+			for label in self.bomContentLabels[rowNum]:
+				self.bomTable.attach(label,  i, i+1, rowNum+1, rowNum+2)
+				i += 1
+				
 		# Figure out which button is now selected
 		if widget.get_active():
 			if 'name' in data:
 				active_bom.parts = sorted(active_bom.parts, key=itemgetter(0))
 				old = len(self.bomContentLabels)
 				del self.bomContentLabels[0:old]
-				print len(active_bom.parts)
-				self.bomTable.resize(len(active_bom.parts)+1, 7)
+				self.bomTable.resize(len(active_bom.parts)+1, 8)
 				self.bomContentLabels = self.createBomLabels(len(active_bom.parts))
 				rowNum = 0
 				for p in bom.parts:
 					# temp is a bomPart object from the DB
 					temp = urbmDB.select(p[0], active_bom.name)
-					self.populateBomRow(self, self.bomContentLabels[rowNum], temp)
-					self.attachBomRow(self, self.bomContentLabels[rowNum], rowNum)
+					populateBomRow(self, temp)
+					attachBomRow(self)
 					rowNum += 1
 			
 				
@@ -290,18 +312,18 @@ class URBM:
 				tableLen = 1 + len(active_bom.valCounts)
 				old = len(self.bomContentLabels)
 				del self.bomContentLabels[0:old]
-				self.bomTable.resize(tableLen, 7)	
+				self.bomTable.resize(tableLen, 8)	
 				self.bomContentLabels = self.createBomLabels(len(active_bom.valCounts))
 				groupName = ""
 				rowNum = 0
 				for val in active_bom.valCounts.keys():
 					group = urbmDB.selectdic("#val=" + val, active_bom.name)
-					for parts in group:
+					for parts in group:		# TODO: Ensure this data is what we expect
 						groupName += parts.part.name + ", "
 					temp = urbmDB.select("#val=" + val, bom.name)
-					self.populateBomRow(self, self.bomContentLabels[rowNum], temp, active_bom.valCounts[val])
+					populateBomRow(self, temp, active_bom.valCounts[val])
 					self.bomContentLabels[rowNum][0].set_label(groupName)
-					self.attachBomRow(self, self.bomContentLabels[rowNum], rowNum)
+					attachBomRow(self)
 					rowNum += 1
 					
 			elif 'product' in data:
@@ -310,19 +332,18 @@ class URBM:
 				tableLen = 1 + len(active_bom.prodCounts)
 				old = len(self.bomContentLabels)
 				del self.bomContentLabels[0:old]
-				self.bomTable.resize(tableLen, 7)
+				self.bomTable.resize(tableLen, 8)
 				self.bomContentLabels = self.createBomLabels(len(bom.prodCounts))
 				groupName = ""
 				rowNum = 0
 				for prod in active_bom.prodCounts.keys():
 					group = urbmDB.selectdic("#prod=" + prod, active_bom.name)
-					for parts in group:
+					for parts in group:	# TODO: Ensure this data is what we expect
 						groupName += parts.part.name + ", "
 					temp = urbmDB.select("#prod=" + prod, active_bom.name)
-					self.populateBomRow(self, self.bomContentLabels[rowNum], \
-					temp, active_bom.prodCounts[prod])
+					populateBomRow(self, temp, active_bom.prodCounts[prod])
 					self.bomContentLabels[rowNum][0].set_label(groupName)
-					self.attachBomRow(self, self.bomContentLabels[rowNum], rowNum)
+					attachBomRow(self)
 					rowNum += 1
 					
 			self.window.show_all()
@@ -339,28 +360,31 @@ class URBM:
 	def createBomLabels(self, numRows):	
 		rows = []
 		for x in range(numRows):
-			def createBomLabelRow(self):
-				row = []
-				for i in range(7):
-					row.append(gtk.Label(None))
-				return row
-			rows.append(createBomLabelRow())
+			#def createBomLabelRow(self):
+			row = []
+			for i in range(7):
+				row.append(gtk.Label(None))
+			#	return row
+			#rows.append(createBomLabelRow(self))
+			rows.append(row)
 		return rows
 	
-	def populateBomRow(self, rowLabels, part, quantity=None):
-		rowLabels[0].set_label(part.name)
-		rowLabels[1].set_label(part.value)
-		rowLabels[2].set_label(part.device)
-		rowLabels[3].set_label(part.package)
-		rowLabels[4].set_label(part.description)
-		rowLabels[5].set_label(part.product.name)
-		rowLabels[6].set_label(quantity)
+	#def populateBomRow(self, rowLabels, part, quantity=None):
+	#def populateBomRow(self, rn, part, quantity=None):
+	#	print self.bomContentLabels[rn][0]
+		#rowLabels[0].set_label(part.name)
+		#rowLabels[1].set_label(part.value)
+		#rowLabels[2].set_label(part.device)
+		#rowLabels[3].set_label(part.package)
+		#rowLabels[4].set_label(part.description)
+		#rowLabels[5].set_label(part.product.name)
+		#rowLabels[6].set_label(quantity)
 	
 	''' @param rowNum considers index 0 to be the first row of content after headers'''
-	def attachBomRow(self, rowLabels, rowNum):
-		i = 0
-		for label in rowLabels:
-			self.bomTable.attach(label,  i, i+1, rowNum+1, rowNum=2)
+	#def attachBomRow(self, rowLabels, rowNum):
+		#i = 0
+		#for label in rowLabels:
+			#self.bomTable.attach(label,  i, i+1, rowNum+1, rowNum+2)
 		
 	def __init__(self):
 		# -------- DECLARATIONS --------
@@ -381,7 +405,7 @@ class URBM:
 		self.bomFrame = gtk.Frame("BOM") # Goes in left side of bomHPane
 		self.bomTableBox = gtk.VBox(False, 0) # Holds bomScrollWin and bomRadioBox
 		self.bomScrollWin = gtk.ScrolledWindow() # Holds bomTable
-		self.bomTable = gtk.Table(50, 7, False) 
+		self.bomTable = gtk.Table(50, 8, False) 
 		
 		# first table row will be column labels
 		self.bomColLabel1 = gtk.Label("Part")
