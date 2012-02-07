@@ -435,9 +435,9 @@ class URBM:
 	def bomSetProductCallback(self, widget, data=None):
 		# Open a text input prompt window
 		setProductDialog = gtk.Dialog("Set part number", self.window, 
-						gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT)
-		#, (gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT, 
-		#				gtk.STOCK_OK, gtk.RESPONSE_ACCEPT)
+						gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
+						(gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT, 
+						gtk.STOCK_OK, gtk.RESPONSE_ACCEPT))
 		self.setProductEntry = gtk.Entry()
 		self.productEntryText = ""
 		
@@ -459,7 +459,6 @@ class URBM:
 		setProductDialogHBox1.pack_start(setProductVendorCombo, True, True, 0)
 		setProductDialogHBox2.pack_start(setProductVendorPNLabel, True, True, 0)
 		setProductDialogHBox2.pack_start(self.setProductEntry, gtk.RESPONSE_ACCEPT)
-		setProductDialog.add_buttons(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_OK, gtk.RESPONSE_ACCEPT)
 		setProductDialog.vbox.pack_start(setProductDialogHBox1, True, True, 0)
 		setProductDialog.vbox.pack_start(setProductDialogHBox2, True, True, 0)
 		setProductDialogHBox1.show()
