@@ -496,25 +496,14 @@ class URBM:
 		 
 	# -------- HELPER METHODS --------
 	''' Create an array of strings to set bomContentLabels texts to'''
-	# TODO: Method incomplete
 	def setBomLabelTextsName(self):
-		self.bomLabelTexts = []
-		#for x in range(numRows):
-		#rowNum = 0
+		bomLabelTexts = []
 		for p in active_bom.parts:
 			# temp is a bomPart object from the DB
 			temp = urbmDB.select(p[0], active_bom.name)
 			self.bomLabelTexts.append((part.name, part.value, part.device, part.package, part.description, part.product))
-			#populateBomRow(self, temp)
-			#attachBomRow(self)
-			#rowNum += 1
-		#rowLabels[0].set_label(part.name)
-		#rowLabels[1].set_label(part.value)
-		#rowLabels[2].set_label(part.device)
-		#rowLabels[3].set_label(part.package)
-		#rowLabels[4].set_label(part.description)
-		#rowLabels[5].set_label(part.product.name)
-		#rowLabels[6].set_label(quantity)
+			
+		return bomLabelTexts
 	
 	def populateBomRow(self, labelRow, stringsTuple, quantity=""):
 		for i in range(6):
