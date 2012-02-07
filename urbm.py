@@ -477,11 +477,14 @@ class URBM:
 		self.bomContentLabels[self.curBomRow][5].show()
 		print "Part Number label text: %s" % self.bomContentLabels[self.curBomRow][5].get_text()
 		
-		self.selectedProduct.vendor = setProductVendorCombo.get_active_text()
+		# Make sure the user selected a vendor
+		if len(setProductVendorCombo.get_active_text()) > 1:
+			self.selectedProduct.vendor = setProductVendorCombo.get_active_text()
+		# If not, default to Digikey	
+		else:	
+			self.selectedProduct.vendor = Product.VENDOR_DK
 		self.selectedProduct.vendor_pn = self.productEntryText
-		#TODO: Check if in DB
 		selectedProduct.selectOrScrape()
-		
 		self.setPartInfolabels(self.selectedProduct)
 		 
 	# -------- HELPER METHODS --------
