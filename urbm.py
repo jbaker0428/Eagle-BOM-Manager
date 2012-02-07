@@ -495,6 +495,15 @@ class URBM:
 		self.setPartInfolabels(self.selectedProduct)
 		 
 	# -------- HELPER METHODS --------
+	def bomTableHeaders(self):
+		self.bomTable.attach(self.bomColLabel1, 0, 1, 0, 1)
+		self.bomTable.attach(self.bomColLabel2, 1, 2, 0, 1)
+		self.bomTable.attach(self.bomColLabel3, 2, 3, 0, 1)
+		self.bomTable.attach(self.bomColLabel4, 3, 4, 0, 1)
+		self.bomTable.attach(self.bomColLabel5, 4, 5, 0, 1)
+		self.bomTable.attach(self.bomColLabel6, 5, 6, 0, 1)
+		self.bomTable.attach(self.bomColLabel7, 6, 7, 0, 1)
+	
 	''' Create an array of strings to set bomContentLabels texts to'''
 	def setBomLabelTextsName(self):
 		bomLabelTexts = []
@@ -511,26 +520,20 @@ class URBM:
 		labelRow[6].set_label(quantity)
 		return labelRow
 		
-		
-	def bomTableHeaders(self):
-		self.bomTable.attach(self.bomColLabel1, 0, 1, 0, 1)
-		self.bomTable.attach(self.bomColLabel2, 1, 2, 0, 1)
-		self.bomTable.attach(self.bomColLabel3, 2, 3, 0, 1)
-		self.bomTable.attach(self.bomColLabel4, 3, 4, 0, 1)
-		self.bomTable.attach(self.bomColLabel5, 4, 5, 0, 1)
-		self.bomTable.attach(self.bomColLabel6, 5, 6, 0, 1)
-		self.bomTable.attach(self.bomColLabel7, 6, 7, 0, 1)
-		
-	def createBomLabels(self, numRows):	
+	def createBomLabels(self, numRows, labelTexts=None):
 		rows = []
-		for x in range(numRows):
-			#def createBomLabelRow(self):
-			row = []
-			for i in range(7):
-				row.append(gtk.Label(None))
-			#	return row
-			#rows.append(createBomLabelRow(self))
-			rows.append(row)
+		if labelTexts is None:
+			for x in range(numRows):
+				row = []
+				for i in range(7):
+					row.append(gtk.Label(None))
+				rows.append(row)
+		else:
+			for x in range(numRows):
+				row = []
+				for i in range(7):
+					row.append(gtk.Label(labelTexts[x][i]))
+				rows.append(row)
 		return rows
 	
 	def destroyBomLabels(self):
