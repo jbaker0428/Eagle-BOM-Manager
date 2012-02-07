@@ -9,6 +9,7 @@ pygtk.require('2.0')
 import gtk
 import y_serial_v060 as y_serial
 from operator import itemgetter
+import types
 
 urbmDB = y_serial.Main(os.path.join(os.getcwd(), "urbm.sqlite"))
 urbmDB.createtable('products')
@@ -478,13 +479,14 @@ class URBM:
 		print "Part Number label text: %s" % self.bomContentLabels[self.curBomRow][5].get_text()
 		
 		# Make sure the user selected a vendor
-		if len(setProductVendorCombo.get_active_text()) > 1:
+		if type(setProductVendorCombo.get_active_text()) is types.NoneType:
+			print "NoneType caught"
 			self.selectedProduct.vendor = setProductVendorCombo.get_active_text()
 		# If not, default to Digikey	
 		else:	
 			self.selectedProduct.vendor = Product.VENDOR_DK
 		self.selectedProduct.vendor_pn = self.productEntryText
-		selectedProduct.selectOrScrape()
+		self.selectedProduct.selectOrScrape()
 		self.setPartInfolabels(self.selectedProduct)
 		 
 	# -------- HELPER METHODS --------
