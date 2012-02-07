@@ -295,8 +295,12 @@ class URBM:
 				active_bom.parts = sorted(active_bom.parts, key=itemgetter(0))
 				old = len(self.bomContentLabels)
 				self.destroyBomLabels()
+				self.destroyBomRadios()
+				del self.bomRadios[0:old]
 				del self.bomContentLabels[0:old]
 				self.bomTable.resize(len(active_bom.parts)+1, 8)
+				self.bomRadios = self.createBomRadios(len(active_bom.parts))
+				self.attachBomRadios()
 				self.bomContentLabels = self.createBomLabels(len(active_bom.parts))
 				rowNum = 0
 				for p in bom.parts:
@@ -313,8 +317,12 @@ class URBM:
 				tableLen = 1 + len(active_bom.valCounts)
 				old = len(self.bomContentLabels)
 				self.destroyBomLabels()
+				self.destroyBomRadios()
+				del self.bomRadios[0:old]
 				del self.bomContentLabels[0:old]
-				self.bomTable.resize(tableLen, 8)	
+				self.bomTable.resize(tableLen, 8)
+				self.bomRadios = self.createBomRadios(len(active_bom.parts))
+				self.attachBomRadios()
 				self.bomContentLabels = self.createBomLabels(len(active_bom.valCounts))
 				groupName = ""
 				rowNum = 0
@@ -334,8 +342,12 @@ class URBM:
 				tableLen = 1 + len(active_bom.prodCounts)
 				old = len(self.bomContentLabels)
 				self.destroyBomLabels()
+				self.destroyBomRadios()
+				del self.bomRadios[0:old]
 				del self.bomContentLabels[0:old]
 				self.bomTable.resize(tableLen, 8)
+				self.bomRadios = self.createBomRadios(len(active_bom.parts))
+				self.attachBomRadios()
 				self.bomContentLabels = self.createBomLabels(len(bom.prodCounts))
 				groupName = ""
 				rowNum = 0
@@ -378,13 +390,15 @@ class URBM:
 				y.destroy()
 	
 	def createBomRadios(self, numRows):
+		radios = []
 		for x in range(numRows):
-			self.bomRadios.append(gtk.RadioButton(self.bomRadioGroup))
+			radios.append(gtk.RadioButton(self.bomRadioGroup))
+		return radios
 	
 	def attachBomRadios(self):
 		r = 0
 		for radio in self.bomRadios:
-			self.bomTable.attach(radio,  0, 7, r+1, r+2
+			self.bomTable.attach(radio,  0, 7, r+1, r+2)
 			r += 1
 	
 	def destroyBomRadios(self):
@@ -438,6 +452,9 @@ class URBM:
 		self.bomColLabel6 = gtk.Label("Part Number")
 		self.bomColLabel7 = gtk.Label("Quantity")
 		self.bomContentLabels = []
+		self.bomRadioGroup = gtk.RadioButton(None)
+		self.bomRadios = self.createBomRadios(49)
+		
 		self.bomRadioBox = gtk.HBox(False, 0)
 		self.bomRadioLabel = gtk.Label("Group by:")
 		self.bomSortName = gtk.RadioButton(None, "Name")
@@ -557,9 +574,7 @@ class URBM:
 
 		self.bomTable.set_col_spacings(10)
 		self.bomTableHeaders()
-		
-		self.bomRadioGroup = gtk.RadioButton(None)
-		self.bomRadios = []
+		self.attachBomRadios()
 		# The following commented lines are kept (for now) as a reference for
 		# how to display the BOM in the table
 		#self.testRadio1 = gtk.RadioButton(None)
