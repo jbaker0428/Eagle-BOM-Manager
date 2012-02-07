@@ -528,6 +528,7 @@ class URBM:
 	def setPartInfolabels(self, prod):
 		self.partInfoVendorLabel2.set_text(str(prod.vendor))
 		self.partInfoVendorPNLabel2.set_text(prod.vendor_pn)
+		self.partInfoInventoryLabel2.set_text(str(prod.inventory))
 		self.partInfoManufacturerLabel2.set_text(prod.manufacturer)
 		self.partInfoManufacturerPNLabel2.set_text(prod.mfg_pn)
 		self.partInfoDescriptionLabel2.set_text(prod.description)
