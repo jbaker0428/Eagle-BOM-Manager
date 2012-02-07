@@ -516,18 +516,12 @@ class URBM:
 		#rowLabels[5].set_label(part.product.name)
 		#rowLabels[6].set_label(quantity)
 	
-	# TODO: Method incomplete
 	def populateBomRow(self, labelRow, stringsTuple, quantity=""):
 		for i in range(6):
 			labelRow[i].set_label(stringTuple[i])
-			
-		self.bomContentLabels[rowNum][0].set_label(part.name)
-		self.bomContentLabels[rowNum][1].set_label(part.value)
-		self.bomContentLabels[rowNum][2].set_label(part.device)
-		self.bomContentLabels[rowNum][3].set_label(part.package)
-		self.bomContentLabels[rowNum][4].set_label(part.description)
-		self.bomContentLabels[rowNum][5].set_label(part.product)
-		self.bomContentLabels[rowNum][6].set_label(quantity)
+		labelRow[6].set_label(quantity)
+		return labelRow
+		
 		
 	def bomTableHeaders(self):
 		self.bomTable.attach(self.bomColLabel1, 0, 1, 0, 1)
