@@ -36,6 +36,7 @@ class Product:
 	def __init__(self, vendor, vendor_pn):
 		self.vendor = vendor
 		self.vendor_pn = vendor_pn
+		self.manufacturer = ""
 		self.mfg_pn = ""
 		self.prices = {}
 		self.inventory = 0
@@ -97,11 +98,12 @@ class Product:
 				invString = invString.replace(",", "")
 			self.inventory = int(invString)
 			
-			# Get manufacturer PN
+			# Get manufacturer and PN
+			self.manufacturer = soup.body('th', text="Manufacturer").nextSibling.string
 			self.mfg_pn = soup.body('th', text="Manufacturer Part Number").nextSibling.string
 			
 			# Get datasheet filename and download
-			datasheetA = self.mfg_pn = soup.body('th', text="Datasheets").nextSibling.contents[0]
+			datasheetA = soup.body('th', text="Datasheets").nextSibling.contents[0]
 			datasheetURL = datasheetA['href']
 			
 			r = urllib2.urlopen(urllib2.Request(url))
@@ -265,16 +267,26 @@ class URBM:
 	def destroy(self, widget, data=None):
 		gtk.main_quit()
 
+	# -------- CALLBACK METHODS --------
 	def readInputCallback(self, widget, data=None):
 		active_bom.readFromFile()
 		#Read back last entry
 		urbmDB.view(1, active_bom.name)
 	
-	def bomSortCallback(self, widget, data=None, bom=active_bom):
+	def bomRadioCallback(self, widget, data=None):
+		bomRow = int(data) 	# Convert str to int
+		# Grab the vendor part number for the selected item from the label text
+		selectedPN = self.bomContentLabels[bomRow][5].get_text()
+		
+		if selectedPN != "none": # Look up part in DB
+			selectedProduct = urbmDB.select(selectedPN, active_bom.name)
+			self.setPartInfolabels(selectedProduct)
+			
+	
+	def bomSortCallback(self, widget, data=None):
 		#print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
 		
 		def populateBomRow(self, part, quantity=""):
-			print "Testing %s " % self.bomContentLabels[rowNum][0]
 			self.bomContentLabels[rowNum][0].set_label(part.name)
 			self.bomContentLabels[rowNum][1].set_label(part.value)
 			self.bomContentLabels[rowNum][2].set_label(part.device)
@@ -303,7 +315,7 @@ class URBM:
 				self.attachBomRadios()
 				self.bomContentLabels = self.createBomLabels(len(active_bom.parts))
 				rowNum = 0
-				for p in bom.parts:
+				for p in active_bom.parts:
 					# temp is a bomPart object from the DB
 					temp = urbmDB.select(p[0], active_bom.name)
 					populateBomRow(self, temp)
@@ -363,6 +375,7 @@ class URBM:
 					
 			self.window.show_all()
 
+	# -------- HELPER METHODS --------
 	def bomTableHeaders(self):
 		self.bomTable.attach(self.bomColLabel1, 0, 1, 0, 1)
 		self.bomTable.attach(self.bomColLabel2, 1, 2, 0, 1)
@@ -393,6 +406,7 @@ class URBM:
 		radios = []
 		for x in range(numRows):
 			radios.append(gtk.RadioButton(self.bomRadioGroup))
+			radios[x].connect("toggled", self.bomRadioCallback, str(x))
 		return radios
 	
 	def attachBomRadios(self):
@@ -405,6 +419,18 @@ class URBM:
 		for r in self.bomRadios:
 			r.destroy()
 	
+	def setPartInfolabels(self, prod):
+		self.partInfoVendorLabel2.set_text(prod.vendor)
+		self.partInfoVendorPNLabel2.set_text(prod.vendor_pn)
+		self.partInfoManufacturerLabel2.set_text(prod.manufacturer)
+		self.partInfoManufacturerPNLabel2.set_text(prod.mfg_pn)
+		self.partInfoDescriptionLabel2.set_text(prod.description)
+		self.partInfoDatasheetLabel2.set_text(prod.datasheet)
+		self.partInfoCategoryLabel2.set_text(prod.category)
+		self.partInfoFamilyLabel2.set_text(prod.family)
+		self.partInfoSeriesLabel2.set_text(prod.series)
+		self.partInfoPackageLabel2.set_text(prod.package)
+
 	#def populateBomRow(self, rowLabels, part, quantity=None):
 	#def populateBomRow(self, rn, part, quantity=None):
 	#	print self.bomContentLabels[rn][0]
