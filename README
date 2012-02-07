@@ -1,0 +1,9 @@
+A BOM manager designed to interface with Eagle's bundled bom.ulp script.
+Scrapes product information off of Digikey product pages (support for Mouser and Sparkfun planned in the future).
+All BOM and product information is stored in a local sqlite3 database compressed using y_serial.  
+
+
+Required third-party Python (2.7) modules:
+y_serial: http://yserial.sourceforge.net/
+Beautiful Soup: http://www.crummy.com/software/BeautifulSoup/
+PyGTK: http://www.pygtk.org/
