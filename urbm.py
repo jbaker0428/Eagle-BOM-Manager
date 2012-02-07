@@ -469,7 +469,12 @@ class URBM:
 		setProductDialog.run()
 		setProductDialog.hide()
 		
-		self.productEntryText = self.setProductEntry.get_text()
+		# If the product text entry field is left blank, set the product to "none"
+		if type(self.setProductEntry.get_text()) is types.NoneType or len(self.setProductEntry.get_text()) == 0:
+			self.productEntryText = "none"
+		else:
+			self.productEntryText = self.setProductEntry.get_text()
+		
 		print "Setting selectedBomPart.product to: %s" % self.productEntryText
 		self.selectedBomPart.product = self.productEntryText
 		print "selectedBomPart's product field: %s" % self.selectedBomPart.product
