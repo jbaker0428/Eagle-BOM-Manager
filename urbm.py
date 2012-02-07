@@ -377,6 +377,20 @@ class URBM:
 			for y in x:
 				y.destroy()
 	
+	def createBomRadios(self, numRows):
+		for x in range(numRows):
+			self.bomRadios.append(gtk.RadioButton(self.bomRadioGroup))
+	
+	def attachBomRadios(self):
+		r = 0
+		for radio in self.bomRadios:
+			self.bomTable.attach(radio,  0, 7, r+1, r+2
+			r += 1
+	
+	def destroyBomRadios(self):
+		for r in self.bomRadios:
+			r.destroy()
+	
 	#def populateBomRow(self, rowLabels, part, quantity=None):
 	#def populateBomRow(self, rn, part, quantity=None):
 	#	print self.bomContentLabels[rn][0]
@@ -544,6 +558,8 @@ class URBM:
 		self.bomTable.set_col_spacings(10)
 		self.bomTableHeaders()
 		
+		self.bomRadioGroup = gtk.RadioButton(None)
+		self.bomRadios = []
 		# The following commented lines are kept (for now) as a reference for
 		# how to display the BOM in the table
 		#self.testRadio1 = gtk.RadioButton(None)
