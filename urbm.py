@@ -11,7 +11,7 @@ import y_serial_v060 as y_serial
 from operator import itemgetter
 
 urbmDB = y_serial.Main(os.path.join(os.getcwd(), "urbm.sqlite"))
-
+urbmDB.createtable('products')
 def enum(*sequential, **named):
 	enums = dict(zip(sequential, range(len(sequential))), **named)
 	return type('Enum', (), enums)
@@ -30,8 +30,11 @@ def getFileName(url,openUrl):
 
 def getProductDBSize():
 	dict = urbmDB.selectdic("?", 'products')
-
+	
 class Product:
+	#self.VENDOR_DK = 0
+	#self.VENDOR_ME = 1
+	#self.VENDOR_SFE = 2
 	vendors = enum('DK', 'ME', 'SFE')
 	def __init__(self, vendor, vendor_pn):
 		self.vendor = vendor
@@ -47,7 +50,7 @@ class Product:
 		self.series = ""
 		self.package = ""
 	
-	def __init__(self, vendor, vendor_pn, databaseFile):
+	'''def __init__(self, vendor, vendor_pn, databaseFile):
 		with open(databaseFile, 'wb') as f:
 			db = csv.reader(f, delimiter=',', quotechar = '"', quoting=csv.QUOTE_ALL)
 			rownum = 0
@@ -64,69 +67,88 @@ class Product:
 						self.prices[keyVal[0]] = keyVal[1]
 					
 					self.inventory = row[4]
-					self.datasheet = row[5]
+					self.datasheet = row[5]'''
 	
 	def scrape(self):
 		# Proceed based on vendor
-		if self.vendor == vendors.DK:
+		if self.vendor == self.vendors.DK:
 			# Clear previous pricing data (in case price break keys change)
 			self.prices.clear()
 			
-			url = "http://search.digikey.com/scripts/DkSearch/dksus.dll?Detail&name=" + pn
+			url = "http://search.digikey.com/us/en/products/soup/" + self.vendor_pn
 			page = urllib2.urlopen(url)
 			soup = BeautifulSoup(page)
-			
+			print "URL: %s" % url
 			# Get prices
 			priceTable = soup.body('table', id="pricing")
 			# priceTable.contents[x] should be the tr tags...
-			for r in priceTable.contents:
-				# r.contents should be td Tags... except the first!
-				if r.contents[0].name == 'th':
-					pass	# do nothing
-				else:
-					newBreakString = r.contents[0].string
-					# Remove commas
-					if newBreakString.isdigit() == False:
-						newBreakString = newBreakString.replace(",", "")					
-					newBreak = int(newBreakString)
-					newUnitPrice = float(r.contents[1].string)
-					prices[newBreak] = newUnitPrice
+			for t in priceTable:
+				for r in t:
+					# r.contents should be td Tags... except the first!
+					if r == '\n':
+						pass
+					elif r.contents[0].name == 'th':
+						print "Found r.name == th"
+						#pass	# do nothing
+					else:
+						newBreakString = r.contents[0].string
+						# Remove commas
+						if newBreakString.isdigit() == False:
+							newBreakString = newBreakString.replace(",", "")
+						print "newBreakString is: %s" % newBreakString					
+						newBreak = int(newBreakString)
+						newUnitPrice = float(r.contents[1].string)
+						self.prices[newBreak] = newUnitPrice
 					
 			# Get inventory
-			invString = soup.body('td', id="quantityavailable").string
-			if invString.isdigit() == false:
+			invSoup = soup.body('td', id="quantityavailable")
+			invString = invSoup[0].contents[0]
+			if invString.isdigit() == False:
 				invString = invString.replace(",", "")
 			self.inventory = int(invString)
 			
 			# Get manufacturer and PN
-			self.manufacturer = soup.body('th', text="Manufacturer").nextSibling.string
-			self.mfg_pn = soup.body('th', text="Manufacturer Part Number").nextSibling.string
+			self.manufacturer = soup.body('th', text="Manufacturer")[0].parent.nextSibling.contents[0].string
+			print "manufacturer is: %s" % self.manufacturer
+			self.mfg_pn = soup.body('th', text="Manufacturer Part Number")[0].parent.nextSibling.contents[0].string
+			print "mfg_pn is: %s" % self.mfg_pn
 			
 			# Get datasheet filename and download
-			datasheetA = soup.body('th', text="Datasheets").nextSibling.contents[0]
+			datasheetSoup = soup.body('th', text="Datasheets")[0].parent.nextSibling
+			datasheetA = datasheetSoup.findAllNext('a')[0]
+			print "datasheetSoup is: %s" % datasheetSoup
+			print "datasheetA is: %s" % datasheetA
 			datasheetURL = datasheetA['href']
+			print "datasheetURL is: %s" % datasheetURL
 			
-			r = urllib2.urlopen(urllib2.Request(url))
+			r = urllib2.urlopen(urllib2.Request(datasheetURL))
 			try:
-				fileName = fileName or getFileName(url,r)
+				fileName = getFileName(url,r)
 				self.datasheet = fileName;
+				# TODO: Do not re-download if already saved
 				with open(fileName, 'wb') as f:
 					shutil.copyfileobj(r,f)
 			finally:
 				r.close()
-			
+			print "datasheet is: %s" % self.datasheet
 			# Get remaining strings (desc, category, family, series, package)
-			self.description = soup.body('th', text="Description").nextSibling.string
-			self.category = soup.body('th', text="Category").nextSibling.string
-			self.family = soup.body('th', text="Family").nextSibling.string
-			self.series = soup.body('th', text="Series").nextSibling.string
-			self.package = soup.body('th', text="Package / Case").nextSibling.string
+			self.description = soup.body('th', text="Description")[0].parent.nextSibling.contents[0].string
+			print "description is: %s" % self.description
+			self.category = soup.body('th', text="Category")[0].parent.nextSibling.contents[0].string
+			print "category is: %s" % self.category
+			self.family = soup.body('th', text="Family")[0].parent.nextSibling.contents[0].string
+			print "family is: %s" % self.family
+			self.series = soup.body('th', text="Series")[0].parent.nextSibling.contents[0].string
+			print "series is: %s" % self.series
+			self.package = soup.body('th', text="Package / Case")[0].parent.nextSibling.contents[0].string
+			print "package is: %s" % self.package
 			
+			self.writeToDB()
 			# TODO: Write to persistent database
-		elif self.vendor == vendors.ME:
+		elif self.vendor == self.vendors.ME:
 			pass
 		
-		elif self.vendor == vendors.SFE:
+		elif self.vendor == self.vendors.SFE:
 			# Clear previous pricing data (in case price break keys change)
 			self.prices.clear()
 			
@@ -146,7 +168,7 @@ class Product:
 	
 	def writeToDB(self):
 		urbmDB.delete(self.vendor_pn, 'products')
-		urbmDB.insert(self, self.vendor_pn + " #" + self.vendor + " #" + \
+		urbmDB.insert(self, self.vendor_pn + " #" + str(self.vendor) + " #" + \
 		self.mfg_pn, 'products')
 
 #call sorted(prices.keys(), reverse=True) on prices.keys() to evaluate the price breaks in order
@@ -185,7 +207,8 @@ class bomPart:
 			return True		
 			
 	def writeToDB(self, bomName):
-		print "bomPart.writeToDB was passed %s" % bomName
+		print "bomPart.writeToDB writing part %s to table %s" % (self.name, bomName)
+		print "Part's product: %s" % self.product
 		urbmDB.delete(self.name, bomName)
 		urbmDB.insert(self, self.name + " #val=" + self.value + " #dev=" + \
 		self.device + " #pkg=" + self.package + " #prod=" + self.product, bomName)
@@ -274,14 +297,26 @@ class URBM:
 		urbmDB.view(1, active_bom.name)
 	
 	def bomRadioCallback(self, widget, data=None):
-		bomRow = int(data) 	# Convert str to int
+		# Set class fields for currently selected item
+		self.curBomRow = int(data) 	# Convert str to int
+		print "Selected item name label: %s" % self.bomContentLabels[self.curBomRow][0].get_text()
+		self.selectedBomPart = urbmDB.select(self.bomContentLabels[self.curBomRow][0].get_text(), active_bom.name)
 		# Grab the vendor part number for the selected item from the label text
-		selectedPN = self.bomContentLabels[bomRow][5].get_text()
+		selectedPN = self.bomContentLabels[self.curBomRow][5].get_text()
 		
 		if selectedPN != "none": # Look up part in DB
-			selectedProduct = urbmDB.select(selectedPN, active_bom.name)
-			self.setPartInfolabels(selectedProduct)
-			
+			# Set class field for currently selected product
+			print "Querying with selectedPN: %s" % selectedPN
+			#self.selectedProduct = Product(Product.vendors.DK, "init")
+			print "Number of results in dic: %s" % len(urbmDB.selectdic(selectedPN, "products"))
+			if(len(urbmDB.selectdic(selectedPN, "products")) != 0):
+				self.selectedProduct = urbmDB.select(selectedPN, "products")
+			if(self.selectedProduct.isInDB()):
+				self.setPartInfolabels(self.selectedProduct)
+			else:
+				self.selectedProduct.vendor_pn = selectedPN
+				self.selectedProduct.scrape()
+				#self.selectedProduct.writeToDB("products")
 	
 	def bomSortCallback(self, widget, data=None):
 		#print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
@@ -374,8 +409,66 @@ class URBM:
 					rowNum += 1
 					
 			self.window.show_all()
-
+	
+	def bomSetProductCallback(self, widget, data=None):
+		# Open a text input prompt window
+		setProductDialog = gtk.Dialog("Set part number", self.window, 
+						gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT)
+		#, (gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT, 
+		#				gtk.STOCK_OK, gtk.RESPONSE_ACCEPT)
+		
+		self.setProductEntry = gtk.Entry()
+		self.productEntryText = ""
+		setProductDialog.add_action_widget(self.setProductEntry, gtk.RESPONSE_ACCEPT)
+		self.setProductEntry.show()
+		setProductDialog.run()
+		setProductDialog.hide()
+		self.productEntryText = self.setProductEntry.get_text()
+		print "Setting selectedBomPart.product to: %s" % self.productEntryText
+		self.selectedBomPart.product = self.productEntryText
+		print "selectedBomPart's product field: %s" % self.selectedBomPart.product
+		self.selectedBomPart.writeToDB(active_bom.name)
+		self.bomContentLabels[self.curBomRow][5].set_label(self.productEntryText)
+		self.bomContentLabels[self.curBomRow][5].show()
+		print "Part Number label text: %s" % self.bomContentLabels[self.curBomRow][5].get_text()
+		self.selectedProduct = urbmDB.select(self.productEntryText, "products")
+		self.setPartInfolabels(self.selectedProduct)
+		 
 	# -------- HELPER METHODS --------
+	''' Create an array of strings to set bomContentLabels texts to'''
+	# TODO: Method incomplete
+	def setBomLabelTextsName(self):
+		self.bomLabelTexts = []
+		#for x in range(numRows):
+		#rowNum = 0
+		for p in active_bom.parts:
+			# temp is a bomPart object from the DB
+			temp = urbmDB.select(p[0], active_bom.name)
+			self.bomLabelTexts.append((part.name, part.value, part.device, part.package, part.description, part.product))
+			#populateBomRow(self, temp)
+			#attachBomRow(self)
+			#rowNum += 1
+		#rowLabels[0].set_label(part.name)
+		#rowLabels[1].set_label(part.value)
+		#rowLabels[2].set_label(part.device)
+		#rowLabels[3].set_label(part.package)
+		#rowLabels[4].set_label(part.description)
+		#rowLabels[5].set_label(part.product.name)
+		#rowLabels[6].set_label(quantity)
+	
+	# TODO: Method incomplete
+	def populateBomRow(self, labelRow, stringsTuple, quantity=""):
+		for i in range(6):
+			labelRow[i].set_label(stringTuple[i])
+			
+		self.bomContentLabels[rowNum][0].set_label(part.name)
+		self.bomContentLabels[rowNum][1].set_label(part.value)
+		self.bomContentLabels[rowNum][2].set_label(part.device)
+		self.bomContentLabels[rowNum][3].set_label(part.package)
+		self.bomContentLabels[rowNum][4].set_label(part.description)
+		self.bomContentLabels[rowNum][5].set_label(part.product)
+		self.bomContentLabels[rowNum][6].set_label(quantity)
+		
 	def bomTableHeaders(self):
 		self.bomTable.attach(self.bomColLabel1, 0, 1, 0, 1)
 		self.bomTable.attach(self.bomColLabel2, 1, 2, 0, 1)
@@ -420,7 +513,7 @@ class URBM:
 			r.destroy()
 	
 	def setPartInfolabels(self, prod):
-		self.partInfoVendorLabel2.set_text(prod.vendor)
+		self.partInfoVendorLabel2.set_text(str(prod.vendor))
 		self.partInfoVendorPNLabel2.set_text(prod.vendor_pn)
 		self.partInfoManufacturerLabel2.set_text(prod.manufacturer)
 		self.partInfoManufacturerPNLabel2.set_text(prod.mfg_pn)
@@ -459,8 +552,8 @@ class URBM:
 		
 		self.bomTabBox = gtk.VBox(False, 0) # First tab in notebook
 		self.bomToolbar = gtk.Toolbar()
-		self.readInputButtonLabel = gtk.Label("Read CSV")
-		self.readInputButton = gtk.Button("Read CSV")
+		self.bomReadInputButton = gtk.ToolButton(None, "Read CSV")
+		self.bomSetProductButton = gtk.ToolButton(None, "Set Product")
 		self.bomHPane = gtk.HPaned()	
 		self.bomVPane = gtk.VPaned()	# Goes in right side of bomHPane
 		
@@ -486,6 +579,8 @@ class URBM:
 		self.bomSortName = gtk.RadioButton(None, "Name")
 		self.bomSortValue = gtk.RadioButton(self.bomSortName, "Value")
 		self.bomSortPN = gtk.RadioButton(self.bomSortName, "Part Number")
+		
+		self.selectedProduct = Product(Product.vendors.DK, "init")
 		
 		self.partInfoFrame = gtk.Frame("Part information") # Goes in top half of bomVPane
 		self.partInfoRowBox = gtk.VBox(False, 0) # Fill with HBoxes 
@@ -565,7 +660,8 @@ class URBM:
 		self.notebook.append_page(self.dbBox, self.dbTabLabel)
 		self.notebook.set_show_tabs(True)
 		
-		self.readInputButton.connect("clicked", self.readInputCallback, "read")
+		self.bomReadInputButton.connect("clicked", self.readInputCallback, "read")
+		self.bomSetProductButton.connect("clicked", self.bomSetProductCallback, "setPN")
 		self.bomScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
 		
 		self.dbScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
@@ -602,9 +698,10 @@ class URBM:
 		self.mainBox.pack_start(self.notebook)
 		self.window.add(self.mainBox)
 		
-		#self.bomTabBox.pack_start(self.bomToolbar)
-		#self.bomToolbar.append_item(self.readInputButton)
-		self.bomTabBox.pack_start(self.readInputButton)
+		self.bomTabBox.pack_start(self.bomToolbar)
+		self.bomToolbar.insert(self.bomReadInputButton, 0)
+		self.bomToolbar.insert(self.bomSetProductButton, 1)
+		#self.bomTabBox.pack_start(self.bomReadInputButton)
 		
 		# TODO : Add toolbar elements
 		
