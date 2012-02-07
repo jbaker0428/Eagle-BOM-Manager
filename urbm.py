@@ -32,10 +32,10 @@ def getProductDBSize():
 	dict = urbmDB.selectdic("?", 'products')
 	
 class Product:
-	#self.VENDOR_DK = 0
-	#self.VENDOR_ME = 1
-	#self.VENDOR_SFE = 2
-	vendors = enum('DK', 'ME', 'SFE')
+	VENDOR_DK = "Digi-Key"
+	VENDOR_ME = "Mouser"
+	VENDOR_SFE = "SparkFun"
+	#vendors = enum('DK', 'ME', 'SFE')
 	def __init__(self, vendor, vendor_pn):
 		self.vendor = vendor
 		self.vendor_pn = vendor_pn
@@ -71,7 +71,8 @@ class Product:
 	
 	def scrape(self):
 		# Proceed based on vendor
-		if self.vendor == self.vendors.DK:
+		#if self.vendor == self.vendors.DK:
+		if self.vendor == Product.VENDOR_DK:
 			# Clear previous pricing data (in case price break keys change)
 			self.prices.clear()
 			
@@ -105,10 +106,6 @@ class Product:
 			# quantity available will have a text input box that we need to
 			# watch out for
 			invSoup = soup.body('td', id="quantityavailable")
-			print "invSoup is: %s" % invSoup
-			print "invSoup[0] is: %s" % invSoup[0]
-			print "invSoup[0].contents is: %s" % invSoup[0].contents
-			print "Finding forms: %s" % invSoup[0].findAll('form')
 			print "Length of form search results: %s" % len(invSoup[0].findAll('form'))
 			if len(invSoup[0].findAll('form')) > 0:
 				self.inventory = 0
@@ -157,10 +154,10 @@ class Product:
 			
 			self.writeToDB()
 			# TODO: Write to persistent database
-		elif self.vendor == self.vendors.ME:
+		elif self.vendor == Product.VENDOR_ME:
 			pass
 		
-		elif self.vendor == self.vendors.SFE:
+		elif self.vendor == Product.VENDOR_SFE:
 			# Clear previous pricing data (in case price break keys change)
 			self.prices.clear()
 			
@@ -180,7 +177,7 @@ class Product:
 	
 	def writeToDB(self):
 		urbmDB.delete(self.vendor_pn, 'products')
-		urbmDB.insert(self, self.vendor_pn + " #" + str(self.vendor) + " #" + \
+		urbmDB.insert(self, self.vendor_pn + " #" + self.vendor + " #" + \
 		self.mfg_pn, 'products')
 
 #call sorted(prices.keys(), reverse=True) on prices.keys() to evaluate the price breaks in order
@@ -429,13 +426,37 @@ class URBM:
 						gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT)
 		#, (gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT, 
 		#				gtk.STOCK_OK, gtk.RESPONSE_ACCEPT)
-		
 		self.setProductEntry = gtk.Entry()
 		self.productEntryText = ""
-		setProductDialog.add_action_widget(self.setProductEntry, gtk.RESPONSE_ACCEPT)
+		
+		setProductDialogHBox1 = gtk.HBox()
+		setProductDialogHBox2 = gtk.HBox()
+		setProductVendorLabel = gtk.Label("Vendor: ")
+		setProductVendorPNLabel = gtk.Label("Vendor Part Number: ")
+		setProductVendorCombo = gtk.combo_box_new_text()
+		
+		setProductVendorCombo.append_text(Product.VENDOR_DK)
+		setProductVendorCombo.append_text(Product.VENDOR_ME)
+		setProductVendorCombo.append_text(Product.VENDOR_SFE)
+		setProductVendorLabel.set_alignment(0.5, 0.5)
+		setProductVendorPNLabel.set_alignment(0.4, 0.5)
+		
 		self.setProductEntry.show()
+		setProductVendorCombo.show() 
+		setProductDialogHBox1.pack_start(setProductVendorLabel, True, True, 0)
+		setProductDialogHBox1.pack_start(setProductVendorCombo, True, True, 0)
+		setProductDialogHBox2.pack_start(setProductVendorPNLabel, True, True, 0)
+		setProductDialogHBox2.pack_start(self.setProductEntry, gtk.RESPONSE_ACCEPT)
+		setProductDialog.add_buttons(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_OK, gtk.RESPONSE_ACCEPT)
+		setProductDialog.vbox.pack_start(setProductDialogHBox1, True, True, 0)
+		setProductDialog.vbox.pack_start(setProductDialogHBox2, True, True, 0)
+		setProductDialogHBox1.show()
+		setProductDialogHBox2.show()
+		setProductVendorLabel.show()
+		setProductVendorPNLabel.show()
 		setProductDialog.run()
 		setProductDialog.hide()
+		
 		self.productEntryText = self.setProductEntry.get_text()
 		print "Setting selectedBomPart.product to: %s" % self.productEntryText
 		self.selectedBomPart.product = self.productEntryText
@@ -444,7 +465,12 @@ class URBM:
 		self.bomContentLabels[self.curBomRow][5].set_label(self.productEntryText)
 		self.bomContentLabels[self.curBomRow][5].show()
 		print "Part Number label text: %s" % self.bomContentLabels[self.curBomRow][5].get_text()
+		
+		self.selectedProduct.vendor = setProductVendorCombo.get_active_text()
+		self.selectedProduct.vendor_pn = self.productEntryText
+		#TODO: Check if in DB
 		self.selectedProduct = urbmDB.select(self.productEntryText, "products")
+		
 		self.setPartInfolabels(self.selectedProduct)
 		 
 	# -------- HELPER METHODS --------
@@ -526,7 +552,7 @@ class URBM:
 			r.destroy()
 	
 	def setPartInfolabels(self, prod):
-		self.partInfoVendorLabel2.set_text(str(prod.vendor))
+		self.partInfoVendorLabel2.set_text(prod.vendor)
 		self.partInfoVendorPNLabel2.set_text(prod.vendor_pn)
 		self.partInfoInventoryLabel2.set_text(str(prod.inventory))
 		self.partInfoManufacturerLabel2.set_text(prod.manufacturer)
@@ -594,7 +620,7 @@ class URBM:
 		self.bomSortValue = gtk.RadioButton(self.bomSortName, "Value")
 		self.bomSortPN = gtk.RadioButton(self.bomSortName, "Part Number")
 		
-		self.selectedProduct = Product(Product.vendors.DK, "init")
+		self.selectedProduct = Product(Product.VENDOR_DK, "init")
 		
 		self.partInfoFrame = gtk.Frame("Part information") # Goes in top half of bomVPane
 		self.partInfoRowBox = gtk.VBox(False, 0) # Fill with HBoxes 
