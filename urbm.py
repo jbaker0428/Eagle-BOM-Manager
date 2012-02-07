@@ -294,6 +294,7 @@ class URBM:
 			if 'name' in data:
 				active_bom.parts = sorted(active_bom.parts, key=itemgetter(0))
 				old = len(self.bomContentLabels)
+				self.destroyBomLabels()
 				del self.bomContentLabels[0:old]
 				self.bomTable.resize(len(active_bom.parts)+1, 8)
 				self.bomContentLabels = self.createBomLabels(len(active_bom.parts))
@@ -311,6 +312,7 @@ class URBM:
 				active_bom.setValCounts()
 				tableLen = 1 + len(active_bom.valCounts)
 				old = len(self.bomContentLabels)
+				self.destroyBomLabels()
 				del self.bomContentLabels[0:old]
 				self.bomTable.resize(tableLen, 8)	
 				self.bomContentLabels = self.createBomLabels(len(active_bom.valCounts))
@@ -331,6 +333,7 @@ class URBM:
 				active_bom.setProdCounts()
 				tableLen = 1 + len(active_bom.prodCounts)
 				old = len(self.bomContentLabels)
+				self.destroyBomLabels()
 				del self.bomContentLabels[0:old]
 				self.bomTable.resize(tableLen, 8)
 				self.bomContentLabels = self.createBomLabels(len(bom.prodCounts))
@@ -368,6 +371,11 @@ class URBM:
 			#rows.append(createBomLabelRow(self))
 			rows.append(row)
 		return rows
+	
+	def destroyBomLabels(self):
+		for x in self.bomContentLabels:
+			for y in x:
+				y.destroy()
 	
 	#def populateBomRow(self, rowLabels, part, quantity=None):
 	#def populateBomRow(self, rn, part, quantity=None):
