@@ -101,11 +101,23 @@ class Product:
 						self.prices[newBreak] = newUnitPrice
 					
 			# Get inventory
+			# If the item is out of stock, the <td> that normally holds the
+			# quantity available will have a text input box that we need to
+			# watch out for
 			invSoup = soup.body('td', id="quantityavailable")
-			invString = invSoup[0].contents[0]
-			if invString.isdigit() == False:
-				invString = invString.replace(",", "")
-			self.inventory = int(invString)
+			print "invSoup is: %s" % invSoup
+			print "invSoup[0] is: %s" % invSoup[0]
+			print "invSoup[0].contents is: %s" % invSoup[0].contents
+			print "Finding forms: %s" % invSoup[0].findAll('form')
+			print "Length of form search results: %s" % len(invSoup[0].findAll('form'))
+			if len(invSoup[0].findAll('form')) > 0:
+				self.inventory = 0
+			
+			else:
+				invString = invSoup[0].contents[0]
+				if invString.isdigit() == False:
+					invString = invString.replace(",", "")
+				self.inventory = int(invString)
 			
 			# Get manufacturer and PN
 			self.manufacturer = soup.body('th', text="Manufacturer")[0].parent.nextSibling.contents[0].string
@@ -299,11 +311,12 @@ class URBM:
 	def bomRadioCallback(self, widget, data=None):
 		# Set class fields for currently selected item
 		self.curBomRow = int(data) 	# Convert str to int
+		print "curBomRow is: %s" % self.curBomRow
 		print "Selected item name label: %s" % self.bomContentLabels[self.curBomRow][0].get_text()
 		self.selectedBomPart = urbmDB.select(self.bomContentLabels[self.curBomRow][0].get_text(), active_bom.name)
 		# Grab the vendor part number for the selected item from the label text
 		selectedPN = self.bomContentLabels[self.curBomRow][5].get_text()
-		
+		print "selectedPN is: %s" % selectedPN
 		if selectedPN != "none": # Look up part in DB
 			# Set class field for currently selected product
 			print "Querying with selectedPN: %s" % selectedPN
@@ -311,12 +324,12 @@ class URBM:
 			print "Number of results in dic: %s" % len(urbmDB.selectdic(selectedPN, "products"))
 			if(len(urbmDB.selectdic(selectedPN, "products")) != 0):
 				self.selectedProduct = urbmDB.select(selectedPN, "products")
-			if(self.selectedProduct.isInDB()):
-				self.setPartInfolabels(self.selectedProduct)
 			else:
+				print "Reached scrape call"
 				self.selectedProduct.vendor_pn = selectedPN
 				self.selectedProduct.scrape()
-				#self.selectedProduct.writeToDB("products")
+				#self.selectedProduct.writeToDB()
+			self.setPartInfolabels(self.selectedProduct)
 	
 	def bomSortCallback(self, widget, data=None):
 		#print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
