@@ -169,16 +169,34 @@ class Product:
 			print 'Error: %s has invalid vendor: %s' % (self.pn, self.vendor)
 
 	def isInDB(self):
-		dict = urbmDB.selectdic(self.vendor_pn, 'products')
-		if len(dict) == 0:
-			return False
-		else:
+		if(len(urbmDB.selectdic(self.vendor_pn, "products")) != 0):
 			return True
+		else:
+			return False
 	
 	def writeToDB(self):
 		urbmDB.delete(self.vendor_pn, 'products')
 		urbmDB.insert(self, self.vendor_pn + " #" + self.vendor + " #" + \
 		self.mfg_pn, 'products')
+		
+	''' Sets the product fields, pulling from the local DB if possible.'''	
+	def selectOrScrape(self):
+		if(self.isInDB()):
+			temp = urbmDB.select(self.vendor_pn, 'products')
+			self.vendor = temp.vendor
+			self.vendor_pn = temp.vendor_pn
+			self.manufacturer = temp.manufacturer
+			self.mfg_pn = temp.mfg_pn
+			self.prices = temp.prices
+			self.inventory = temp.inventory
+			self.datasheet = temp.datasheet
+			self.description = temp.description
+			self.category = temp.category
+			self.family = temp.family
+			self.series = temp.series
+			self.package = temp.package
+		else:
+			self.scrape()
 
 #call sorted(prices.keys(), reverse=True) on prices.keys() to evaluate the price breaks in order
 
@@ -317,15 +335,9 @@ class URBM:
 		if selectedPN != "none": # Look up part in DB
 			# Set class field for currently selected product
 			print "Querying with selectedPN: %s" % selectedPN
-			#self.selectedProduct = Product(Product.vendors.DK, "init")
-			print "Number of results in dic: %s" % len(urbmDB.selectdic(selectedPN, "products"))
-			if(len(urbmDB.selectdic(selectedPN, "products")) != 0):
-				self.selectedProduct = urbmDB.select(selectedPN, "products")
-			else:
-				print "Reached scrape call"
-				self.selectedProduct.vendor_pn = selectedPN
-				self.selectedProduct.scrape()
-				#self.selectedProduct.writeToDB()
+			self.selectedProduct.vendor_pn = selectedPN
+			
+			self.selectedProduct.selectOrScrape()
 			self.setPartInfolabels(self.selectedProduct)
 	
 	def bomSortCallback(self, widget, data=None):
@@ -469,7 +481,7 @@ class URBM:
 		self.selectedProduct.vendor = setProductVendorCombo.get_active_text()
 		self.selectedProduct.vendor_pn = self.productEntryText
 		#TODO: Check if in DB
-		self.selectedProduct = urbmDB.select(self.productEntryText, "products")
+		selectedProduct.selectOrScrape()
 		
 		self.setPartInfolabels(self.selectedProduct)
 		 
