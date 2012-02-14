@@ -56,7 +56,22 @@ class Product:
 					
 					self.inventory = row[4]
 					self.datasheet = row[5]'''
-	
+		
+	''' Returns the (price break, unit price) list pair for the given purchase quantity.
+	If qty is below the lowest break, the lowest is returned.'''
+	def getPriceBreak(self, qty):
+		breaks = self.prices.keys()
+		breaks.sort()
+		if breaks[0] > qty:
+			print "Warning: Purchase quantity is below minimum!"
+			return [breaks[0], self.prices[breaks[0]]]
+			# TODO : GUI warning
+		for i in range(len(breaks)):
+			if breaks[i] == qty or breaks[i] == max(breaks):
+				return [breaks[i], self.prices[breaks[i]]]
+			elif  breaks[i] > qty:
+				return [breaks[i-1], self.prices[breaks[i-1]]]			
+		
 	def scrape(self):
 		# Proceed based on vendor
 		#if self.vendor == self.vendors.DK:
