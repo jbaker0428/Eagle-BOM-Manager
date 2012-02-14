@@ -374,7 +374,6 @@ class URBM:
 		self.partInfoPricingTable.attach(self.unitPriceLabels[0],  1, 2, 0, 1)
 		self.partInfoPricingTable.attach(self.extPriceLabels[0],  2, 3, 0, 1)
 		
-		# self.partInfoPricingTable.attach(self.priceBreakLabels[0],  i, i+1, row+1, row+2)
 		rowNum = 1
 		for i in range(n):
 			#k[i] is a key of prod.prices()
@@ -464,16 +463,10 @@ class URBM:
 		
 		self.partInfoPricingTable = gtk.Table(8, 3 , False) # Price breaks
 		self.priceBreakLabels = []
-		#for i in range(10):
-		#	self.priceBreakLabels.append(gtk.Label(None))
 		
 		self.unitPriceLabels = []
-		#for i in range(10):
-		#	self.unitPriceLabels.append(gtk.Label(None))
 		
 		self.extPriceLabels = []
-		#for i in range(10):
-		#	self.extPriceLabels.append(gtk.Label(None))
 		
 		self.partInfoButtonBox = gtk.HBox(False, 0)
 
@@ -556,7 +549,6 @@ class URBM:
 		self.bomToolbar.insert(self.bomReadInputButton, 0)
 		self.bomToolbar.insert(self.bomReadDBButton, 1)
 		self.bomToolbar.insert(self.bomSetProductButton, 2)
-		#self.bomTabBox.pack_start(self.bomReadInputButton)
 		
 		# TODO : Add toolbar elements
 		
@@ -622,18 +614,6 @@ class URBM:
 		self.partInfoInfoTable.attach(self.partInfoFamilyLabel2, 1, 2, 8, 9)
 		self.partInfoInfoTable.attach(self.partInfoSeriesLabel2, 1, 2, 9, 10)
 		self.partInfoInfoTable.attach(self.partInfoPackageLabel2, 1, 2, 10, 11)
-		
-		for i in range(len(self.priceBreakLabels)):
-			self.partInfoPricingTable.attach(self.priceBreakLabels[i], 0, 1, i, i+1)
-			self.priceBreakLabels[i].set_alignment(0.5, 0.5)
-			
-		for i in range(len(self.unitPriceLabels)):
-			self.partInfoPricingTable.attach(self.unitPriceLabels[i], 1, 2, i, i+1)
-			self.unitPriceLabels[i].set_alignment(0.9, 0.5)
-			
-		for i in range(len(self.extPriceLabels)):
-			self.partInfoPricingTable.attach(self.extPriceLabels[i], 2, 3, i, i+1)
-			self.extPriceLabels[i].set_alignment(0.9, 0.5)
 			
 		self.partInfoRowBox.pack_start(self.partInfoPricingTable, True, True, 5)
 		self.partInfoRowBox.pack_start(self.partInfoButtonBox)
