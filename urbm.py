@@ -378,11 +378,11 @@ class URBM:
 		rowNum = 1
 		for i in range(n):
 			#k[i] is a key of prod.prices()
-			self.priceBreakLabels.append(gtk.Label(str(k[i])))
+			self.priceBreakLabels.append(gtk.Label(str(k[i]) + '   '))
 			self.priceBreakLabels[rowNum].set_alignment(0.5, 0.5)
-			self.unitPriceLabels.append(gtk.Label(str(prod.prices[k[i]])))
+			self.unitPriceLabels.append(gtk.Label(str(prod.prices[k[i]]) + '   '))
 			self.unitPriceLabels[rowNum].set_alignment(1.0, 0.5)
-			self.extPriceLabels.append(gtk.Label(str( k[i] *  prod.prices[k[i]])))
+			self.extPriceLabels.append(gtk.Label(str( k[i] *  prod.prices[k[i]]) + '   '))
 			self.extPriceLabels[rowNum].set_alignment(1.0, 0.5)
 			
 			self.partInfoPricingTable.attach(self.priceBreakLabels[rowNum],  0, 1, rowNum, rowNum+1)
@@ -525,27 +525,27 @@ class URBM:
 		self.bomGroupPN.connect("toggled", self.bomGroupCallback, "product")
 		
 		self.partInfoVendorLabel1.set_alignment(0.0, 0.5)
-		self.partInfoVendorLabel2.set_alignment(1.0, 0.5)
+		self.partInfoVendorLabel2.set_alignment(0.0, 0.5)
 		self.partInfoVendorPNLabel1.set_alignment(0.0, 0.5)
-		self.partInfoVendorPNLabel2.set_alignment(1.0, 0.5)
+		self.partInfoVendorPNLabel2.set_alignment(0.0, 0.5)
 		self.partInfoInventoryLabel1.set_alignment(0.0, 0.5)
-		self.partInfoInventoryLabel2.set_alignment(1.0, 0.5)
+		self.partInfoInventoryLabel2.set_alignment(0.0, 0.5)
 		self.partInfoManufacturerLabel1.set_alignment(0.0, 0.5)
-		self.partInfoManufacturerLabel2.set_alignment(1.0, 0.5)
+		self.partInfoManufacturerLabel2.set_alignment(0.0, 0.5)
 		self.partInfoManufacturerPNLabel1.set_alignment(0.0, 0.5)
-		self.partInfoManufacturerPNLabel2.set_alignment(1.0, 0.5)
+		self.partInfoManufacturerPNLabel2.set_alignment(0.0, 0.5)
 		self.partInfoDescriptionLabel1.set_alignment(0.0, 0.5)
-		self.partInfoDescriptionLabel2.set_alignment(1.0, 0.5)
+		self.partInfoDescriptionLabel2.set_alignment(0.0, 0.5)
 		self.partInfoDatasheetLabel1.set_alignment(0.0, 0.5)
-		self.partInfoDatasheetLabel2.set_alignment(1.0, 0.5)
+		self.partInfoDatasheetLabel2.set_alignment(0.0, 0.5)
 		self.partInfoCategoryLabel1.set_alignment(0.0, 0.5)
-		self.partInfoCategoryLabel2.set_alignment(1.0, 0.5)
+		self.partInfoCategoryLabel2.set_alignment(0.0, 0.5)
 		self.partInfoFamilyLabel1.set_alignment(0.0, 0.5)
-		self.partInfoFamilyLabel2.set_alignment(1.0, 0.5)
+		self.partInfoFamilyLabel2.set_alignment(0.0, 0.5)
 		self.partInfoSeriesLabel1.set_alignment(0.0, 0.5)
-		self.partInfoSeriesLabel2.set_alignment(1.0, 0.5)
+		self.partInfoSeriesLabel2.set_alignment(0.0, 0.5)
 		self.partInfoPackageLabel1.set_alignment(0.0, 0.5)
-		self.partInfoPackageLabel2.set_alignment(1.0, 0.5)
+		self.partInfoPackageLabel2.set_alignment(0.0, 0.5)
 		
 		# -------- PACKING AND ADDING --------
 		self.mainBox.pack_start(self.menuBar)
@@ -598,7 +598,7 @@ class URBM:
 		
 		# Part info frame elements
 		self.partInfoFrame.add(self.partInfoRowBox)
-		self.partInfoRowBox.pack_start(self.partInfoInfoTable)
+		self.partInfoRowBox.pack_start(self.partInfoInfoTable, True, True, 5)
 		self.partInfoInfoTable.attach(self.partInfoVendorLabel1, 0, 1, 0, 1)
 		self.partInfoInfoTable.attach(self.partInfoVendorPNLabel1, 0, 1, 1, 2)
 		self.partInfoInfoTable.attach(self.partInfoInventoryLabel1, 0, 1, 2, 3)
@@ -629,13 +629,13 @@ class URBM:
 			
 		for i in range(len(self.unitPriceLabels)):
 			self.partInfoPricingTable.attach(self.unitPriceLabels[i], 1, 2, i, i+1)
-			self.unitPriceLabels[i].set_alignment(1.0, 0.5)
+			self.unitPriceLabels[i].set_alignment(0.9, 0.5)
 			
 		for i in range(len(self.extPriceLabels)):
 			self.partInfoPricingTable.attach(self.extPriceLabels[i], 2, 3, i, i+1)
-			self.extPriceLabels[i].set_alignment(1.0, 0.5)
+			self.extPriceLabels[i].set_alignment(0.9, 0.5)
 			
-		self.partInfoRowBox.pack_start(self.partInfoPricingTable)
+		self.partInfoRowBox.pack_start(self.partInfoPricingTable, True, True, 5)
 		self.partInfoRowBox.pack_start(self.partInfoButtonBox)
 		
 		self.dbBox.pack_start(self.dbToolbar)
