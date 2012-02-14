@@ -188,7 +188,7 @@ class URBM:
 		print "Setting selectedBomPart.product to: %s" % self.productEntryText
 		self.selectedBomPart.product = self.productEntryText
 		print "selectedBomPart's product field: %s" % self.selectedBomPart.product
-		self.selectedBomPart.writeToDB(active_bom.name)
+		self.selectedBomPart.writeToDB()
 		self.bomContentLabels[self.curBomRow][5].set_label(self.productEntryText)
 		self.bomContentLabels[self.curBomRow][5].show()
 		print "Part Number label text: %s" % self.bomContentLabels[self.curBomRow][5].get_text()
@@ -337,7 +337,7 @@ class URBM:
 		self.bomSortValue = gtk.RadioButton(self.bomSortName, "Value")
 		self.bomSortPN = gtk.RadioButton(self.bomSortName, "Part Number")
 		
-		self.selectedProduct = Product(Product.VENDOR_DK, "init")
+		self.selectedProduct = Product(Product.VENDOR_DK, "init", urbmDB)
 		
 		self.partInfoFrame = gtk.Frame("Part information") # Goes in top half of bomVPane
 		self.partInfoRowBox = gtk.VBox(False, 0) # Fill with HBoxes 

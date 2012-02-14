@@ -62,12 +62,12 @@ class BOM:
 				print "Part: %s %s %s %s" % (part.name, part.value, part.device, part.package)
 				# Check if identical part is already in DB with a product
 				# If so, preserve the product entry
-				if(part.isInDB(self.name)):
+				if(part.isInDB()):
 					oldPart = self.db.select(part.name, self.name)
 					if(part.value == oldPart.value and part.device == oldPart.device \
 					and part.package == oldPart.package):
 						part.product = oldPart.product
-				part.writeToDB(self.name)
+				part.writeToDB()
 				self.parts.append((part.name, part.value, part.product))
 		#parts = newParts
 		self.writeToDB()
