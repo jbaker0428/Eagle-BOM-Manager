@@ -98,8 +98,9 @@ class BOM:
 		return partsDic
 		
 	def readFromFile(self):
-		# TODO : Check if already in DB and compare part numbers
 		print "BOM.readFromFile"
+		# Clear self.parts
+		del self.parts[:]
 		with open(self.input, 'rb') as f:
 			reader = csv.reader(f, delimiter=',', quotechar = '"', quoting=csv.QUOTE_ALL)
 			for row in reader:
@@ -118,10 +119,11 @@ class BOM:
 							part.product = oldPart.product
 						else:
 							print "Part found in DB without product entry, overwriting..."
-							self.updateParts(part)
 							part.writeToDB()
 				else:
 					print "Part not in DB, writing..."
 					part.writeToDB()
-					self.parts.append([part.name, part.value, part.product])
-		self.writeToDB()
+				self.parts.append([part.name, part.value, part.product])
+		self.writeToDB() # deletes old bomlist
+		print "Parts list: ", self.parts
+		
