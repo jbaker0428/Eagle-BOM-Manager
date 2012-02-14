@@ -79,9 +79,9 @@ class BOM:
 	def readFromDB(self):
 		print "BOM.readFromDB"
 		self.parts = self.db.select("bomlist", self.name)
-		partsDB = self.db.select("#prt", self.name)
-		print "partsDB: \n", partsDB
-		return partsDB
+		partsDic = self.db.selectdic("#prt", self.name)
+		print "partsDic: \n", partsDic
+		return partsDic
 		
 	def readFromFile(self):
 		print "BOM.readFromFile"

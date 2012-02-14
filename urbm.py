@@ -33,6 +33,10 @@ class URBM:
 		#Read back last entry
 		urbmDB.view(1, active_bom.name)
 	
+	def readDBCallback(self, widget, data=None):
+		print "Read DB callback"
+		active_bom.readFromDB()
+	
 	def bomRadioCallback(self, widget, data=None):
 		# Set class fields for currently selected item
 		self.curBomRow = int(data) 	# Convert str to int
@@ -46,7 +50,7 @@ class URBM:
 			self.selectedProduct.vendor_pn = selectedPN
 			
 			self.selectedProduct.selectOrScrape()
-			self.setPartInfolabels(self.selectedProduct)
+			self.setPartInfoLabels(self.selectedProduct)
 		else:
 			self.clearPartInfoLabels()
 	
@@ -285,7 +289,7 @@ class URBM:
 		for r in self.bomRadios:
 			r.destroy()
 	
-	def setPartInfolabels(self, prod):
+	def setPartInfoLabels(self, prod):
 		self.partInfoVendorLabel2.set_text(prod.vendor)
 		self.partInfoVendorPNLabel2.set_text(prod.vendor_pn)
 		self.partInfoInventoryLabel2.set_text(str(prod.inventory))
@@ -340,6 +344,7 @@ class URBM:
 		self.bomTabBox = gtk.VBox(False, 0) # First tab in notebook
 		self.bomToolbar = gtk.Toolbar()
 		self.bomReadInputButton = gtk.ToolButton(None, "Read CSV")
+		self.bomReadDBButton = gtk.ToolButton(None, "Read DB")
 		self.bomSetProductButton = gtk.ToolButton(None, "Set Product")
 		self.bomHPane = gtk.HPaned()	
 		self.bomVPane = gtk.VPaned()	# Goes in right side of bomHPane
@@ -448,6 +453,7 @@ class URBM:
 		self.notebook.set_show_tabs(True)
 		
 		self.bomReadInputButton.connect("clicked", self.readInputCallback, "read")
+		self.bomReadDBButton.connect("clicked", self.readDBCallback, "read")
 		self.bomSetProductButton.connect("clicked", self.bomSetProductCallback, "setPN")
 		self.bomScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
 		
@@ -487,7 +493,8 @@ class URBM:
 		
 		self.bomTabBox.pack_start(self.bomToolbar)
 		self.bomToolbar.insert(self.bomReadInputButton, 0)
-		self.bomToolbar.insert(self.bomSetProductButton, 1)
+		self.bomToolbar.insert(self.bomReadDBButton, 1)
+		self.bomToolbar.insert(self.bomSetProductButton, 2)
 		#self.bomTabBox.pack_start(self.bomReadInputButton)
 		
 		# TODO : Add toolbar elements
