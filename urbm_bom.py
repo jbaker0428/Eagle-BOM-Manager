@@ -5,6 +5,7 @@ import urlparse
 from urbm_bompart import bomPart
 from urbm_product import Product
 import y_serial_v060 as y_serial
+from operator import itemgetter
 
 '''For determining the name of a project's bomPart table.'''			
 class BOM:
@@ -19,6 +20,15 @@ class BOM:
 		
 	def delete(self):
 		self.db.droptable(self.name)
+	
+	def sortByName(self):
+		self.parts.sort(key=itemgetter(0))
+		
+	def sortByVal(self):
+		self.parts.sort(key=itemgetter(1))
+		
+	def sortByProd(self):
+		self.parts.sort(key=itemgetter(2))
 	
 	def setValCounts(self):
 		print "BOM.setValCounts"

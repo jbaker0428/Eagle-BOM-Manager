@@ -3,7 +3,6 @@ import pygtk
 pygtk.require('2.0')
 import gtk
 import y_serial_v060 as y_serial
-from operator import itemgetter
 import shutil
 import os
 import types
@@ -72,7 +71,7 @@ class URBM:
 		# Figure out which button is now selected
 		if widget.get_active():
 			if 'name' in data:
-				active_bom.parts = sorted(active_bom.parts, key=itemgetter(0))
+				active_bom.sortByName()
 				old = len(self.bomContentLabels)
 				self.destroyBomLabels()
 				self.destroyBomRadios()
@@ -92,7 +91,7 @@ class URBM:
 			
 				
 			elif 'value' in data:
-				active_bom.parts = sorted(active_bom.parts, key=itemgetter(1))
+				active_bom.sortByVal()
 				active_bom.setValCounts()
 				tableLen = 1 + len(active_bom.valCounts)
 				old = len(self.bomContentLabels)
@@ -117,7 +116,7 @@ class URBM:
 					rowNum += 1
 					
 			elif 'product' in data:
-				active_bom.parts = sorted(active_bom.parts, key=itemgetter(2))
+				active_bom.sortByProd()
 				active_bom.setProdCounts()
 				tableLen = 1 + len(active_bom.prodCounts)
 				old = len(self.bomContentLabels)
