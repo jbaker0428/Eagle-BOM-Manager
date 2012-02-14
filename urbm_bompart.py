@@ -1,4 +1,5 @@
 import y_serial_v060 as y_serial
+import types
 
 class bomPart:
 	def __init__(self, name, value, device, package, parent_bom, description="", product="none"):
@@ -9,6 +10,26 @@ class bomPart:
 		self.description = description
 		self.product = product
 		self.bom = parent_bom
+
+	''' Compares the bomPart to another bomPart.'''
+	def equals(self, p):
+		if type(p) != type(self):
+			return False
+		eq = True
+		if self.name != p.name:
+			eq = False
+		if self.value != p.value:
+			eq = False
+		if self.device != p.device:
+			eq = False
+		if self.package != p.package:
+			eq = False
+		if self.description != p.description:
+			eq = False
+		if self.product != p.product:
+			eq = False
+		return eq
+		
 
 	def findInBOM(self, bomFile):
 		with open(bomFile, 'rb') as f:
