@@ -35,10 +35,10 @@ class BOM:
 		self.valCounts.clear()
 		
 		for x in self.parts:
-			if x[2] in self.valCounts.keys():
-				self.valCounts[x[2]] += 1
+			if x[1] in self.valCounts.keys():
+				self.valCounts[x[1]] += 1
 			else:
-				self.valCounts[x[2]] = 1
+				self.valCounts[x[1]] = 1
 
 	def setProdCounts(self):
 		print "BOM.setProdCounts"
