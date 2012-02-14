@@ -44,7 +44,9 @@ class BOM:
 	def setProdCounts(self):
 		print "BOM.setProdCounts"
 		self.prodCounts.clear()
+		print "BOM.parts: ", self.parts
 		for x in self.parts:
+			print "x in BOM.parts: ", x
 			if x[2] in self.prodCounts.keys():
 				self.prodCounts[x[2]] += 1
 			else:
@@ -71,6 +73,16 @@ class BOM:
 				
 		return cost
 	
+	''' Take in a bomPart, find it in self.parts, update product.name entry'''
+	def updateParts(self, part):
+		# Find p in self.parts by name
+		for p in self.parts:
+			if p[0] == part.name:
+				p[2] = part.product
+		# TODO : If inline addition of parts is added later (as in, not from a
+		# CSV file), a check needs to be added here to make sure part is in self.parts
+		self.writeToDB()
+	
 	def writeToDB(self):
 		print "BOM.writeToDB to table %s" % self.name
 		self.db.delete("bomlist", self.name)
@@ -78,7 +90,9 @@ class BOM:
 		
 	def readFromDB(self):
 		print "BOM.readFromDB"
+		newParts = []
 		self.parts = self.db.select("bomlist", self.name)
+		print "BOM.parts from DB: ", self.parts
 		partsDic = self.db.selectdic("#prt", self.name)
 		print "partsDic: \n", partsDic
 		return partsDic
@@ -100,6 +114,6 @@ class BOM:
 					and part.package == oldPart.package):
 						part.product = oldPart.product
 				part.writeToDB()
-				self.parts.append((part.name, part.value, part.product))
+				self.parts.append([part.name, part.value, part.product])
 		#parts = newParts
 		self.writeToDB()

@@ -36,6 +36,13 @@ class URBM:
 	def readDBCallback(self, widget, data=None):
 		print "Read DB callback"
 		active_bom.readFromDB()
+		if self.bomGroupName.get_active():
+			self.drawBomByName()
+		elif self.bomGroupValue.get_active():
+			self.drawBomByValue()
+		elif self.bomGroupPN.get_active():
+			self.drawBomByPN()
+		self.window.show_all()
 	
 	def bomRadioCallback(self, widget, data=None):
 		# Set class fields for currently selected item
@@ -57,107 +64,16 @@ class URBM:
 	def bomGroupCallback(self, widget, data=None):
 		#print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
 		
-		def populateBomRow(self, part, quantity=""):
-			self.bomContentLabels[rowNum][0].set_label("\t" + part.name)
-			self.bomContentLabels[rowNum][1].set_label(part.value)
-			self.bomContentLabels[rowNum][2].set_label(part.device)
-			self.bomContentLabels[rowNum][3].set_label(part.package)
-			self.bomContentLabels[rowNum][4].set_label(part.description)
-			self.bomContentLabels[rowNum][5].set_label(part.product)
-			self.bomContentLabels[rowNum][6].set_label(str(quantity))
-			
-		def attachBomRow(self):
-			i = 0
-			for label in self.bomContentLabels[rowNum]:
-				self.bomTable.attach(label,  i, i+1, rowNum+1, rowNum+2)
-				i += 1
-				
 		# Figure out which button is now selected
 		if widget.get_active():
 			if 'name' in data:
-				active_bom.sortByName()
-				old = len(self.bomContentLabels)
-				self.destroyBomLabels()
-				self.destroyBomRadios()
-				del self.bomRadios[0:old]
-				del self.bomContentLabels[0:old]
-				self.bomTable.resize(len(active_bom.parts)+1, 8)
-				self.bomRadios = self.createBomRadios(len(active_bom.parts))
-				self.attachBomRadios()
-				self.bomContentLabels = self.createBomLabels(len(active_bom.parts))
-				rowNum = 0
-				for p in active_bom.parts:
-					# temp is a bomPart object from the DB
-					temp = urbmDB.select(p[0], active_bom.name)
-					populateBomRow(self, temp)
-					attachBomRow(self)
-					rowNum += 1
-			
+				self.drawBomByName()
 				
 			elif 'value' in data:
-				active_bom.sortByVal()
-				active_bom.setValCounts()
-				tableLen = 1 + len(active_bom.valCounts)
-				old = len(self.bomContentLabels)
-				self.destroyBomLabels()
-				self.destroyBomRadios()
-				del self.bomRadios[0:old]
-				del self.bomContentLabels[0:old]
-				self.bomTable.resize(tableLen, 8)
-				self.bomRadios = self.createBomRadios(len(active_bom.parts))
-				self.attachBomRadios()
-				self.bomContentLabels = self.createBomLabels(len(active_bom.valCounts))
-				
-				rowNum = 0
-				# Will sort by value as well (kept for future reference)
-				#vals = sorted(active_bom.valCounts.keys())
-				#for val in vals: 
-				for val in active_bom.valCounts.keys():
-					groupName = "\t"	# Clear groupName and prepend a tab
-					group = urbmDB.selectdic("#val=" + val, active_bom.name)
-					for part in group.values():
-						groupName += part[2].name + ", "
-					
-					# Replace trailing comma with tab
-					groupName = groupName[0:-2]
-					populateBomRow(self, group[group.keys()[0]][2], active_bom.valCounts[val])
-					self.bomContentLabels[rowNum][0].set_label(groupName)
-					attachBomRow(self)
-					rowNum += 1
+				self.drawBomByValue()
 					
 			elif 'product' in data:
-				active_bom.sortByProd()
-				active_bom.setProdCounts()
-				tableLen = 1 + len(active_bom.prodCounts)
-				old = len(self.bomContentLabels)
-				self.destroyBomLabels()
-				self.destroyBomRadios()
-				del self.bomRadios[0:old]
-				del self.bomContentLabels[0:old]
-				self.bomTable.resize(tableLen, 8)
-				self.bomRadios = self.createBomRadios(len(active_bom.parts))
-				self.attachBomRadios()
-				self.bomContentLabels = self.createBomLabels(len(active_bom.prodCounts))
-				rowNum = 0
-				for prod in active_bom.prodCounts.keys():
-					groupName = "\t"	# Clear groupName and prepend a tab
-					print "Querying with prod =", prod, " of length ", len(prod)
-					# Catch empty product string
-					if prod == ' ' or len(prod) == 0: 
-						print "Caught empty product"
-						group = urbmDB.selectdic("#prod=none", active_bom.name)
-					else:
-						group = urbmDB.selectdic("#prod=" + prod, active_bom.name)
-					print "Group: \n", group
-					for part in group.values():	# TODO: Ensure this data is what we expect
-						groupName += part[2].name + ", "
-					
-					# Replace trailing comma with tab
-					groupName = groupName[0:-2]
-					populateBomRow(self, group[group.keys()[0]][2], active_bom.prodCounts[prod])
-					self.bomContentLabels[rowNum][0].set_label(groupName)
-					attachBomRow(self)
-					rowNum += 1
+				self.drawBomByPN()
 					
 			self.window.show_all()
 	
@@ -203,10 +119,13 @@ class URBM:
 		else:
 			self.productEntryText = self.setProductEntry.get_text()
 		
+		# Set selectedBomPart
 		print "Setting selectedBomPart.product to: %s" % self.productEntryText
 		self.selectedBomPart.product = self.productEntryText
 		print "selectedBomPart's product field: %s" % self.selectedBomPart.product
 		self.selectedBomPart.writeToDB()
+		active_bom.updateParts(self.selectedBomPart)
+		
 		self.bomContentLabels[self.curBomRow][5].set_label(self.productEntryText)
 		self.bomContentLabels[self.curBomRow][5].show()
 		print "Part Number label text: %s" % self.bomContentLabels[self.curBomRow][5].get_text()
@@ -315,22 +234,107 @@ class URBM:
 		self.partInfoSeriesLabel2.set_text("\t")
 		self.partInfoPackageLabel2.set_text("\t")
 	
-	#def populateBomRow(self, rowLabels, part, quantity=None):
-	#def populateBomRow(self, rn, part, quantity=None):
-	#	print self.bomContentLabels[rn][0]
-		#rowLabels[0].set_label(part.name)
-		#rowLabels[1].set_label(part.value)
-		#rowLabels[2].set_label(part.device)
-		#rowLabels[3].set_label(part.package)
-		#rowLabels[4].set_label(part.description)
-		#rowLabels[5].set_label(part.product.name)
-		#rowLabels[6].set_label(quantity)
+	''' @param row considers index 0 to be the first row of content after headers'''
+	def populateBomRow(self, part, row, quantity=""):
+		self.bomContentLabels[row][0].set_label("\t" + part.name)
+		self.bomContentLabels[row][1].set_label(part.value)
+		self.bomContentLabels[row][2].set_label(part.device)
+		self.bomContentLabels[row][3].set_label(part.package)
+		self.bomContentLabels[row][4].set_label(part.description)
+		self.bomContentLabels[row][5].set_label(part.product)
+		self.bomContentLabels[row][6].set_label(str(quantity))
 	
-	''' @param rowNum considers index 0 to be the first row of content after headers'''
-	#def attachBomRow(self, rowLabels, rowNum):
-		#i = 0
-		#for label in rowLabels:
-			#self.bomTable.attach(label,  i, i+1, rowNum+1, rowNum+2)
+	''' @param row considers index 0 to be the first row of content after headers'''	
+	def attachBomRow(self, row):
+		i = 0
+		for label in self.bomContentLabels[row]:
+			self.bomTable.attach(label,  i, i+1, row+1, row+2)
+			i += 1
+	
+	def drawBomByName(self):
+		active_bom.sortByName()
+		old = len(self.bomContentLabels)
+		self.destroyBomLabels()
+		self.destroyBomRadios()
+		del self.bomRadios[0:old]
+		del self.bomContentLabels[0:old]
+		self.bomTable.resize(len(active_bom.parts)+1, 8)
+		self.bomRadios = self.createBomRadios(len(active_bom.parts))
+		self.attachBomRadios()
+		self.bomContentLabels = self.createBomLabels(len(active_bom.parts))
+		rowNum = 0
+		for p in active_bom.parts:
+			# temp is a bomPart object from the DB
+			temp = urbmDB.select(p[0], active_bom.name)
+			self.populateBomRow(temp, rowNum)
+			self.attachBomRow(rowNum)
+			rowNum += 1
+	
+	def drawBomByValue(self):
+		active_bom.sortByVal()
+		active_bom.setValCounts()
+		tableLen = 1 + len(active_bom.valCounts.keys())
+		old = len(self.bomContentLabels)
+		self.destroyBomLabels()
+		self.destroyBomRadios()
+		del self.bomRadios[0:old]
+		del self.bomContentLabels[0:old]
+		self.bomTable.resize(tableLen, 8)
+		self.bomRadios = self.createBomRadios(len(active_bom.valCounts.keys()))
+		self.attachBomRadios()
+		self.bomContentLabels = self.createBomLabels(len(active_bom.valCounts.keys()))
+		
+		rowNum = 0
+		# Will sort by value as well (kept for future reference)
+		#vals = sorted(active_bom.valCounts.keys())
+		#for val in vals: 
+		for val in active_bom.valCounts.keys():
+			groupName = "\t"	# Clear groupName and prepend a tab
+			group = urbmDB.selectdic("#val=" + val, active_bom.name)
+			for part in group.values():
+				groupName += part[2].name + ", "
+			
+			# Replace trailing comma with tab
+			groupName = groupName[0:-2]
+			self.populateBomRow(group[group.keys()[0]][2], rowNum, active_bom.valCounts[val])
+			self.bomContentLabels[rowNum][0].set_label(groupName)
+			self.attachBomRow(rowNum)
+			rowNum += 1
+	
+	def drawBomByPN(self):
+		active_bom.sortByProd()
+		active_bom.setProdCounts()
+		tableLen = 1 + len(active_bom.prodCounts.keys())
+		old = len(self.bomContentLabels)
+		self.destroyBomLabels()
+		self.destroyBomRadios()
+		del self.bomRadios[0:old]
+		del self.bomContentLabels[0:old]
+		self.bomTable.resize(tableLen, 8)
+		self.bomRadios = self.createBomRadios(len(active_bom.prodCounts.keys()))
+		self.attachBomRadios()
+		self.bomContentLabels = self.createBomLabels(len(active_bom.prodCounts.keys()))
+		rowNum = 0
+		print "prodCounts.keys(): ", active_bom.prodCounts.keys()
+		for prod in active_bom.prodCounts.keys():
+			groupName = "\t"	# Clear groupName and prepend a tab
+			print "Querying with prod =", prod, " of length ", len(prod)
+			# Catch empty product string
+			if prod == ' ' or len(prod) == 0: 
+				print "Caught empty product"
+				group = urbmDB.selectdic("#prod=none", active_bom.name)
+			else:
+				group = urbmDB.selectdic("#prod=" + prod, active_bom.name)
+			print "Group: \n", group
+			for part in group.values():	# TODO: Ensure this data is what we expect
+				groupName += part[2].name + ", "
+			
+			# Replace trailing comma with tab
+			groupName = groupName[0:-2]
+			self.populateBomRow(group[group.keys()[0]][2], rowNum, active_bom.prodCounts[prod])
+			self.bomContentLabels[rowNum][0].set_label(groupName)
+			self.attachBomRow(rowNum)
+			rowNum += 1
 		
 	def __init__(self):
 		# -------- DECLARATIONS --------
