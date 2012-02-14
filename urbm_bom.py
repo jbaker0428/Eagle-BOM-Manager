@@ -3,6 +3,7 @@ import shutil
 import os
 import urlparse
 from urbm_bompart import bomPart
+from urbm_product import Product
 import y_serial_v060 as y_serial
 
 '''For determining the name of a project's bomPart table.'''			
@@ -44,7 +45,31 @@ class BOM:
 				self.prodCounts[x[2]] = 1
 						
 			prev = x;
+	
+	''' Get the total project BOM cost for a given production run size'''		
+	def getCost(self, runSize=1):
+		# TODO : Sort self.parts by product
+		# Beware of sorting self.parts screwing with GUI BOM list sorting!
+		self.setProdCounts()
+		projProdCounts = self.prodCounts.copy()
+		cost = 0
+		for x in projProdCounts.keys():
+			projProdCounts[x] = projProdCounts[x] * runSize
 			
+		for x in projProdCounts.items():
+			# Find x[0] (the dict key) in the product DB
+			if x[0] is "none":
+				# TODO : Print a warning on screen?
+				print "Warning: BOM.getCost() skipped a part with no product"
+			else:
+				product = self.db.select(x[0], 'products')
+				priceBreak = product.getPriceBreak(x[1])
+				cost += priceBreak[1] * projProdCounts[x[0]]
+				
+		return cost
+				
+			
+	
 	def writeToDB(self):
 		print "BOM.writeToDB to table %s" % self.name
 		self.db.delete("bomparts", self.name)
