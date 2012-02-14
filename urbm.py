@@ -54,7 +54,7 @@ class URBM:
 		#print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
 		
 		def populateBomRow(self, part, quantity=""):
-			self.bomContentLabels[rowNum][0].set_label(part.name)
+			self.bomContentLabels[rowNum][0].set_label("\t" + part.name)
 			self.bomContentLabels[rowNum][1].set_label(part.value)
 			self.bomContentLabels[rowNum][2].set_label(part.device)
 			self.bomContentLabels[rowNum][3].set_label(part.package)
