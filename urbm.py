@@ -384,6 +384,7 @@ class URBM:
 		self.bomGroupPN = gtk.RadioButton(self.bomGroupName, "Part Number")
 		
 		self.selectedProduct = Product(Product.VENDOR_DK, "init", urbmDB)
+		self.selectedBomPart = bomPart("init", "init", "init", "init", active_bom)
 		
 		self.partInfoFrame = gtk.Frame("Part information") # Goes in top half of bomVPane
 		self.partInfoRowBox = gtk.VBox(False, 0) # Fill with HBoxes 
