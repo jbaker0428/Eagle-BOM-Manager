@@ -1,7 +1,7 @@
 from urbm_bom import BOM
 
 class bomPart:
-	def __init__(self, name, value, device, package, description="", product="none", parent_bom):
+	def __init__(self, name, value, device, package, parent_bom, description="", product="none"):
 		self.name = name
 		self.value = value
 		self.device = device

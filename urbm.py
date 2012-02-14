@@ -17,7 +17,7 @@ urbmDB.createtable('products')
 def getProductDBSize():
 	dict = urbmDB.selectdic("?", 'products')
 
-active_bom = BOM("test1", os.path.join(os.getcwd(), "test.csv"), urbmDB)
+active_bom = BOM("test1", urbmDB, os.path.join(os.getcwd(), "test.csv"))
 
 '''GUI class'''
 class URBM:

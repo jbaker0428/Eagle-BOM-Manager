@@ -6,7 +6,7 @@ from urbm_bompart import bomPart
 
 '''For determining the name of a project's bomPart table.'''			
 class BOM:
-	def __init__(self, name, inputFile="bom.csv", database):
+	def __init__(self, name, database, inputFile="bom.csv"):
 		self.name = name
 		self.input = inputFile
 		self.parts = [] # List of 3-element lists of part name, value, and product.name
@@ -57,7 +57,7 @@ class BOM:
 			reader = csv.reader(f, delimiter=',', quotechar = '"', quoting=csv.QUOTE_ALL)
 			for row in reader:
 				print row
-				part = bomPart(row[0], row[1], row[2], row[3], row[4], self)
+				part = bomPart(row[0], row[1], row[2], row[3], self, row[4])
 				print "Part: %s %s %s %s" % (part.name, part.value, part.device, part.package)
 				# Check if identical part is already in DB with a product
 				# If so, preserve the product entry
