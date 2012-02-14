@@ -73,8 +73,15 @@ class BOM:
 	
 	def writeToDB(self):
 		print "BOM.writeToDB to table %s" % self.name
-		self.db.delete("bomparts", self.name)
-		self.db.insert(self.parts, "bomparts", self.name)
+		self.db.delete("bomlist", self.name)
+		self.db.insert(self.parts, "bomlist", self.name)
+		
+	def readFromDB(self):
+		print "BOM.readFromDB"
+		self.parts = self.db.select("bomlist", self.name)
+		partsDB = self.db.select("#prt", self.name)
+		print "partsDB: \n", partsDB
+		return partsDB
 		
 	def readFromFile(self):
 		print "BOM.readFromFile"
