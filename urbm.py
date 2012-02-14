@@ -436,7 +436,7 @@ class URBM:
 		self.selectedBomPart = bomPart("init", "init", "init", "init", active_bom)
 		
 		self.partInfoFrame = gtk.Frame("Part information") # Goes in top half of bomVPane
-		self.partInfoRowBox = gtk.VBox(False, 0) # Fill with HBoxes 
+		self.partInfoRowBox = gtk.VBox(False, 20) # Fill with HBoxes 
 		
 		self.partInfoInfoTable = gtk.Table(11, 2, False) # Vendor, PNs, inventory, etc
 		self.partInfoVendorLabel1 = gtk.Label("Vendor: ")
