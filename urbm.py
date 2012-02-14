@@ -16,9 +16,6 @@ from urbm_bom import BOM
 
 urbmDB = y_serial.Main(os.path.join(os.getcwd(), "urbm.sqlite"))
 urbmDB.createtable('products')
-def enum(*sequential, **named):
-	enums = dict(zip(sequential, range(len(sequential))), **named)
-	return type('Enum', (), enums)
 
 def getProductDBSize():
 	dict = urbmDB.selectdic("?", 'products')
