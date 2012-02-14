@@ -1,0 +1,7 @@
+*.pyc
+*.pdf
+*.csv
+*.xls
+*.sqlite
+desktop.ini
+~$*.*x
