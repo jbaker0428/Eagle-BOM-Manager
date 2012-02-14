@@ -198,7 +198,7 @@ class Product:
 			self.family = temp.family
 			self.series = temp.series
 			self.package = temp.package
-		else:
+		elif self.vendor_pn != "none":
 			self.scrape()
 
 #call sorted(prices.keys(), reverse=True) on prices.keys() to evaluate the price breaks in order

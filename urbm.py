@@ -36,9 +36,7 @@ class URBM:
 	def bomRadioCallback(self, widget, data=None):
 		# Set class fields for currently selected item
 		self.curBomRow = int(data) 	# Convert str to int
-		print "curBomRow is: %s" % self.curBomRow
-		print "Selected item name label: %s" % self.bomContentLabels[self.curBomRow][0].get_text()
-		self.selectedBomPart = urbmDB.select(self.bomContentLabels[self.curBomRow][0].get_text(), active_bom.name)
+		self.selectedBomPart = urbmDB.select(self.bomContentLabels[self.curBomRow][0].get_text()[1:], active_bom.name)
 		# Grab the vendor part number for the selected item from the label text
 		selectedPN = self.bomContentLabels[self.curBomRow][5].get_text()
 		print "selectedPN is: %s" % selectedPN
@@ -49,6 +47,8 @@ class URBM:
 			
 			self.selectedProduct.selectOrScrape()
 			self.setPartInfolabels(self.selectedProduct)
+		else:
+			self.clearPartInfoLabels()
 	
 	def bomGroupCallback(self, widget, data=None):
 		#print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
@@ -109,7 +109,7 @@ class URBM:
 				#vals = sorted(active_bom.valCounts.keys())
 				#for val in vals: 
 				for val in active_bom.valCounts.keys():
-					groupName = "\t" # Clear groupName and prepend a tab
+					groupName = "\t"	# Clear groupName and prepend a tab
 					group = urbmDB.selectdic("#val=" + val, active_bom.name)
 					for part in group.values():
 						groupName += part[2].name + ", "
@@ -133,15 +133,24 @@ class URBM:
 				self.bomTable.resize(tableLen, 8)
 				self.bomRadios = self.createBomRadios(len(active_bom.parts))
 				self.attachBomRadios()
-				self.bomContentLabels = self.createBomLabels(len(bom.prodCounts))
-				groupName = ""
+				self.bomContentLabels = self.createBomLabels(len(active_bom.prodCounts))
 				rowNum = 0
 				for prod in active_bom.prodCounts.keys():
-					group = urbmDB.selectdic("#prod=" + prod, active_bom.name)
-					for parts in group:	# TODO: Ensure this data is what we expect
-						groupName += parts.part.name + ", "
-					temp = urbmDB.select("#prod=" + prod, active_bom.name)
-					populateBomRow(self, temp, active_bom.prodCounts[prod])
+					groupName = "\t"	# Clear groupName and prepend a tab
+					print "Querying with prod =", prod, " of length ", len(prod)
+					# Catch empty product string
+					if prod == ' ' or len(prod) == 0: 
+						print "Caught empty product"
+						group = urbmDB.selectdic("#prod=none", active_bom.name)
+					else:
+						group = urbmDB.selectdic("#prod=" + prod, active_bom.name)
+					print "Group: \n", group
+					for part in group.values():	# TODO: Ensure this data is what we expect
+						groupName += part[2].name + ", "
+					
+					# Replace trailing comma with tab
+					groupName = groupName[0:-2]
+					populateBomRow(self, group[group.keys()[0]][2], active_bom.prodCounts[prod])
 					self.bomContentLabels[rowNum][0].set_label(groupName)
 					attachBomRow(self)
 					rowNum += 1
@@ -199,15 +208,18 @@ class URBM:
 		print "Part Number label text: %s" % self.bomContentLabels[self.curBomRow][5].get_text()
 		
 		# Make sure the user selected a vendor
+		# If not, default to Digikey
 		if type(setProductVendorCombo.get_active_text()) is types.NoneType:
 			print "NoneType caught"
-			self.selectedProduct.vendor = setProductVendorCombo.get_active_text()
-		# If not, default to Digikey	
-		else:	
 			self.selectedProduct.vendor = Product.VENDOR_DK
+		else:	
+			self.selectedProduct.vendor = setProductVendorCombo.get_active_text()
 		self.selectedProduct.vendor_pn = self.productEntryText
 		self.selectedProduct.selectOrScrape()
-		self.setPartInfolabels(self.selectedProduct)
+		if self.selectedProduct.vendor_pn == "none":
+			self.clearPartInfoLabels()
+		else:
+			self.setPartInfoLabels(self.selectedProduct)
 		 
 	# -------- HELPER METHODS --------
 	def bomTableHeaders(self):
@@ -286,6 +298,19 @@ class URBM:
 		self.partInfoSeriesLabel2.set_text(prod.series)
 		self.partInfoPackageLabel2.set_text(prod.package)
 
+	def clearPartInfoLabels(self):
+		self.partInfoVendorLabel2.set_text("\t")
+		self.partInfoVendorPNLabel2.set_text("\t")
+		self.partInfoInventoryLabel2.set_text("\t")
+		self.partInfoManufacturerLabel2.set_text("\t")
+		self.partInfoManufacturerPNLabel2.set_text("\t")
+		self.partInfoDescriptionLabel2.set_text("\t")
+		self.partInfoDatasheetLabel2.set_text("\t")
+		self.partInfoCategoryLabel2.set_text("\t")
+		self.partInfoFamilyLabel2.set_text("\t")
+		self.partInfoSeriesLabel2.set_text("\t")
+		self.partInfoPackageLabel2.set_text("\t")
+	
 	#def populateBomRow(self, rowLabels, part, quantity=None):
 	#def populateBomRow(self, rn, part, quantity=None):
 	#	print self.bomContentLabels[rn][0]
