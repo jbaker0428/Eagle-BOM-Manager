@@ -6,7 +6,7 @@ from urbm_bompart import bomPart
 
 '''For determining the name of a project's bomPart table.'''			
 class BOM:
-	def __init__(self, name, inputFile="bom.csv", database=urbmDB):
+	def __init__(self, name, inputFile="bom.csv", database):
 		self.name = name
 		self.input = inputFile
 		self.parts = [] # List of 3-element lists of part name, value, and product.name

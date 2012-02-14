@@ -23,7 +23,7 @@ class Product:
 	VENDOR_ME = "Mouser"
 	VENDOR_SFE = "SparkFun"
 	#vendors = enum('DK', 'ME', 'SFE')
-	def __init__(self, vendor, vendor_pn, database=urbmDB):
+	def __init__(self, vendor, vendor_pn, database):
 		self.vendor = vendor
 		self.vendor_pn = vendor_pn
 		self.manufacturer = ""
