@@ -44,9 +44,9 @@ class bomPart:
 	def isInDB(self):
 		print "bomPart.isInDB was passed %s" % self.bom.name
 		if self.product == "none":
-			query = self.name + "#prt,#val=" + self.value + ",#dev=" + self.device + ",#pkg=" + self.package
+			query = self.name + " #prt,#val=" + self.value + ",#dev=" + self.device + ",#pkg=" + self.package
 		else:
-			query = self.name + "#prt,#val=" + self.value + ",#dev=" + self.device + ",#pkg=" + self.package + ",#prod=" + self.product
+			query = self.name + " #prt,#val=" + self.value + ",#dev=" + self.device + ",#pkg=" + self.package + ",#prod=" + self.product
 		print "Query: %s" % query
 		dict = self.bom.db.selectdic(query, self.bom.name)
 		#test = self.bom.db.select(self.name, self.bom.name)

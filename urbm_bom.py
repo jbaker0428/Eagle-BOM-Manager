@@ -98,8 +98,8 @@ class BOM:
 		return partsDic
 		
 	def readFromFile(self):
+		# TODO : Check if already in DB and compare part numbers
 		print "BOM.readFromFile"
-		newParts = []
 		with open(self.input, 'rb') as f:
 			reader = csv.reader(f, delimiter=',', quotechar = '"', quoting=csv.QUOTE_ALL)
 			for row in reader:
@@ -109,11 +109,19 @@ class BOM:
 				# Check if identical part is already in DB with a product
 				# If so, preserve the product entry
 				if(part.isInDB()):
-					oldPart = self.db.select(part.name, self.name)
-					if(part.value == oldPart.value and part.device == oldPart.device \
-					and part.package == oldPart.package):
-						part.product = oldPart.product
-				part.writeToDB()
-				self.parts.append([part.name, part.value, part.product])
-		#parts = newParts
+					print "Part already in DB"
+					oldPart = self.db.select(part.name + " #prt", self.name)
+					print "oldPart: ", oldPart.name, oldPart.value, oldPart.package, oldPart.product
+					if(part.value == oldPart.value and part.device == oldPart.device and part.package == oldPart.package):
+						if oldPart.product != 'none':
+							print "Part found in DB with existing product ", oldPart.product
+							part.product = oldPart.product
+						else:
+							print "Part found in DB without product entry, overwriting..."
+							self.updateParts(part)
+							part.writeToDB()
+				else:
+					print "Part not in DB, writing..."
+					part.writeToDB()
+					self.parts.append([part.name, part.value, part.product])
 		self.writeToDB()
