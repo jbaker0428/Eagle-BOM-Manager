@@ -20,35 +20,27 @@ class BOM:
 	def delete(self):
 		self.db.droptable(self.name)
 	
-	'''Sort self.parts by value BEFORE calling setValCounts()!'''
 	def setValCounts(self):
 		print "BOM.setValCounts"
-		prev = "previous"
+		self.valCounts.clear()
+		
 		for x in self.parts:
-			if x[1] != prev[1]:
-				if x[1] in self.valCounts:
-					self.valCounts[x[1]] += 1
+			if x[2] in self.valCounts.keys():
+				self.valCounts[x[2]] += 1
 			else:
-				self.valCounts[x[1]] = 1
-						
-			prev = x;
+				self.valCounts[x[2]] = 1
 
-	'''Sort self.parts by product BEFORE calling setProdCounts()!'''
 	def setProdCounts(self):
 		print "BOM.setProdCounts"
-		prev = "previous"
+		self.prodCounts.clear()
 		for x in self.parts:
-			if x[2] != prev[2]:
-				if x[2] in self.prodCounts:
-					self.prodCounts[x[2]] += 1
+			if x[2] in self.prodCounts.keys():
+				self.prodCounts[x[2]] += 1
 			else:
 				self.prodCounts[x[2]] = 1
-						
-			prev = x;
 	
 	''' Get the total project BOM cost for a given production run size'''		
 	def getCost(self, runSize=1):
-		# TODO : Sort self.parts by product
 		# Beware of sorting self.parts screwing with GUI BOM list sorting!
 		self.setProdCounts()
 		projProdCounts = self.prodCounts.copy()
