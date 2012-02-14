@@ -32,6 +32,13 @@ class URBM:
 		active_bom.readFromFile()
 		#Read back last entry
 		urbmDB.view(1, active_bom.name)
+		if self.bomGroupName.get_active():
+			self.drawBomByName()
+		elif self.bomGroupValue.get_active():
+			self.drawBomByValue()
+		elif self.bomGroupPN.get_active():
+			self.drawBomByPN()
+		self.window.show_all()
 	
 	def readDBCallback(self, widget, data=None):
 		print "Read DB callback"
