@@ -363,7 +363,7 @@ class URBM:
 		self.bomFrame = gtk.Frame("BOM") # Goes in left side of bomHPane
 		self.bomTableBox = gtk.VBox(False, 0) # Holds bomScrollWin and bomRadioBox
 		self.bomScrollWin = gtk.ScrolledWindow() # Holds bomTable
-		self.bomTable = gtk.Table(50, 8, False) 
+		self.bomTable = gtk.Table(1, 8, False) 
 		
 		# first table row will be column labels
 		self.bomColLabel1 = gtk.Label("Part")
@@ -375,7 +375,7 @@ class URBM:
 		self.bomColLabel7 = gtk.Label("Quantity")
 		self.bomContentLabels = []
 		self.bomRadioGroup = gtk.RadioButton(None)
-		self.bomRadios = self.createBomRadios(49)
+		self.bomRadios = self.createBomRadios(0)
 		
 		self.bomRadioBox = gtk.HBox(False, 0)
 		self.bomRadioLabel = gtk.Label("Group by:")
