@@ -60,7 +60,7 @@ class URBM:
 			self.bomContentLabels[rowNum][3].set_label(part.package)
 			self.bomContentLabels[rowNum][4].set_label(part.description)
 			self.bomContentLabels[rowNum][5].set_label(part.product)
-			self.bomContentLabels[rowNum][6].set_label(quantity)
+			self.bomContentLabels[rowNum][6].set_label(str(quantity))
 			
 		def attachBomRow(self):
 			i = 0
@@ -103,14 +103,20 @@ class URBM:
 				self.bomRadios = self.createBomRadios(len(active_bom.parts))
 				self.attachBomRadios()
 				self.bomContentLabels = self.createBomLabels(len(active_bom.valCounts))
-				groupName = ""
+				
 				rowNum = 0
+				# Will sort by value as well (kept for future reference)
+				#vals = sorted(active_bom.valCounts.keys())
+				#for val in vals: 
 				for val in active_bom.valCounts.keys():
+					groupName = "\t" # Clear groupName and prepend a tab
 					group = urbmDB.selectdic("#val=" + val, active_bom.name)
-					for parts in group:		# TODO: Ensure this data is what we expect
-						groupName += parts.part.name + ", "
-					temp = urbmDB.select("#val=" + val, bom.name)
-					populateBomRow(self, temp, active_bom.valCounts[val])
+					for part in group.values():
+						groupName += part[2].name + ", "
+					
+					# Replace trailing comma with tab
+					groupName = groupName[0:-2]
+					populateBomRow(self, group[group.keys()[0]][2], active_bom.valCounts[val])
 					self.bomContentLabels[rowNum][0].set_label(groupName)
 					attachBomRow(self)
 					rowNum += 1
