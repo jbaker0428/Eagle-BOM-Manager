@@ -1,4 +1,4 @@
-from urbm_bom import BOM
+import y_serial_v060 as y_serial
 
 class bomPart:
 	def __init__(self, name, value, device, package, parent_bom, description="", product="none"):

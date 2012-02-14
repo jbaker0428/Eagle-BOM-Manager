@@ -3,6 +3,7 @@ import shutil
 import os
 import urlparse
 from urbm_bompart import bomPart
+import y_serial_v060 as y_serial
 
 '''For determining the name of a project's bomPart table.'''			
 class BOM:
