@@ -65,7 +65,9 @@ class URBM:
 			
 			self.selectedProduct.selectOrScrape()
 			self.setPartInfoLabels(self.selectedProduct)
+			self.setPartPriceLabels(self.selectedProduct)
 		else:
+			self.destroyPartPriceLabels()
 			self.clearPartInfoLabels()
 	
 	def bomGroupCallback(self, widget, data=None):
@@ -148,8 +150,10 @@ class URBM:
 		self.selectedProduct.selectOrScrape()
 		if self.selectedProduct.vendor_pn == "none":
 			self.clearPartInfoLabels()
+			self.destroyPartPriceLabels()
 		else:
 			self.setPartInfoLabels(self.selectedProduct)
+			self.setPartPriceLabels(self.selectedProduct)
 		 
 	# -------- HELPER METHODS --------
 	def bomTableHeaders(self):
@@ -214,32 +218,6 @@ class URBM:
 	def destroyBomRadios(self):
 		for r in self.bomRadios:
 			r.destroy()
-	
-	def setPartInfoLabels(self, prod):
-		self.partInfoVendorLabel2.set_text(prod.vendor)
-		self.partInfoVendorPNLabel2.set_text(prod.vendor_pn)
-		self.partInfoInventoryLabel2.set_text(str(prod.inventory))
-		self.partInfoManufacturerLabel2.set_text(prod.manufacturer)
-		self.partInfoManufacturerPNLabel2.set_text(prod.mfg_pn)
-		self.partInfoDescriptionLabel2.set_text(prod.description)
-		self.partInfoDatasheetLabel2.set_text(prod.datasheet)
-		self.partInfoCategoryLabel2.set_text(prod.category)
-		self.partInfoFamilyLabel2.set_text(prod.family)
-		self.partInfoSeriesLabel2.set_text(prod.series)
-		self.partInfoPackageLabel2.set_text(prod.package)
-
-	def clearPartInfoLabels(self):
-		self.partInfoVendorLabel2.set_text("\t")
-		self.partInfoVendorPNLabel2.set_text("\t")
-		self.partInfoInventoryLabel2.set_text("\t")
-		self.partInfoManufacturerLabel2.set_text("\t")
-		self.partInfoManufacturerPNLabel2.set_text("\t")
-		self.partInfoDescriptionLabel2.set_text("\t")
-		self.partInfoDatasheetLabel2.set_text("\t")
-		self.partInfoCategoryLabel2.set_text("\t")
-		self.partInfoFamilyLabel2.set_text("\t")
-		self.partInfoSeriesLabel2.set_text("\t")
-		self.partInfoPackageLabel2.set_text("\t")
 	
 	''' @param row considers index 0 to be the first row of content after headers'''
 	def populateBomRow(self, part, row, quantity=""):
@@ -342,6 +320,77 @@ class URBM:
 			self.bomContentLabels[rowNum][0].set_label(groupName)
 			self.attachBomRow(rowNum)
 			rowNum += 1
+			
+	def setPartInfoLabels(self, prod):
+		self.partInfoVendorLabel2.set_text(prod.vendor)
+		self.partInfoVendorPNLabel2.set_text(prod.vendor_pn)
+		self.partInfoInventoryLabel2.set_text(str(prod.inventory))
+		self.partInfoManufacturerLabel2.set_text(prod.manufacturer)
+		self.partInfoManufacturerPNLabel2.set_text(prod.mfg_pn)
+		self.partInfoDescriptionLabel2.set_text(prod.description)
+		self.partInfoDatasheetLabel2.set_text(prod.datasheet)
+		self.partInfoCategoryLabel2.set_text(prod.category)
+		self.partInfoFamilyLabel2.set_text(prod.family)
+		self.partInfoSeriesLabel2.set_text(prod.series)
+		self.partInfoPackageLabel2.set_text(prod.package)
+
+	def clearPartInfoLabels(self):
+		self.partInfoVendorLabel2.set_text("\t")
+		self.partInfoVendorPNLabel2.set_text("\t")
+		self.partInfoInventoryLabel2.set_text("\t")
+		self.partInfoManufacturerLabel2.set_text("\t")
+		self.partInfoManufacturerPNLabel2.set_text("\t")
+		self.partInfoDescriptionLabel2.set_text("\t")
+		self.partInfoDatasheetLabel2.set_text("\t")
+		self.partInfoCategoryLabel2.set_text("\t")
+		self.partInfoFamilyLabel2.set_text("\t")
+		self.partInfoSeriesLabel2.set_text("\t")
+		self.partInfoPackageLabel2.set_text("\t")
+	
+	def destroyPartPriceLabels(self):
+		for r in self.priceBreakLabels:
+			r.destroy()
+			
+		for r in self.unitPriceLabels:
+			r.destroy()
+			
+		for r in self.extPriceLabels:
+			r.destroy()
+		
+	def setPartPriceLabels(self, prod):
+		n = len(prod.prices)
+		print "n =", n
+		k = sorted(prod.prices.keys())
+		print "prod.prices = \n", prod.prices
+		print "sorted(prod.prices.keys()) = \n", k
+		self.partInfoPricingTable.resize(n+1, 3)
+		self.destroyPartPriceLabels()
+		
+		self.priceBreakLabels.append(gtk.Label("Price Break"))
+		self.unitPriceLabels.append(gtk.Label("Unit Price"))
+		self.extPriceLabels.append(gtk.Label("Extended Price"))
+		
+		self.partInfoPricingTable.attach(self.priceBreakLabels[0],  0, 1, 0, 1)
+		self.partInfoPricingTable.attach(self.unitPriceLabels[0],  1, 2, 0, 1)
+		self.partInfoPricingTable.attach(self.extPriceLabels[0],  2, 3, 0, 1)
+		
+		# self.partInfoPricingTable.attach(self.priceBreakLabels[0],  i, i+1, row+1, row+2)
+		rowNum = 1
+		for i in range(n):
+			#k[i] is a key of prod.prices()
+			self.priceBreakLabels.append(gtk.Label(str(k[i])))
+			self.priceBreakLabels[rowNum].set_alignment(0.5, 0.5)
+			self.unitPriceLabels.append(gtk.Label(str(prod.prices[k[i]])))
+			self.unitPriceLabels[rowNum].set_alignment(1.0, 0.5)
+			self.extPriceLabels.append(gtk.Label(str( k[i] *  prod.prices[k[i]])))
+			self.extPriceLabels[rowNum].set_alignment(1.0, 0.5)
+			
+			self.partInfoPricingTable.attach(self.priceBreakLabels[rowNum],  0, 1, rowNum, rowNum+1)
+			self.partInfoPricingTable.attach(self.unitPriceLabels[rowNum],  1, 2, rowNum, rowNum+1)
+			self.partInfoPricingTable.attach(self.extPriceLabels[rowNum],  2, 3, rowNum, rowNum+1)
+			rowNum += 1
+			
+		self.window.show_all()
 		
 	def __init__(self):
 		# -------- DECLARATIONS --------
@@ -415,16 +464,16 @@ class URBM:
 		
 		self.partInfoPricingTable = gtk.Table(8, 3 , False) # Price breaks
 		self.priceBreakLabels = []
-		for i in range(10):
-			self.priceBreakLabels.append(gtk.Label(None))
+		#for i in range(10):
+		#	self.priceBreakLabels.append(gtk.Label(None))
 		
 		self.unitPriceLabels = []
-		for i in range(10):
-			self.unitPriceLabels.append(gtk.Label(None))
+		#for i in range(10):
+		#	self.unitPriceLabels.append(gtk.Label(None))
 		
 		self.extPriceLabels = []
-		for i in range(10):
-			self.extPriceLabels.append(gtk.Label(None))
+		#for i in range(10):
+		#	self.extPriceLabels.append(gtk.Label(None))
 		
 		self.partInfoButtonBox = gtk.HBox(False, 0)
 
@@ -574,7 +623,6 @@ class URBM:
 		self.partInfoInfoTable.attach(self.partInfoSeriesLabel2, 1, 2, 9, 10)
 		self.partInfoInfoTable.attach(self.partInfoPackageLabel2, 1, 2, 10, 11)
 		
-		self.partInfoRowBox.pack_start(self.partInfoPricingTable)
 		for i in range(len(self.priceBreakLabels)):
 			self.partInfoPricingTable.attach(self.priceBreakLabels[i], 0, 1, i, i+1)
 			self.priceBreakLabels[i].set_alignment(0.5, 0.5)
@@ -587,6 +635,7 @@ class URBM:
 			self.partInfoPricingTable.attach(self.extPriceLabels[i], 2, 3, i, i+1)
 			self.extPriceLabels[i].set_alignment(1.0, 0.5)
 			
+		self.partInfoRowBox.pack_start(self.partInfoPricingTable)
 		self.partInfoRowBox.pack_start(self.partInfoButtonBox)
 		
 		self.dbBox.pack_start(self.dbToolbar)
