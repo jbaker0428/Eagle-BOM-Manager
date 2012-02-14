@@ -50,7 +50,7 @@ class URBM:
 			self.selectedProduct.selectOrScrape()
 			self.setPartInfolabels(self.selectedProduct)
 	
-	def bomSortCallback(self, widget, data=None):
+	def bomGroupCallback(self, widget, data=None):
 		#print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
 		
 		def populateBomRow(self, part, quantity=""):
@@ -338,9 +338,9 @@ class URBM:
 		
 		self.bomRadioBox = gtk.HBox(False, 0)
 		self.bomRadioLabel = gtk.Label("Group by:")
-		self.bomSortName = gtk.RadioButton(None, "Name")
-		self.bomSortValue = gtk.RadioButton(self.bomSortName, "Value")
-		self.bomSortPN = gtk.RadioButton(self.bomSortName, "Part Number")
+		self.bomGroupName = gtk.RadioButton(None, "Name")
+		self.bomGroupValue = gtk.RadioButton(self.bomGroupName, "Value")
+		self.bomGroupPN = gtk.RadioButton(self.bomGroupName, "Part Number")
 		
 		self.selectedProduct = Product(Product.VENDOR_DK, "init", urbmDB)
 		
@@ -428,9 +428,9 @@ class URBM:
 		
 		self.dbScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
 		
-		self.bomSortName.connect("toggled", self.bomSortCallback, "name")
-		self.bomSortValue.connect("toggled", self.bomSortCallback, "value")
-		self.bomSortPN.connect("toggled", self.bomSortCallback, "product")
+		self.bomGroupName.connect("toggled", self.bomGroupCallback, "name")
+		self.bomGroupValue.connect("toggled", self.bomGroupCallback, "value")
+		self.bomGroupPN.connect("toggled", self.bomGroupCallback, "product")
 		
 		self.partInfoVendorLabel1.set_alignment(0.0, 0.5)
 		self.partInfoVendorLabel2.set_alignment(1.0, 0.5)
@@ -499,9 +499,9 @@ class URBM:
 		#self.bomTable.attach(self.bLabel2, 1, 2, 2, 3)
 		
 		self.bomRadioBox.pack_start(self.bomRadioLabel)
-		self.bomRadioBox.pack_start(self.bomSortName)
-		self.bomRadioBox.pack_start(self.bomSortValue)
-		self.bomRadioBox.pack_start(self.bomSortPN)
+		self.bomRadioBox.pack_start(self.bomGroupName)
+		self.bomRadioBox.pack_start(self.bomGroupValue)
+		self.bomRadioBox.pack_start(self.bomGroupPN)
 		
 		# Part info frame elements
 		self.partInfoFrame.add(self.partInfoRowBox)
