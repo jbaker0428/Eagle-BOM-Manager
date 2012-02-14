@@ -17,6 +17,7 @@ class BOM:
 		self.valCounts = {}
 		self.prodCounts = {}
 		self.db = database
+		self.db.createtable(self.name)
 		
 	def delete(self):
 		self.db.droptable(self.name)
@@ -69,8 +70,6 @@ class BOM:
 				cost += priceBreak[1] * projProdCounts[x[0]]
 				
 		return cost
-				
-			
 	
 	def writeToDB(self):
 		print "BOM.writeToDB to table %s" % self.name
@@ -80,13 +79,12 @@ class BOM:
 	def readFromFile(self):
 		print "BOM.readFromFile"
 		newParts = []
-		self.db.insert(1, "touch", self.name) # Touch DB first
 		with open(self.input, 'rb') as f:
 			reader = csv.reader(f, delimiter=',', quotechar = '"', quoting=csv.QUOTE_ALL)
 			for row in reader:
 				print row
 				part = bomPart(row[0], row[1], row[2], row[3], self, row[4])
-				print "Part: %s %s %s %s" % (part.name, part.value, part.device, part.package)
+				#print "Part: %s %s %s %s" % (part.name, part.value, part.device, part.package)
 				# Check if identical part is already in DB with a product
 				# If so, preserve the product entry
 				if(part.isInDB()):
