@@ -1,15 +1,22 @@
+import csv
+import shutil
+import os
+import urlparse
+from urbm_bompart import bomPart
+
 '''For determining the name of a project's bomPart table.'''			
 class BOM:
-	def __init__(self, name, inputFile="bom.csv"):
+	def __init__(self, name, inputFile="bom.csv", database=urbmDB):
 		self.name = name
 		self.input = inputFile
 		self.parts = [] # List of 3-element lists of part name, value, and product.name
 		# This is used for sorting in the BOM table in the GUI
 		self.valCounts = {}
 		self.prodCounts = {}
+		self.db = database
 		
 	def delete(self):
-		urbmDB.droptable(self.name)
+		self.db.droptable(self.name)
 	
 	'''Sort self.parts by value BEFORE calling setValCounts()!'''
 	def setValCounts(self):
@@ -39,22 +46,23 @@ class BOM:
 			
 	def writeToDB(self):
 		print "BOM.writeToDB to table %s" % self.name
-		urbmDB.delete("bomparts", self.name)
-		urbmDB.insert(self.parts, "bomparts", self.name)
+		self.db.delete("bomparts", self.name)
+		self.db.insert(self.parts, "bomparts", self.name)
 		
 	def readFromFile(self):
 		print "BOM.readFromFile"
 		newParts = []
+		self.db.insert(1, "touch", active_bom.name) # Touch DB first
 		with open(self.input, 'rb') as f:
 			reader = csv.reader(f, delimiter=',', quotechar = '"', quoting=csv.QUOTE_ALL)
 			for row in reader:
 				print row
-				part = bomPart(row[0], row[1], row[2], row[3], row[4])
+				part = bomPart(row[0], row[1], row[2], row[3], row[4], self)
 				print "Part: %s %s %s %s" % (part.name, part.value, part.device, part.package)
 				# Check if identical part is already in DB with a product
 				# If so, preserve the product entry
 				if(part.isInDB(self.name)):
-					oldPart = urbmDB.select(part.name, self.name)
+					oldPart = self.db.select(part.name, self.name)
 					if(part.value == oldPart.value and part.device == oldPart.device \
 					and part.package == oldPart.package):
 						part.product = oldPart.product

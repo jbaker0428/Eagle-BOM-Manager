@@ -1,14 +1,11 @@
-import urllib2
 import csv
-from BeautifulSoup import BeautifulSoup
-import shutil
-import os
-import urlparse
 import pygtk
 pygtk.require('2.0')
 import gtk
 import y_serial_v060 as y_serial
 from operator import itemgetter
+import shutil
+import os
 import types
 from urbm_product import Product
 from urbm_bompart import bomPart
@@ -20,7 +17,7 @@ urbmDB.createtable('products')
 def getProductDBSize():
 	dict = urbmDB.selectdic("?", 'products')
 
-active_bom = BOM("test1", os.path.join(os.getcwd(), "test.csv"))
+active_bom = BOM("test1", os.path.join(os.getcwd(), "test.csv"), urbmDB)
 
 '''GUI class'''
 class URBM:
@@ -33,7 +30,6 @@ class URBM:
 
 	# -------- CALLBACK METHODS --------
 	def readInputCallback(self, widget, data=None):
-		urbmDB.insert(1, "touch", active_bom.name) # Touch DB first
 		active_bom.readFromFile()
 		#Read back last entry
 		urbmDB.view(1, active_bom.name)

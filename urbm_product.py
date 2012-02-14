@@ -1,3 +1,11 @@
+import y_serial_v060 as y_serial
+import urllib2
+import csv
+from BeautifulSoup import BeautifulSoup
+import shutil
+import os
+import urlparse
+
 def getFileName(url,openUrl):
 	if 'Content-Disposition' in openUrl.info():
 		# If the response has Content-Disposition, try to get filename from it
@@ -15,7 +23,7 @@ class Product:
 	VENDOR_ME = "Mouser"
 	VENDOR_SFE = "SparkFun"
 	#vendors = enum('DK', 'ME', 'SFE')
-	def __init__(self, vendor, vendor_pn):
+	def __init__(self, vendor, vendor_pn, database=urbmDB):
 		self.vendor = vendor
 		self.vendor_pn = vendor_pn
 		self.manufacturer = ""
@@ -28,6 +36,7 @@ class Product:
 		self.family = ""
 		self.series = ""
 		self.package = ""
+		self.db = database
 	
 	'''def __init__(self, vendor, vendor_pn, databaseFile):
 		with open(databaseFile, 'wb') as f:
@@ -148,20 +157,20 @@ class Product:
 			print 'Error: %s has invalid vendor: %s' % (self.pn, self.vendor)
 
 	def isInDB(self):
-		if(len(urbmDB.selectdic(self.vendor_pn, "products")) != 0):
+		if(len(self.db.selectdic(self.vendor_pn, "products")) != 0):
 			return True
 		else:
 			return False
 	
 	def writeToDB(self):
-		urbmDB.delete(self.vendor_pn, 'products')
-		urbmDB.insert(self, self.vendor_pn + " #" + self.vendor + " #" + \
+		self.db.delete(self.vendor_pn, 'products')
+		self.db.insert(self, self.vendor_pn + " #" + self.vendor + " #" + \
 		self.mfg_pn, 'products')
 		
 	''' Sets the product fields, pulling from the local DB if possible.'''	
 	def selectOrScrape(self):
 		if(self.isInDB()):
-			temp = urbmDB.select(self.vendor_pn, 'products')
+			temp = self.db.select(self.vendor_pn, 'products')
 			self.vendor = temp.vendor
 			self.vendor_pn = temp.vendor_pn
 			self.manufacturer = temp.manufacturer
