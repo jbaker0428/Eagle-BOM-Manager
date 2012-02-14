@@ -45,7 +45,6 @@ class BOM:
 	def readFromFile(self):
 		print "BOM.readFromFile"
 		newParts = []
-		urbmDB.insert(1, "touch", self.name) # Touch DB first
 		with open(self.input, 'rb') as f:
 			reader = csv.reader(f, delimiter=',', quotechar = '"', quoting=csv.QUOTE_ALL)
 			for row in reader:

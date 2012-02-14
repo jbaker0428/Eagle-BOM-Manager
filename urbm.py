@@ -33,6 +33,7 @@ class URBM:
 
 	# -------- CALLBACK METHODS --------
 	def readInputCallback(self, widget, data=None):
+		urbmDB.insert(1, "touch", active_bom.name) # Touch DB first
 		active_bom.readFromFile()
 		#Read back last entry
 		urbmDB.view(1, active_bom.name)
