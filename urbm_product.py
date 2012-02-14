@@ -1,3 +1,15 @@
+def getFileName(url,openUrl):
+	if 'Content-Disposition' in openUrl.info():
+		# If the response has Content-Disposition, try to get filename from it
+		cd = dict(map(
+			lambda x: x.strip().split('=') if '=' in x else (x.strip(),''),
+			openUrl.info().split(';')))
+		if 'filename' in cd:
+			filename = cd['filename'].strip("\"'")
+			if filename: return filename
+	# if no filename was found above, parse it out of the final URL.
+	return os.path.basename(urlparse.urlsplit(openUrl.url)[2])
+
 class Product:
 	VENDOR_DK = "Digi-Key"
 	VENDOR_ME = "Mouser"
