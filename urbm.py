@@ -51,6 +51,7 @@ class URBM:
 			self.drawBomByPN()
 		self.window.show_all()
 	
+	'''Callback method triggered when a BOM line item is selected.'''
 	def bomRadioCallback(self, widget, data=None):
 		# Set class fields for currently selected item
 		self.curBomRow = int(data) 	# Convert str to int
@@ -70,6 +71,8 @@ class URBM:
 			self.destroyPartPriceLabels()
 			self.clearPartInfoLabels()
 	
+	'''Callback method activated by the BOM grouping radio buttons.
+	Redraws the BOM table with the approporiate goruping for the selected radio.'''
 	def bomGroupCallback(self, widget, data=None):
 		#print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
 		
@@ -86,6 +89,8 @@ class URBM:
 					
 			self.window.show_all()
 	
+	'''Callback method for the "Set Product" button in the BOM tab.
+	Opens a dialog window with fields to select a vendor and enter a vendor PN.'''
 	def bomSetProductCallback(self, widget, data=None):
 		# Open a text input prompt window
 		setProductDialog = gtk.Dialog("Set part number", self.window, 
@@ -180,7 +185,8 @@ class URBM:
 			labelRow[i].set_label(stringTuple[i])
 		labelRow[6].set_label(quantity)
 		return labelRow
-		
+	
+	'''Create Label instances for a given number of BOM rows.'''	
 	def createBomLabels(self, numRows, labelTexts=None):
 		rows = []
 		if labelTexts is None:
@@ -202,6 +208,7 @@ class URBM:
 			for y in x:
 				y.destroy()
 	
+	'''Create RadioButton instances for a given number of BOM rows.'''
 	def createBomRadios(self, numRows):
 		radios = []
 		for x in range(numRows):
@@ -236,6 +243,7 @@ class URBM:
 			self.bomTable.attach(label,  i, i+1, row+1, row+2)
 			i += 1
 	
+	'''Draw the BOM table, grouping components by name.'''
 	def drawBomByName(self):
 		active_bom.sortByName()
 		old = len(self.bomContentLabels)
@@ -255,6 +263,7 @@ class URBM:
 			self.attachBomRow(rowNum)
 			rowNum += 1
 	
+	'''Draw the BOM table, grouping components by value.'''
 	def drawBomByValue(self):
 		active_bom.sortByVal()
 		active_bom.setValCounts()
@@ -286,6 +295,7 @@ class URBM:
 			self.attachBomRow(rowNum)
 			rowNum += 1
 	
+	'''Draw the BOM table, grouping components by vendor part number.'''
 	def drawBomByPN(self):
 		active_bom.sortByProd()
 		active_bom.setProdCounts()
@@ -320,7 +330,9 @@ class URBM:
 			self.bomContentLabels[rowNum][0].set_label(groupName)
 			self.attachBomRow(rowNum)
 			rowNum += 1
-			
+	
+	'''Set the Part Information pane fields based on the fields of a given 
+	product object.'''		
 	def setPartInfoLabels(self, prod):
 		self.partInfoVendorLabel2.set_text(prod.vendor)
 		self.partInfoVendorPNLabel2.set_text(prod.vendor_pn)
@@ -334,6 +346,8 @@ class URBM:
 		self.partInfoSeriesLabel2.set_text(prod.series)
 		self.partInfoPackageLabel2.set_text(prod.package)
 
+	'''Clears the Part Information pane fields, setting the text of each Label
+	object to a tab character.'''
 	def clearPartInfoLabels(self):
 		self.partInfoVendorLabel2.set_text("\t")
 		self.partInfoVendorPNLabel2.set_text("\t")
@@ -509,9 +523,12 @@ class URBM:
 		self.bomReadInputButton.connect("clicked", self.readInputCallback, "read")
 		self.bomReadDBButton.connect("clicked", self.readDBCallback, "read")
 		self.bomSetProductButton.connect("clicked", self.bomSetProductCallback, "setPN")
+		
 		self.bomScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
 		
 		self.dbScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
+		
+		# TODO: Fiddle with bomTable sizing to make it force the window larger to fit
 		
 		self.bomGroupName.connect("toggled", self.bomGroupCallback, "name")
 		self.bomGroupValue.connect("toggled", self.bomGroupCallback, "value")
