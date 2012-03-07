@@ -139,11 +139,6 @@ class URBM:
 		editPartVendorCombo.append_text(Product.VENDOR_SFE)
 		
 		# Return values
-		self.nameEntryText = ""
-		self.valueEntryText = ""
-		self.deviceEntryText = ""
-		self.packageEntryText = ""
-		self.descriptionEntryText = ""
 		self.productEntryText = ""
 		
 		# HBoxes
@@ -229,7 +224,7 @@ class URBM:
 		print "selectedBomPart's product field: %s" % self.selectedBomPart.product
 		
 		# Make sure the user selected a vendor
-		# If not, default to Digikey
+		# If not, default to Digikey for now
 		# TODO: If a product was previously set, default to the current vendor
 		# TODO: Can this be a "required field" that will prevent the OK button 
 		# from working (greyed out) if a part number is also entered?
