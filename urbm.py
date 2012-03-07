@@ -89,68 +89,173 @@ class URBM:
 					
 			self.window.show_all()
 	
-	'''Callback method for the "Set Product" button in the BOM tab.
-	Opens a dialog window with fields to select a vendor and enter a vendor PN.'''
-	def bomSetProductCallback(self, widget, data=None):
+	# PLAN: Revise this callback/window to be "Edit Part", including setting the Product
+	# To set:
+	#part.name
+	# Caveat: If grouping by value or PN, what to do? Grey out the name field?
+	# It should write the rest to ALL of the parts in the row
+	#part.value
+	#part.device
+	#part.package
+	#part.description
+	#part.product   (already done)
+	
+	# Each of these need:
+	# gtk.Label for the field
+	# gtk.Entry for the actual text entry
+	# gtk.HBox for the above
+	# Default text of the gtk.Entry should be the current part field value 
+	
+	'''Callback method for the "Edit Part" button in the BOM tab.
+	Opens a dialog window with form fields for each BOM Part object field.'''
+	def bomEditPartCallback(self, widget, data=None):
 		# Open a text input prompt window
-		setProductDialog = gtk.Dialog("Set part number", self.window, 
+		editPartDialog = gtk.Dialog("Edit part", self.window, 
 						gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
 						(gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT, 
 						gtk.STOCK_OK, gtk.RESPONSE_ACCEPT))
-		self.setProductEntry = gtk.Entry()
+		
+		# -------- DECLARATIONS --------
+		# Field labels
+		editPartNameLabel = gtk.Label("Name: ")
+		editPartValueLabel = gtk.Label("Value: ")
+		editPartDeviceLabel = gtk.Label("Device: ")
+		editPartPackageLabel = gtk.Label("Package: ")
+		editPartDescriptionLabel = gtk.Label("Description: ")
+		editPartVendorLabel = gtk.Label("Vendor: ")
+		editPartVendorPNLabel = gtk.Label("Vendor Part Number: ")
+		
+		# Field entry elements
+		self.editPartNameEntry = gtk.Entry()
+		self.editPartValueEntry = gtk.Entry()
+		self.editPartDeviceEntry = gtk.Entry()
+		self.editPartPackageEntry = gtk.Entry()
+		self.editPartDescriptionEntry = gtk.Entry()
+		self.editPartProductEntry = gtk.Entry()
+		
+		editPartVendorCombo = gtk.combo_box_new_text()
+		editPartVendorCombo.append_text(Product.VENDOR_DK)
+		editPartVendorCombo.append_text(Product.VENDOR_ME)
+		editPartVendorCombo.append_text(Product.VENDOR_SFE)
+		
+		# Return values
+		self.nameEntryText = ""
+		self.valueEntryText = ""
+		self.deviceEntryText = ""
+		self.packageEntryText = ""
+		self.descriptionEntryText = ""
 		self.productEntryText = ""
 		
-		setProductDialogHBox1 = gtk.HBox()
-		setProductDialogHBox2 = gtk.HBox()
-		setProductVendorLabel = gtk.Label("Vendor: ")
-		setProductVendorPNLabel = gtk.Label("Vendor Part Number: ")
-		setProductVendorCombo = gtk.combo_box_new_text()
+		# HBoxes
+		editPartDialogNameHBox = gtk.HBox()
+		editPartDialogValueHBox = gtk.HBox()
+		editPartDialogDeviceHBox = gtk.HBox()
+		editPartDialogPackageHBox = gtk.HBox()
+		editPartDialogDescriptionHBox = gtk.HBox()
+		editPartDialogVendorHBox = gtk.HBox()
+		editPartDialogVendorPNHBox = gtk.HBox()
 		
-		setProductVendorCombo.append_text(Product.VENDOR_DK)
-		setProductVendorCombo.append_text(Product.VENDOR_ME)
-		setProductVendorCombo.append_text(Product.VENDOR_SFE)
-		setProductVendorLabel.set_alignment(0.5, 0.5)
-		setProductVendorPNLabel.set_alignment(0.4, 0.5)
+		# -------- CONFIGURATION --------
+		# Label alignment
+		editPartNameLabel.set_alignment(0.0, 0.5)
+		editPartValueLabel.set_alignment(0.0, 0.5)
+		editPartDeviceLabel.set_alignment(0.0, 0.5)
+		editPartPackageLabel.set_alignment(0.0, 0.5)
+		editPartDescriptionLabel.set_alignment(0.0, 0.5)
+		editPartVendorLabel.set_alignment(0.0, 0.5)
+		editPartVendorPNLabel.set_alignment(0.0, 0.5)
 		
-		self.setProductEntry.show()
-		setProductVendorCombo.show() 
-		setProductDialogHBox1.pack_start(setProductVendorLabel, True, True, 0)
-		setProductDialogHBox1.pack_start(setProductVendorCombo, True, True, 0)
-		setProductDialogHBox2.pack_start(setProductVendorPNLabel, True, True, 0)
-		setProductDialogHBox2.pack_start(self.setProductEntry, gtk.RESPONSE_ACCEPT)
-		setProductDialog.vbox.pack_start(setProductDialogHBox1, True, True, 0)
-		setProductDialog.vbox.pack_start(setProductDialogHBox2, True, True, 0)
-		setProductDialogHBox1.show()
-		setProductDialogHBox2.show()
-		setProductVendorLabel.show()
-		setProductVendorPNLabel.show()
-		setProductDialog.run()
-		setProductDialog.hide()
+		# Set default text of entry fields to current part values
+		self.editPartNameEntry.set_text(self.selectedBomPart.name)
+		self.editPartValueEntry.set_text(self.selectedBomPart.value)
+		self.editPartDeviceEntry.set_text(self.selectedBomPart.device)
+		self.editPartPackageEntry.set_text(self.selectedBomPart.package)
+		self.editPartDescriptionEntry.set_text(self.selectedBomPart.description)
+		self.editPartProductEntry.set_text(self.selectedBomPart.product)
+		
+		# Pack labels/entry fields into HBoxes
+		editPartDialogNameHBox.pack_start(editPartNameLabel, False, True, 0)
+		editPartDialogNameHBox.pack_end(self.editPartNameEntry, False, True, 0)
+		
+		editPartDialogValueHBox.pack_start(editPartValueLabel, False, True, 0)
+		editPartDialogValueHBox.pack_end(self.editPartValueEntry, False, True, 0)
+		
+		editPartDialogDeviceHBox.pack_start(editPartDeviceLabel, False, True, 0)
+		editPartDialogDeviceHBox.pack_end(self.editPartDeviceEntry, False, True, 0)
+		
+		editPartDialogPackageHBox.pack_start(editPartPackageLabel, False, True, 0)
+		editPartDialogPackageHBox.pack_end(self.editPartPackageEntry, False, True, 0)
+		
+		editPartDialogDescriptionHBox.pack_start(editPartDescriptionLabel, False, True, 0)
+		editPartDialogDescriptionHBox.pack_end(self.editPartDescriptionEntry, False, True, 0)
+		
+		editPartDialogVendorHBox.pack_start(editPartVendorLabel, True, True, 0)
+		editPartDialogVendorHBox.pack_end(editPartVendorCombo, True, True, 0)
+		
+		editPartDialogVendorPNHBox.pack_start(editPartVendorPNLabel, True, True, 0)
+		editPartDialogVendorPNHBox.pack_end(self.editPartProductEntry, gtk.RESPONSE_ACCEPT)
+		
+		# Pack HBoxes into vbox
+		editPartDialog.vbox.set_spacing(1)
+		editPartDialog.vbox.pack_start(editPartDialogNameHBox, True, True, 0)
+		editPartDialog.vbox.pack_start(editPartDialogValueHBox, True, True, 0)
+		editPartDialog.vbox.pack_start(editPartDialogDeviceHBox, True, True, 0)
+		editPartDialog.vbox.pack_start(editPartDialogPackageHBox, True, True, 0)
+		editPartDialog.vbox.pack_start(editPartDialogDescriptionHBox, True, True, 0)
+		editPartDialog.vbox.pack_start(editPartDialogVendorHBox, True, True, 0)
+		editPartDialog.vbox.pack_start(editPartDialogVendorPNHBox, True, True, 0)
+		
+		# Show everything
+		editPartDialog.vbox.show_all()
+		editPartDialog.run()
+		editPartDialog.hide()
 		
 		# If the product text entry field is left blank, set the product to "none"
-		if type(self.setProductEntry.get_text()) is types.NoneType or len(self.setProductEntry.get_text()) == 0:
+		if type(self.editPartProductEntry.get_text()) is types.NoneType or len(self.editPartProductEntry.get_text()) == 0:
 			self.productEntryText = "none"
 		else:
-			self.productEntryText = self.setProductEntry.get_text()
+			self.productEntryText = self.editPartProductEntry.get_text()
 		
 		# Set selectedBomPart
-		print "Setting selectedBomPart.product to: %s" % self.productEntryText
+		# TODO: If grouping by value or PN, what to do? Grey out the name field?
+		# It should write the rest to ALL of the parts in the row
+		self.selectedBomPart.name = self.editPartNameEntry.get_text()
+		self.selectedBomPart.value = self.editPartValueEntry.get_text()
+		self.selectedBomPart.device = self.editPartDeviceEntry.get_text()
+		self.selectedBomPart.package = self.editPartPackageEntry.get_text()
+		self.selectedBomPart.description = self.editPartDescriptionEntry.get_text()
+		print "Setting selectedBomPart.product to: %s" % self.editPartProductEntry.get_text()
 		self.selectedBomPart.product = self.productEntryText
 		print "selectedBomPart's product field: %s" % self.selectedBomPart.product
+		
+		# Make sure the user selected a vendor
+		# If not, default to Digikey
+		# TODO: If a product was previously set, default to the current vendor
+		# TODO: Can this be a "required field" that will prevent the OK button 
+		# from working (greyed out) if a part number is also entered?
+		if type(editPartVendorCombo.get_active_text()) is types.NoneType:
+			print "NoneType caught"
+			self.selectedProduct.vendor = Product.VENDOR_DK
+		else:	
+			self.selectedProduct.vendor = editPartVendorCombo.get_active_text()
+		
 		self.selectedBomPart.writeToDB()
 		active_bom.updateParts(self.selectedBomPart)
 		
+		self.bomContentLabels[self.curBomRow][0].set_label(self.editPartNameEntry.get_text())
+		self.bomContentLabels[self.curBomRow][0].show()
+		self.bomContentLabels[self.curBomRow][1].set_label(self.editPartValueEntry.get_text())
+		self.bomContentLabels[self.curBomRow][1].show()
+		self.bomContentLabels[self.curBomRow][2].set_label(self.editPartDeviceEntry.get_text())
+		self.bomContentLabels[self.curBomRow][2].show()
+		self.bomContentLabels[self.curBomRow][3].set_label(self.editPartPackageEntry.get_text())
+		self.bomContentLabels[self.curBomRow][3].show()
+		self.bomContentLabels[self.curBomRow][4].set_label(self.editPartDescriptionEntry.get_text())
+		self.bomContentLabels[self.curBomRow][4].show()
 		self.bomContentLabels[self.curBomRow][5].set_label(self.productEntryText)
 		self.bomContentLabels[self.curBomRow][5].show()
 		print "Part Number label text: %s" % self.bomContentLabels[self.curBomRow][5].get_text()
 		
-		# Make sure the user selected a vendor
-		# If not, default to Digikey
-		if type(setProductVendorCombo.get_active_text()) is types.NoneType:
-			print "NoneType caught"
-			self.selectedProduct.vendor = Product.VENDOR_DK
-		else:	
-			self.selectedProduct.vendor = setProductVendorCombo.get_active_text()
 		self.selectedProduct.vendor_pn = self.productEntryText
 		self.selectedProduct.selectOrScrape()
 		if self.selectedProduct.vendor_pn == "none":
@@ -418,7 +523,7 @@ class URBM:
 		self.bomToolbar = gtk.Toolbar()
 		self.bomReadInputButton = gtk.ToolButton(None, "Read CSV")
 		self.bomReadDBButton = gtk.ToolButton(None, "Read DB")
-		self.bomSetProductButton = gtk.ToolButton(None, "Set Product")
+		self.bomEditPartButton = gtk.ToolButton(None, "Edit Part")
 		self.bomHPane = gtk.HPaned()	
 		self.bomVPane = gtk.VPaned()	# Goes in right side of bomHPane
 		
@@ -522,7 +627,7 @@ class URBM:
 		
 		self.bomReadInputButton.connect("clicked", self.readInputCallback, "read")
 		self.bomReadDBButton.connect("clicked", self.readDBCallback, "read")
-		self.bomSetProductButton.connect("clicked", self.bomSetProductCallback, "setPN")
+		self.bomEditPartButton.connect("clicked", self.bomEditPartCallback, "setPN")
 		
 		self.bomScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
 		
@@ -565,7 +670,7 @@ class URBM:
 		self.bomTabBox.pack_start(self.bomToolbar)
 		self.bomToolbar.insert(self.bomReadInputButton, 0)
 		self.bomToolbar.insert(self.bomReadDBButton, 1)
-		self.bomToolbar.insert(self.bomSetProductButton, 2)
+		self.bomToolbar.insert(self.bomEditPartButton, 2)
 		
 		# TODO : Add toolbar elements
 		
