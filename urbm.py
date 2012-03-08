@@ -264,12 +264,14 @@ class URBM:
 	'''Callback for the "Read DB" button on the product DB tab.'''
 	def dbReadDBCallback(self, widget, data=None):
 		print "Read DB callback"
-		prodsDict = urbmDB.selectdic(product.PROD_SEL_ALL, "products")
+		#prodsDict = urbmDB.selectdic(Product.PROD_SEL_ALL, "products")
+		prodsDict = urbmDB.selectdic("*", "products")
 		self.dbDraw(prodsDict)
 		self.window.show_all()
 	
 	'''Callback method triggered when a product DB item is selected.'''
 	def dbRadioCallback(self, widget, data=None):
+		print "dbRadioCallback"
 		# Set class fields for currently selected item
 		self.dbSelectedRow = int(data) 	# Convert str to int
 		# Grab the vendor part number for the selected item from the label text
@@ -563,7 +565,7 @@ class URBM:
 	def dbAttachRadios(self):
 		r = 0
 		for radio in self.dbRadios:
-			self.dbTable.attach(radio,  0, 7, r+1, r+2)
+			self.dbTable.attach(radio,  0, 11, r+1, r+2)
 			r += 1
 	
 	def dbDestroyRadios(self):
@@ -574,7 +576,7 @@ class URBM:
 	def dbPopulateRow(self, product, row):
 		self.dbContentLabels[row][0].set_label("\t" + product.vendor)
 		self.dbContentLabels[row][1].set_label(product.vendor_pn)
-		self.dbContentLabels[row][2].set_label(product.inventory)
+		self.dbContentLabels[row][2].set_label(str(product.inventory))
 		self.dbContentLabels[row][3].set_label(product.manufacturer)
 		self.dbContentLabels[row][4].set_label(product.mfg_pn)
 		self.dbContentLabels[row][5].set_label(product.description)
@@ -589,8 +591,9 @@ class URBM:
 		for label in self.dbContentLabels[row]:
 			self.dbTable.attach(label,  i, i+1, row+1, row+2)
 			i += 1
+	
 	''' @param d Dictionary containing the contents of the "products" table.'''
-	def dbDraw(d):
+	def dbDraw(self, d):
 		nr = len(d)	# numRows
 		old = len(self.dbContentLabels)
 		self.dbDestroyLabels()
@@ -601,13 +604,16 @@ class URBM:
 		self.dbTable.resize(nr+1, 12)
 		self.dbContentLabels = self.dbCreateLabels(nr)
 		self.dbRadios = self.dbCreateRadios(nr)
+		self.dbAttachRadios()
 		
 		rowNum = 0
 		for p in d.values():
-			# p is a Product object from the DB
-			self.dbPopulateRow(temp, rowNum)
+			# p[2] is a Product object from the DB
+			self.dbPopulateRow(p[2], rowNum)
 			self.dbAttachRow(rowNum)
 			rowNum += 1
+			
+		self.window.show_all()
 		
 	def __init__(self):
 		# -------- DECLARATIONS --------
@@ -698,6 +704,7 @@ class URBM:
 		
 		self.dbBox = gtk.VBox(False, 0) # Second tab in notebook
 		self.dbToolbar = gtk.Toolbar()
+		self.dbReadDBButton = gtk.ToolButton(None, "Read DB")
 		self.dbFrame = gtk.Frame("Product database") 
 		self.dbScrollWin = gtk.ScrolledWindow()
 		self.dbTable = gtk.Table(50, 6, False)
@@ -733,8 +740,6 @@ class URBM:
 		
 		self.bomScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
 		
-		self.dbScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
-		
 		# TODO: Fiddle with bomTable sizing to make it force the window larger to fit
 		
 		self.bomGroupName.connect("toggled", self.bomGroupCallback, "name")
@@ -763,6 +768,9 @@ class URBM:
 		self.partInfoSeriesLabel2.set_alignment(0.0, 0.5)
 		self.partInfoPackageLabel1.set_alignment(0.0, 0.5)
 		self.partInfoPackageLabel2.set_alignment(0.0, 0.5)
+		
+		self.dbScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
+		self.dbReadDBButton.connect("clicked", self.dbReadDBCallback, "read")
 		
 		# -------- PACKING AND ADDING --------
 		self.mainBox.pack_start(self.menuBar)
@@ -843,6 +851,7 @@ class URBM:
 		self.partInfoRowBox.pack_start(self.partInfoButtonBox)
 		
 		self.dbBox.pack_start(self.dbToolbar)
+		self.dbToolbar.insert(self.dbReadDBButton, 0)
 		self.dbBox.pack_start(self.dbFrame)
 		self.dbFrame.add(self.dbScrollWin)
 		self.dbScrollWin.add_with_viewport(self.dbTable)
