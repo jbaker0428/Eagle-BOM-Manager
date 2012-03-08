@@ -46,7 +46,7 @@ class BOM:
 		self.prodCounts.clear()
 		print "BOM.parts: ", self.parts
 		for x in self.parts:
-			print "x in BOM.parts: ", x
+			#print "x in BOM.parts: ", x
 			if x[2] in self.prodCounts.keys():
 				self.prodCounts[x[2]] += 1
 			else:
@@ -93,6 +93,8 @@ class BOM:
 		newParts = []
 		self.parts = self.db.select("bomlist", self.name)
 		print "BOM.parts from DB: ", self.parts
+		# Delete any erroneously saved "init" entry
+		self.db.delete("init", self.name)
 		partsDic = self.db.selectdic("#prt", self.name)
 		print "partsDic: \n", partsDic
 		return partsDic
