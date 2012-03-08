@@ -40,6 +40,7 @@ class URBM:
 			self.drawBomByPN()
 		self.window.show_all()
 	
+	'''Callback for the "Read DB" button on the BOM tab.'''
 	def bomReadDBCallback(self, widget, data=None):
 		print "Read DB callback"
 		active_bom.readFromDB()
@@ -259,6 +260,13 @@ class URBM:
 		else:
 			self.setPartInfoLabels(self.bomSelectedProduct)
 			self.setPartPriceLabels(self.bomSelectedProduct)
+	
+	'''Callback for the "Read DB" button on the product DB tab.'''
+	def dbReadDBCallback(self, widget, data=None):
+		print "Read DB callback"
+		prodsDict = urbmDB.selectdic(product.PROD_SEL_ALL, "products")
+		self.dbDraw(prodsDict)
+		self.window.show_all()
 	
 	'''Callback method triggered when a product DB item is selected.'''
 	def dbRadioCallback(self, widget, data=None):
@@ -581,7 +589,26 @@ class URBM:
 		for label in self.dbContentLabels[row]:
 			self.dbTable.attach(label,  i, i+1, row+1, row+2)
 			i += 1
-			
+	''' @param d Dictionary containing the contents of the "products" table.'''
+	def dbDraw(d):
+		nr = len(d)	# numRows
+		old = len(self.dbContentLabels)
+		self.dbDestroyLabels()
+		self.dbDestroyRadios()
+		del self.dbContentLabels[0:old]
+		del self.dbRadios[0:old]
+		
+		self.dbTable.resize(nr+1, 12)
+		self.dbContentLabels = self.dbCreateLabels(nr)
+		self.dbRadios = self.dbCreateRadios(nr)
+		
+		rowNum = 0
+		for p in d.values():
+			# p is a Product object from the DB
+			self.dbPopulateRow(temp, rowNum)
+			self.dbAttachRow(rowNum)
+			rowNum += 1
+		
 	def __init__(self):
 		# -------- DECLARATIONS --------
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
