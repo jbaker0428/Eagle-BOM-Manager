@@ -519,6 +519,61 @@ class URBM:
 		self.dbTable.attach(self.dbSeriesLabel, 9, 10, 0, 1)
 		self.dbTable.attach(self.dbPackageLabel, 10, 11, 0, 1)
 	
+	'''Create Label instances for a given number of Product DB rows.'''	
+	def dbCreateLabels(self, numRows):
+		rows = []
+		for x in range(numRows):
+			row = []
+			for i in range(11):
+				row.append(gtk.Label(None))
+			rows.append(row)
+		
+		return rows
+	
+	'''Destroy current self.dbContentLabels Label instances.''' 
+	def dbDestroyLabels(self):
+		for x in self.dbContentLabels:
+			for y in x:
+				y.destroy()
+				
+	'''Create RadioButton instances for a given number of Product DB rows.'''
+	def dbCreateRadios(self, numRows):
+		radios = []
+		for x in range(numRows):
+			radios.append(gtk.RadioButton(self.dbRadioGroup))
+			radios[x].connect("toggled", self.dbRadioCallback, str(x))
+		return radios
+	
+	def dbAttachRadios(self):
+		r = 0
+		for radio in self.dbRadios:
+			self.dbTable.attach(radio,  0, 7, r+1, r+2)
+			r += 1
+	
+	def dbDestroyRadios(self):
+		for r in self.dbRadios:
+			r.destroy()
+	
+	''' @param row considers index 0 to be the first row of content after headers'''
+	def dbPopulateRow(self, product, row):
+		self.dbContentLabels[row][0].set_label(product.vendor)
+		self.dbContentLabels[row][1].set_label(product.vendor_pn)
+		self.dbContentLabels[row][2].set_label(product.inventory)
+		self.dbContentLabels[row][3].set_label(product.manufacturer)
+		self.dbContentLabels[row][4].set_label(product.mfg_pn)
+		self.dbContentLabels[row][5].set_label(product.description)
+		self.dbContentLabels[row][6].set_label(product.datasheet)
+		self.dbContentLabels[row][7].set_label(product.category)
+		self.dbContentLabels[row][8].set_label(product.family)
+		self.dbContentLabels[row][9].set_label(product.series)
+		self.dbContentLabels[row][10].set_label(product.package)
+		
+	def dbAttachRow(self, row):
+		i = 0
+		for label in self.dbContentLabels[row]:
+			self.dbTable.attach(label,  i, i+1, row+1, row+2)
+			i += 1
+			
 	def __init__(self):
 		# -------- DECLARATIONS --------
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
@@ -622,6 +677,9 @@ class URBM:
 		self.dbFamilyLabel = gtk.Label("Family")
 		self.dbSeriesLabel = gtk.Label("Series")
 		self.dbPackageLabel = gtk.Label("Package/case")
+		self.dbContentLabels = []
+		self.dbRadioGroup = gtk.RadioButton(None)
+		self.dbRadios = self.dbCreateRadios(0)
 		
 		# -------- CONFIGURATION --------
 		self.window.set_title("Unified Robotics BOM Manager") 
