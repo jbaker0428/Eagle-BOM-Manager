@@ -26,6 +26,9 @@ class Product:
 	VENDOR_ME = "Mouser"
 	VENDOR_NEW = "Newark"
 	VENDOR_SFE = "SparkFun"
+	
+	# String for selecting parts from all vendors from product table
+	PROD_SEL_ALL = "#", VENDOR_DK, ",#", VENDOR_FAR, ",#", VENDOR_FUE, ",#", VENDOR_JAM, ",#", VENDOR_ME, ",#", VENDOR_NEW, ",#", VENDOR_SFE
 	def __init__(self, vendor, vendor_pn, database):
 		self.vendor = vendor
 		self.vendor_pn = vendor_pn
