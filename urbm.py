@@ -62,11 +62,11 @@ class URBM:
 		if selectedPN != "none": # Look up part in DB
 			# Set class field for currently selected product
 			print "Querying with selectedPN: %s" % selectedPN
-			self.selectedProduct.vendor_pn = selectedPN
+			self.bomSelectedProduct.vendor_pn = selectedPN
 			
-			self.selectedProduct.selectOrScrape()
-			self.setPartInfoLabels(self.selectedProduct)
-			self.setPartPriceLabels(self.selectedProduct)
+			self.bomSelectedProduct.selectOrScrape()
+			self.setPartInfoLabels(self.bomSelectedProduct)
+			self.setPartPriceLabels(self.bomSelectedProduct)
 		else:
 			self.destroyPartPriceLabels()
 			self.clearPartInfoLabels()
@@ -230,9 +230,9 @@ class URBM:
 		# from working (greyed out) if a part number is also entered?
 		if type(editPartVendorCombo.get_active_text()) is types.NoneType:
 			print "NoneType caught"
-			self.selectedProduct.vendor = Product.VENDOR_DK
+			self.bomSelectedProduct.vendor = Product.VENDOR_DK
 		else:	
-			self.selectedProduct.vendor = editPartVendorCombo.get_active_text()
+			self.bomSelectedProduct.vendor = editPartVendorCombo.get_active_text()
 		
 		self.selectedBomPart.writeToDB()
 		active_bom.updateParts(self.selectedBomPart)
@@ -251,15 +251,23 @@ class URBM:
 		self.bomContentLabels[self.curBomRow][5].show()
 		print "Part Number label text: %s" % self.bomContentLabels[self.curBomRow][5].get_text()
 		
-		self.selectedProduct.vendor_pn = self.productEntryText
-		self.selectedProduct.selectOrScrape()
-		if self.selectedProduct.vendor_pn == "none":
+		self.bomSelectedProduct.vendor_pn = self.productEntryText
+		self.bomSelectedProduct.selectOrScrape()
+		if self.bomSelectedProduct.vendor_pn == "none":
 			self.clearPartInfoLabels()
 			self.destroyPartPriceLabels()
 		else:
-			self.setPartInfoLabels(self.selectedProduct)
-			self.setPartPriceLabels(self.selectedProduct)
-		 
+			self.setPartInfoLabels(self.bomSelectedProduct)
+			self.setPartPriceLabels(self.bomSelectedProduct)
+	
+	'''Callback method triggered when a product DB item is selected.'''
+	def dbRadioCallback(self, widget, data=None):
+		# Set class fields for currently selected item
+		self.dbSelectedRow = int(data) 	# Convert str to int
+		# Grab the vendor part number for the selected item from the label text
+		selectedPN = self.dbContentLabels[self.dbSelectedRow][1].get_text()
+		self.dbSelectedProduct = urbmDB.select(selectedPN, "products")
+	 
 	# -------- HELPER METHODS --------
 	def bomTableHeaders(self):
 		self.bomTable.attach(self.bomColLabel1, 0, 1, 0, 1)
@@ -556,7 +564,7 @@ class URBM:
 	
 	''' @param row considers index 0 to be the first row of content after headers'''
 	def dbPopulateRow(self, product, row):
-		self.dbContentLabels[row][0].set_label(product.vendor)
+		self.dbContentLabels[row][0].set_label("\t" + product.vendor)
 		self.dbContentLabels[row][1].set_label(product.vendor_pn)
 		self.dbContentLabels[row][2].set_label(product.inventory)
 		self.dbContentLabels[row][3].set_label(product.manufacturer)
@@ -614,7 +622,7 @@ class URBM:
 		self.bomGroupValue = gtk.RadioButton(self.bomGroupName, "Value")
 		self.bomGroupPN = gtk.RadioButton(self.bomGroupName, "Part Number")
 		
-		self.selectedProduct = Product(Product.VENDOR_DK, "init", urbmDB)
+		self.bomSelectedProduct = Product(Product.VENDOR_DK, "init", urbmDB)
 		self.selectedBomPart = bomPart("init", "init", "init", "init", active_bom)
 		
 		self.partInfoFrame = gtk.Frame("Part information") # Goes in top half of bomVPane
