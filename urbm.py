@@ -303,6 +303,7 @@ class URBM:
 				rows.append(row)
 		return rows
 	
+	'''Destroy current self.bomContentLabels Label instances.''' 
 	def destroyBomLabels(self):
 		for x in self.bomContentLabels:
 			for y in x:
@@ -505,6 +506,19 @@ class URBM:
 			
 		self.window.show_all()
 		
+	def dbTableHeaders(self):
+		self.dbTable.attach(self.dbVendorLabel, 0, 1, 0, 1)
+		self.dbTable.attach(self.dbVendorPNLabel, 1, 2, 0, 1)
+		self.dbTable.attach(self.dbInventoryLabel, 2, 3, 0, 1)
+		self.dbTable.attach(self.dbManufacturerLabel, 3, 4, 0, 1)
+		self.dbTable.attach(self.dbManufacturerPNLabel, 4, 5, 0, 1)
+		self.dbTable.attach(self.dbDescriptionLabel, 5, 6, 0, 1)
+		self.dbTable.attach(self.dbDatasheetLabel, 6, 7, 0, 1)
+		self.dbTable.attach(self.dbCategoryLabel, 7, 8, 0, 1)
+		self.dbTable.attach(self.dbFamilyLabel, 8, 9, 0, 1)
+		self.dbTable.attach(self.dbSeriesLabel, 9, 10, 0, 1)
+		self.dbTable.attach(self.dbPackageLabel, 10, 11, 0, 1)
+	
 	def __init__(self):
 		# -------- DECLARATIONS --------
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
@@ -739,17 +753,7 @@ class URBM:
 		self.dbBox.pack_start(self.dbFrame)
 		self.dbFrame.add(self.dbScrollWin)
 		self.dbScrollWin.add_with_viewport(self.dbTable)
-		self.dbTable.attach(self.dbVendorLabel, 0, 1, 0, 1)
-		self.dbTable.attach(self.dbVendorPNLabel, 1, 2, 0, 1)
-		self.dbTable.attach(self.dbInventoryLabel, 2, 3, 0, 1)
-		self.dbTable.attach(self.dbManufacturerLabel, 3, 4, 0, 1)
-		self.dbTable.attach(self.dbManufacturerPNLabel, 4, 5, 0, 1)
-		self.dbTable.attach(self.dbDescriptionLabel, 5, 6, 0, 1)
-		self.dbTable.attach(self.dbDatasheetLabel, 6, 7, 0, 1)
-		self.dbTable.attach(self.dbCategoryLabel, 7, 8, 0, 1)
-		self.dbTable.attach(self.dbFamilyLabel, 8, 9, 0, 1)
-		self.dbTable.attach(self.dbSeriesLabel, 9, 10, 0, 1)
-		self.dbTable.attach(self.dbPackageLabel, 10, 11, 0, 1)
+		self.dbTableHeaders()
 		self.dbTable.set_col_spacings(10)
 		
 		# Show everything
