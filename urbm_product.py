@@ -20,9 +20,12 @@ def getFileName(url,openUrl):
 
 class Product:
 	VENDOR_DK = "Digi-Key"
+	VENDOR_FAR = "Farnell"
+	VENDOR_FUE = "Future Electronics"
+	VENDOR_JAM = "Jameco"
 	VENDOR_ME = "Mouser"
+	VENDOR_NEW = "Newark"
 	VENDOR_SFE = "SparkFun"
-	#vendors = enum('DK', 'ME', 'SFE')
 	def __init__(self, vendor, vendor_pn, database):
 		self.vendor = vendor
 		self.vendor_pn = vendor_pn
