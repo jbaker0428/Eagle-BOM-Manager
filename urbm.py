@@ -40,7 +40,7 @@ class URBM:
 			self.drawBomByPN()
 		self.window.show_all()
 	
-	def readDBCallback(self, widget, data=None):
+	def bomReadDBCallback(self, widget, data=None):
 		print "Read DB callback"
 		active_bom.readFromDB()
 		if self.bomGroupName.get_active():
@@ -701,7 +701,7 @@ class URBM:
 		self.notebook.set_show_tabs(True)
 		
 		self.bomReadInputButton.connect("clicked", self.readInputCallback, "read")
-		self.bomReadDBButton.connect("clicked", self.readDBCallback, "read")
+		self.bomReadDBButton.connect("clicked", self.bomReadDBCallback, "read")
 		self.bomEditPartButton.connect("clicked", self.bomEditPartCallback, "setPN")
 		
 		self.bomScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
