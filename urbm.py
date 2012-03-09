@@ -21,7 +21,7 @@ def getProductDBSize():
 '''Project Manager window class. '''
 class projectManager:
 	''' Returns a list of BOM project tables in the DB. '''
-	def listProjects():
+	def listProjects(self):
 		conn = sqlite3.connect("urbm.sqlite")
 		cur = conn.cursor()
 		projects = []
@@ -157,7 +157,11 @@ class URBM:
 		
 		editPartVendorCombo = gtk.combo_box_new_text()
 		editPartVendorCombo.append_text(Product.VENDOR_DK)
+		editPartVendorCombo.append_text(Product.VENDOR_FAR)
+		editPartVendorCombo.append_text(Product.VENDOR_FUE)
+		editPartVendorCombo.append_text(Product.VENDOR_JAM)
 		editPartVendorCombo.append_text(Product.VENDOR_ME)
+		editPartVendorCombo.append_text(Product.VENDOR_NEW)
 		editPartVendorCombo.append_text(Product.VENDOR_SFE)
 		
 		# Return values
@@ -880,7 +884,6 @@ class URBM:
 		self.dbTable.set_col_spacings(10)
 		
 		self.dbReadDBCallback(None)
-		listProjects()
 		# Show everything
 		self.mainBox.show_all()
 		self.window.show()

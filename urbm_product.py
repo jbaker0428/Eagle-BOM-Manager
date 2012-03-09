@@ -21,7 +21,7 @@ def getFileName(url,openUrl):
 class Product:
 	VENDOR_DK = "Digi-Key"
 	VENDOR_FAR = "Farnell"
-	VENDOR_FUE = "Future Electronics"
+	VENDOR_FUE = "Future"
 	VENDOR_JAM = "Jameco"
 	VENDOR_ME = "Mouser"
 	VENDOR_NEW = "Newark"
