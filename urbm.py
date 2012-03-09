@@ -111,23 +111,6 @@ class URBM:
 					
 			self.window.show_all()
 	
-	# PLAN: Revise this callback/window to be "Edit Part", including setting the Product
-	# To set:
-	#part.name
-	# Caveat: If grouping by value or PN, what to do? Grey out the name field?
-	# It should write the rest to ALL of the parts in the row
-	#part.value
-	#part.device
-	#part.package
-	#part.description
-	#part.product   (already done)
-	
-	# Each of these need:
-	# gtk.Label for the field
-	# gtk.Entry for the actual text entry
-	# gtk.HBox for the above
-	# Default text of the gtk.Entry should be the current part field value 
-	
 	'''Callback method for the "Edit Part" button in the BOM tab.
 	Opens a dialog window with form fields for each BOM Part object field.'''
 	def bomEditPartCallback(self, widget, data=None):
@@ -825,20 +808,6 @@ class URBM:
 		self.bomTable.set_col_spacings(10)
 		self.bomTableHeaders()
 		self.attachBomRadios()
-		# The following commented lines are kept (for now) as a reference for
-		# how to display the BOM in the table
-		#self.testRadio1 = gtk.RadioButton(None)
-		#self.aLabel1 = gtk.Label("R1")
-		#self.aLabel2 = gtk.Label("10k")
-		#self.testRadio2 = gtk.RadioButton(self.testRadio1)
-		#self.bLabel1 = gtk.Label("C1")
-		#self.bLabel2 = gtk.Label("10 uF")
-		#self.bomTable.attach(self.testRadio1, 0, 7, 1, 2)
-		#self.bomTable.attach(self.aLabel1, 0, 1, 1, 2)
-		#self.bomTable.attach(self.aLabel2, 1, 2, 1, 2)
-		#self.bomTable.attach(self.testRadio2, 0, 7, 2, 3)
-		#self.bomTable.attach(self.bLabel1, 0, 1, 2, 3)
-		#self.bomTable.attach(self.bLabel2, 1, 2, 2, 3)
 		
 		self.bomRadioBox.pack_start(self.bomRadioLabel)
 		self.bomRadioBox.pack_start(self.bomGroupName)
