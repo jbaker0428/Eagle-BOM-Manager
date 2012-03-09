@@ -82,16 +82,16 @@ class BOM:
 				p[2] = part.product
 		# TODO : If inline addition of parts is added later (as in, not from a
 		# CSV file), a check needs to be added here to make sure part is in self.parts
-		self.writeToDB()
+		self.writePartsListToDB()
 	
 	# TODO: Should the read/write methods write the actual BOM object?
-	def writeToDB(self):
-		print "BOM.writeToDB to table %s" % self.name
+	def writePartsListToDB(self):
+		print "BOM.writePartsListToDB to table %s" % self.name
 		self.db.delete("bomlist", self.name)
 		self.db.insert(self.parts, "bomlist", self.name)
 		
-	def readFromDB(self):
-		print "BOM.readFromDB"
+	def readPartsListFromDB(self):
+		print "BOM.readPartsListFromDB"
 		newParts = []
 		self.parts = self.db.select("bomlist", self.name)
 		print "BOM.parts from DB: ", self.parts
@@ -123,11 +123,11 @@ class BOM:
 							part.product = oldPart.product
 						else:
 							print "Part found in DB without product entry, overwriting..."
-							part.writeToDB()
+							part.writePartsListToDB()
 				else:
 					print "Part not in DB, writing..."
-					part.writeToDB()
+					part.writePartsListToDB()
 				self.parts.append([part.name, part.value, part.product])
-		self.writeToDB() # deletes old bomlist
+		self.writePartsListToDB() # deletes old bomlist
 		print "Parts list: ", self.parts
 		

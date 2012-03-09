@@ -45,7 +45,7 @@ class URBM:
 	'''Callback for the "Read DB" button on the BOM tab.'''
 	def bomReadDBCallback(self, widget, data=None):
 		print "Read DB callback"
-		active_bom.readFromDB()
+		active_bom.readPartsListFromDB()
 		if self.bomGroupName.get_active():
 			self.drawBomByName()
 		elif self.bomGroupValue.get_active():
