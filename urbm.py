@@ -5,6 +5,7 @@ import gtk
 import y_serial_v060 as y_serial
 import shutil
 import os
+import sqlite3
 import types
 from urbm_product import Product
 from urbm_bompart import bomPart
@@ -13,13 +14,33 @@ from urbm_bom import BOM
 urbmDB = y_serial.Main(os.path.join(os.getcwd(), "urbm.sqlite"))
 urbmDB.createtable('products')
 
+active_bom = BOM("test1", urbmDB, os.path.join(os.getcwd(), "test.csv"))
 def getProductDBSize():
 	dict = urbmDB.selectdic("?", 'products')
 
-active_bom = BOM("test1", urbmDB, os.path.join(os.getcwd(), "test.csv"))
+'''Project Manager window class. '''
+class projectManager:
+	''' Returns a list of BOM project tables in the DB. '''
+	def listProjects():
+		conn = sqlite3.connect("urbm.sqlite")
+		cur = conn.cursor()
+		projects = []
+		a = "SELECT name FROM sqlite_master"
+		b = "WHERE type='table' AND name IS NOT 'products'"
+		c = "ORDER BY name"
+		sql = ' '.join( [a, b, c] )
+		cur.execute(sql)
+		answer = cur.fetchall()
+		cur.close()
+		conn.close()
+		for p in answer:
+			projects.append(p[0])
+		return projects
 
-'''GUI class'''
+'''Main GUI class'''
 class URBM:
+	''' Query the database for all project tables.'''
+	
 	def delete_event(self, widget, event, data=None):
 		print "delete event occurred"
 		return False
@@ -859,7 +880,7 @@ class URBM:
 		self.dbTable.set_col_spacings(10)
 		
 		self.dbReadDBCallback(None)
-		
+		listProjects()
 		# Show everything
 		self.mainBox.show_all()
 		self.window.show()
