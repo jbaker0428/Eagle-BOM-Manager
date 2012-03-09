@@ -13,10 +13,11 @@ from urbm_bom import BOM
 
 urbmDB = y_serial.Main(os.path.join(os.getcwd(), "urbm.sqlite"))
 urbmDB.createtable('products')
-active_bom = BOM("test1", 'Test BOM 1', urbmDB, os.path.join(os.getcwd(), "test.csv"))
-test1 = BOM.readFromDB(urbmDB, 'test1')
-#print test1.name
-print test1
+activeProjectName = 'test1'
+inputFile = os.path.join(os.getcwd(), "test.csv")	# TODO: Test dummy
+
+#active_bom = BOM("test1", 'Test BOM 1', urbmDB, os.path.join(os.getcwd(), "test.csv"))
+
 def getProductDBSize():
 	dict = urbmDB.selectdic("?", 'products')
 
@@ -33,9 +34,9 @@ class URBM:
 
 	# -------- CALLBACK METHODS --------
 	def readInputCallback(self, widget, data=None):
-		active_bom.readFromFile()
+		self.active_bom.readFromFile()
 		#Read back last entry
-		urbmDB.view(1, active_bom.name)
+		urbmDB.view(1, self.active_bom.name)
 		if self.bomGroupName.get_active():
 			self.drawBomByName()
 		elif self.bomGroupValue.get_active():
@@ -47,7 +48,7 @@ class URBM:
 	'''Callback for the "Read DB" button on the BOM tab.'''
 	def bomReadDBCallback(self, widget, data=None):
 		print "Read DB callback"
-		active_bom.readPartsListFromDB()
+		self.active_bom = BOM.readFromDB(urbmDB, activeProjectName)
 		if self.bomGroupName.get_active():
 			self.drawBomByName()
 		elif self.bomGroupValue.get_active():
@@ -60,7 +61,7 @@ class URBM:
 	def bomRadioCallback(self, widget, data=None):
 		# Set class fields for currently selected item
 		self.curBomRow = int(data) 	# Convert str to int
-		self.selectedBomPart = urbmDB.select(self.bomContentLabels[self.curBomRow][0].get_text()[1:], active_bom.name)
+		self.selectedBomPart = urbmDB.select(self.bomContentLabels[self.curBomRow][0].get_text()[1:], self.active_bom.name)
 		# Grab the vendor part number for the selected item from the label text
 		selectedPN = self.bomContentLabels[self.curBomRow][5].get_text()
 		print "selectedPN is: %s" % selectedPN
@@ -227,7 +228,7 @@ class URBM:
 			self.bomSelectedProduct.vendor = editPartVendorCombo.get_active_text()
 		
 		self.selectedBomPart.writeToDB()
-		active_bom.updateParts(self.selectedBomPart)
+		self.active_bom.updateParts(self.selectedBomPart)
 		
 		self.bomContentLabels[self.curBomRow][0].set_label(self.editPartNameEntry.get_text())
 		self.bomContentLabels[self.curBomRow][0].show()
@@ -355,88 +356,88 @@ class URBM:
 	
 	'''Draw the BOM table, grouping components by name.'''
 	def drawBomByName(self):
-		active_bom.sortByName()
+		self.active_bom.sortByName()
 		old = len(self.bomContentLabels)
 		self.destroyBomLabels()
 		self.destroyBomRadios()
 		del self.bomRadios[0:old]
 		del self.bomContentLabels[0:old]
-		self.bomTable.resize(len(active_bom.parts)+1, 8)
-		self.bomRadios = self.createBomRadios(len(active_bom.parts))
+		self.bomTable.resize(len(self.active_bom.parts)+1, 8)
+		self.bomRadios = self.createBomRadios(len(self.active_bom.parts))
 		self.attachBomRadios()
-		self.bomContentLabels = self.createBomLabels(len(active_bom.parts))
+		self.bomContentLabels = self.createBomLabels(len(self.active_bom.parts))
 		rowNum = 0
-		for p in active_bom.parts:
+		for p in self.active_bom.parts:
 			# temp is a bomPart object from the DB
-			temp = urbmDB.select(p[0], active_bom.name)
+			temp = urbmDB.select(p[0], self.active_bom.name)
 			self.populateBomRow(temp, rowNum)
 			self.attachBomRow(rowNum)
 			rowNum += 1
 	
 	'''Draw the BOM table, grouping components by value.'''
 	def drawBomByValue(self):
-		active_bom.sortByVal()
-		active_bom.setValCounts()
-		tableLen = 1 + len(active_bom.valCounts.keys())
+		self.active_bom.sortByVal()
+		self.active_bom.setValCounts()
+		tableLen = 1 + len(self.active_bom.valCounts.keys())
 		old = len(self.bomContentLabels)
 		self.destroyBomLabels()
 		self.destroyBomRadios()
 		del self.bomRadios[0:old]
 		del self.bomContentLabels[0:old]
 		self.bomTable.resize(tableLen, 8)
-		self.bomRadios = self.createBomRadios(len(active_bom.valCounts.keys()))
+		self.bomRadios = self.createBomRadios(len(self.active_bom.valCounts.keys()))
 		self.attachBomRadios()
-		self.bomContentLabels = self.createBomLabels(len(active_bom.valCounts.keys()))
+		self.bomContentLabels = self.createBomLabels(len(self.active_bom.valCounts.keys()))
 		
 		rowNum = 0
 		# Will sort by value as well (kept for future reference)
-		#vals = sorted(active_bom.valCounts.keys())
+		#vals = sorted(self.active_bom.valCounts.keys())
 		#for val in vals: 
-		for val in active_bom.valCounts.keys():
+		for val in self.active_bom.valCounts.keys():
 			groupName = "\t"	# Clear groupName and prepend a tab
-			group = urbmDB.selectdic("#val=" + val, active_bom.name)
+			group = urbmDB.selectdic("#val=" + val, self.active_bom.name)
 			for part in group.values():
 				groupName += part[2].name + ", "
 			
 			# Replace trailing comma with tab
 			groupName = groupName[0:-2]
-			self.populateBomRow(group[group.keys()[0]][2], rowNum, active_bom.valCounts[val])
+			self.populateBomRow(group[group.keys()[0]][2], rowNum, self.active_bom.valCounts[val])
 			self.bomContentLabels[rowNum][0].set_label(groupName)
 			self.attachBomRow(rowNum)
 			rowNum += 1
 	
 	'''Draw the BOM table, grouping components by vendor part number.'''
 	def drawBomByPN(self):
-		active_bom.sortByProd()
-		active_bom.setProdCounts()
-		tableLen = 1 + len(active_bom.prodCounts.keys())
+		self.active_bom.sortByProd()
+		self.active_bom.setProdCounts()
+		tableLen = 1 + len(self.active_bom.prodCounts.keys())
 		old = len(self.bomContentLabels)
 		self.destroyBomLabels()
 		self.destroyBomRadios()
 		del self.bomRadios[0:old]
 		del self.bomContentLabels[0:old]
 		self.bomTable.resize(tableLen, 8)
-		self.bomRadios = self.createBomRadios(len(active_bom.prodCounts.keys()))
+		self.bomRadios = self.createBomRadios(len(self.active_bom.prodCounts.keys()))
 		self.attachBomRadios()
-		self.bomContentLabels = self.createBomLabels(len(active_bom.prodCounts.keys()))
+		self.bomContentLabels = self.createBomLabels(len(self.active_bom.prodCounts.keys()))
 		rowNum = 0
-		print "prodCounts.keys(): ", active_bom.prodCounts.keys()
-		for prod in active_bom.prodCounts.keys():
+		print "prodCounts.keys(): ", self.active_bom.prodCounts.keys()
+		for prod in self.active_bom.prodCounts.keys():
 			groupName = "\t"	# Clear groupName and prepend a tab
 			print "Querying with prod =", prod, " of length ", len(prod)
 			# Catch empty product string
 			if prod == ' ' or len(prod) == 0: 
 				print "Caught empty product"
-				group = urbmDB.selectdic("#prod=none", active_bom.name)
+				group = urbmDB.selectdic("#prod=none", self.active_bom.name)
 			else:
-				group = urbmDB.selectdic("#prod=" + prod, active_bom.name)
+				group = urbmDB.selectdic("#prod=" + prod, self.active_bom.name)
 			print "Group: \n", group
 			for part in group.values():	# TODO: Ensure this data is what we expect
 				groupName += part[2].name + ", "
 			
 			# Replace trailing comma with tab
 			groupName = groupName[0:-2]
-			self.populateBomRow(group[group.keys()[0]][2], rowNum, active_bom.prodCounts[prod])
+			self.populateBomRow(group[group.keys()[0]][2], rowNum, self.active_bom.prodCounts[prod])
 			self.bomContentLabels[rowNum][0].set_label(groupName)
 			self.attachBomRow(rowNum)
 			rowNum += 1
@@ -608,6 +609,8 @@ class URBM:
 		
 	def __init__(self):
 		# -------- DECLARATIONS --------
+		self.active_bom = BOM('dummy', 'Active BOM Declaration', urbmDB, inputFile)
+		
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
 		self.mainBox = gtk.VBox(False, 0)
 		self.menuBar = gtk.MenuBar()
@@ -647,7 +650,7 @@ class URBM:
 		self.bomGroupPN = gtk.RadioButton(self.bomGroupName, "Part Number")
 		
 		self.bomSelectedProduct = Product(Product.VENDOR_DK, "init", urbmDB)
-		self.selectedBomPart = bomPart("init", "init", "init", "init", active_bom)
+		self.selectedBomPart = bomPart("init", "init", "init", "init", self.active_bom)
 		
 		self.partInfoFrame = gtk.Frame("Part information") # Goes in top half of bomVPane
 		self.partInfoRowBox = gtk.VBox(False, 20) # Fill with HBoxes 
@@ -848,7 +851,7 @@ class projectManager(URBM):
 		cur = conn.cursor()
 		projects = []
 		a = "SELECT name FROM sqlite_master"
-		b = "WHERE type='table' AND name IS NOT 'products'"
+		b = "WHERE type='table' AND name IS NOT 'products' OR 'dummy'"
 		c = "ORDER BY name"
 		sql = ' '.join( [a, b, c] )
 		cur.execute(sql)

@@ -137,7 +137,7 @@ class BOM:
 							part.writeToDB()
 				else:
 					print "Part not in DB, writing..."
-					part.writePartsListToDB()
+					part.writeToDB()
 				self.parts.append([part.name, part.value, part.product])
 		self.writePartsListToDB() # deletes old partslist
 		self.writeToDB()
