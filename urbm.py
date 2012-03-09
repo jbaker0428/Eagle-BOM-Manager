@@ -19,7 +19,7 @@ def getProductDBSize():
 	dict = urbmDB.selectdic("?", 'products')
 
 '''Project Manager window class. '''
-class projectManager:
+class projectManager(URBM):
 	''' Returns a list of BOM project tables in the DB. '''
 	def listProjects(self):
 		conn = sqlite3.connect("urbm.sqlite")
