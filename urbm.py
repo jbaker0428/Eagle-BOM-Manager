@@ -858,6 +858,8 @@ class URBM:
 		self.dbTableHeaders()
 		self.dbTable.set_col_spacings(10)
 		
+		self.dbReadDBCallback(None)
+		
 		# Show everything
 		self.mainBox.show_all()
 		self.window.show()
