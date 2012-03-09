@@ -13,8 +13,10 @@ from urbm_bom import BOM
 
 urbmDB = y_serial.Main(os.path.join(os.getcwd(), "urbm.sqlite"))
 urbmDB.createtable('products')
-
 active_bom = BOM("test1", 'Test BOM 1', urbmDB, os.path.join(os.getcwd(), "test.csv"))
+test1 = BOM.readFromDB(urbmDB, 'test1')
+#print test1.name
+print test1
 def getProductDBSize():
 	dict = urbmDB.selectdic("?", 'products')
 

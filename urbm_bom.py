@@ -9,6 +9,12 @@ from operator import itemgetter
 
 '''For determining the name of a project's bomPart table.'''			
 class BOM:
+	''' Return any BOM object from a DB based on its table name. '''
+	@staticmethod
+	def readFromDB(database, name):
+		bom = database.select('bom', name)
+		return bom
+	
 	def __init__(self, name, desc, database, inputFile="bom.csv"):
 		self.name = name	# Table name
 		self.description = desc # Longer description string
@@ -87,13 +93,18 @@ class BOM:
 	# TODO: Should the read/write methods write the actual BOM object?
 	def writePartsListToDB(self):
 		print "BOM.writePartsListToDB to table %s" % self.name
-		self.db.delete("bomlist", self.name)
-		self.db.insert(self.parts, "bomlist", self.name)
+		self.db.delete("partslist", self.name)
+		self.db.insert(self.parts, "partslist", self.name)
+		
+	def writeToDB(self):
+		self.db.delete("bom", self.name)
+		self.db.insert(self, "bom", self.name)
+		
 		
 	def readPartsListFromDB(self):
 		print "BOM.readPartsListFromDB"
 		newParts = []
-		self.parts = self.db.select("bomlist", self.name)
+		self.parts = self.db.select("parts", self.name)
 		print "BOM.parts from DB: ", self.parts
 		# Delete any erroneously saved "init" entry
 		self.db.delete("init", self.name)
@@ -123,11 +134,12 @@ class BOM:
 							part.product = oldPart.product
 						else:
 							print "Part found in DB without product entry, overwriting..."
-							part.writePartsListToDB()
+							part.writeToDB()
 				else:
 					print "Part not in DB, writing..."
 					part.writePartsListToDB()
 				self.parts.append([part.name, part.value, part.product])
-		self.writePartsListToDB() # deletes old bomlist
+		self.writePartsListToDB() # deletes old partslist
+		self.writeToDB()
 		print "Parts list: ", self.parts
 		
