@@ -9,8 +9,9 @@ from operator import itemgetter
 
 '''For determining the name of a project's bomPart table.'''			
 class BOM:
-	def __init__(self, name, database, inputFile="bom.csv"):
-		self.name = name
+	def __init__(self, name, desc, database, inputFile="bom.csv"):
+		self.name = name	# Table name
+		self.description = desc # Longer description string
 		self.input = inputFile
 		self.parts = [] # List of 3-element lists of part name, value, and product.name
 		# This is used for sorting in the BOM table in the GUI
@@ -83,6 +84,7 @@ class BOM:
 		# CSV file), a check needs to be added here to make sure part is in self.parts
 		self.writeToDB()
 	
+	# TODO: Should the read/write methods write the actual BOM object?
 	def writeToDB(self):
 		print "BOM.writeToDB to table %s" % self.name
 		self.db.delete("bomlist", self.name)
