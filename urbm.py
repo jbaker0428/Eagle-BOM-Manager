@@ -21,6 +21,23 @@ inputFile = os.path.join(os.getcwd(), "test.csv")	# TODO: Test dummy
 def getProductDBSize():
 	dict = urbmDB.selectdic("?", 'products')
 
+''' Returns a list of BOM project tables in the DB. '''
+def listProjects():
+	conn = sqlite3.connect("urbm.sqlite")
+	cur = conn.cursor()
+	projects = []
+	a = "SELECT name FROM sqlite_master"
+	b = "WHERE type='table' AND name IS NOT 'products' OR 'dummy'"
+	c = "ORDER BY name"
+	sql = ' '.join( [a, b, c] )
+	cur.execute(sql)
+	answer = cur.fetchall()
+	cur.close()
+	conn.close()
+	for p in answer:
+		projects.append(p[0])
+	return projects
+
 '''Main GUI class'''
 class URBM:
 	''' Query the database for all project tables.'''
@@ -615,10 +632,31 @@ class URBM:
 		self.mainBox = gtk.VBox(False, 0)
 		self.menuBar = gtk.MenuBar()
 		self.notebook = gtk.Notebook()
+		self.projectTabLabel = gtk.Label("Projects")
 		self.bomTabLabel = gtk.Label("BOM Editor")
 		self.dbTabLabel = gtk.Label("Product Database")
 		
-		self.bomTabBox = gtk.VBox(False, 0) # First tab in notebook
+		# --- Projects tab ---
+		self.projectBox = gtk.VBox(False, 0) # First tab in notebook
+		self.projectToolbar = gtk.Toolbar()
+		self.projectNewButton = gtk.ToolButton(None, "New Project")
+		self.projectOpenButton = gtk.ToolButton(None, "Open Project")
+		self.projectEditButton = gtk.ToolButton(None, "Edit Project")
+		self.projectDeleteButton = gtk.ToolButton(None, "Delete Project")
+		self.projectFrame = gtk.Frame("Projects") 
+		self.projectScrollWin = gtk.ScrolledWindow()
+		self.projectTable = gtk.Table(50, 6, False)
+		
+		self.projectNameLabel = gtk.Label("Name")
+		self.projectDescriptionLabel = gtk.Label("Description \t")
+		self.projectDatabaseLabel = gtk.Label("Database")
+		self.projectInputLabel = gtk.Label("Input File")
+		self.projectContentLabels = []
+		self.projectRadioGroup = gtk.RadioButton(None)
+		self.projectRadios = self.createBomRadios(0)	# TODO: Update this method call
+		
+		# --- BOM tab ---
+		self.bomTabBox = gtk.VBox(False, 0) # Second tab in notebook
 		self.bomToolbar = gtk.Toolbar()
 		self.bomReadInputButton = gtk.ToolButton(None, "Read CSV")
 		self.bomReadDBButton = gtk.ToolButton(None, "Read DB")
@@ -696,7 +734,8 @@ class URBM:
 		self.orderSizeScale = gtk.HScale(self.orderSizeScaleAdj)
 		self.orderSizeText = gtk.Entry(10000)
 		
-		self.dbBox = gtk.VBox(False, 0) # Second tab in notebook
+		# --- Product DB tab ---
+		self.dbBox = gtk.VBox(False, 0) # Third tab in notebook
 		self.dbToolbar = gtk.Toolbar()
 		self.dbReadDBButton = gtk.ToolButton(None, "Read DB")
 		self.dbFrame = gtk.Frame("Product database") 
@@ -842,25 +881,6 @@ class URBM:
 		# Show everything
 		self.mainBox.show_all()
 		self.window.show()
-
-'''Project Manager window class. '''
-class projectManager(URBM):
-	''' Returns a list of BOM project tables in the DB. '''
-	def listProjects(self):
-		conn = sqlite3.connect("urbm.sqlite")
-		cur = conn.cursor()
-		projects = []
-		a = "SELECT name FROM sqlite_master"
-		b = "WHERE type='table' AND name IS NOT 'products' OR 'dummy'"
-		c = "ORDER BY name"
-		sql = ' '.join( [a, b, c] )
-		cur.execute(sql)
-		answer = cur.fetchall()
-		cur.close()
-		conn.close()
-		for p in answer:
-			projects.append(p[0])
-		return projects
 
 def main():
 	gtk.main()
