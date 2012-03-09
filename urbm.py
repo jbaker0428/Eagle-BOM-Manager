@@ -18,25 +18,6 @@ active_bom = BOM("test1", urbmDB, os.path.join(os.getcwd(), "test.csv"))
 def getProductDBSize():
 	dict = urbmDB.selectdic("?", 'products')
 
-'''Project Manager window class. '''
-class projectManager(URBM):
-	''' Returns a list of BOM project tables in the DB. '''
-	def listProjects(self):
-		conn = sqlite3.connect("urbm.sqlite")
-		cur = conn.cursor()
-		projects = []
-		a = "SELECT name FROM sqlite_master"
-		b = "WHERE type='table' AND name IS NOT 'products'"
-		c = "ORDER BY name"
-		sql = ' '.join( [a, b, c] )
-		cur.execute(sql)
-		answer = cur.fetchall()
-		cur.close()
-		conn.close()
-		for p in answer:
-			projects.append(p[0])
-		return projects
-
 '''Main GUI class'''
 class URBM:
 	''' Query the database for all project tables.'''
@@ -856,6 +837,26 @@ class URBM:
 		# Show everything
 		self.mainBox.show_all()
 		self.window.show()
+
+'''Project Manager window class. '''
+class projectManager(URBM):
+	''' Returns a list of BOM project tables in the DB. '''
+	def listProjects(self):
+		conn = sqlite3.connect("urbm.sqlite")
+		cur = conn.cursor()
+		projects = []
+		a = "SELECT name FROM sqlite_master"
+		b = "WHERE type='table' AND name IS NOT 'products'"
+		c = "ORDER BY name"
+		sql = ' '.join( [a, b, c] )
+		cur.execute(sql)
+		answer = cur.fetchall()
+		cur.close()
+		conn.close()
+		for p in answer:
+			projects.append(p[0])
+		return projects
+
 def main():
 	gtk.main()
 	
