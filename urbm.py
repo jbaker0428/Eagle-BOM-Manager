@@ -850,7 +850,7 @@ class URBM:
 		self.partInfoRowBox.pack_start(self.partInfoPricingTable, True, True, 5)
 		self.partInfoRowBox.pack_start(self.partInfoButtonBox)
 		
-		self.dbBox.pack_start(self.dbToolbar)
+		self.dbBox.pack_start(self.dbToolbar, False)
 		self.dbToolbar.insert(self.dbReadDBButton, 0)
 		self.dbBox.pack_start(self.dbFrame)
 		self.dbFrame.add(self.dbScrollWin)
