@@ -288,6 +288,14 @@ class URBM:
 		self.dbSelectedProduct = urbmDB.select(selectedPN, "products")
 	 
 	# -------- HELPER METHODS --------
+	def projectStorePopulate(self):
+		self.projectStore.clear()
+		# Columns: Name, Description, Database, Input File
+		projectsList = listProjects()
+		for p in projectsList:
+			bom = BOM.readFromDB(urbmDB, p)
+			iter = self.projectStore.append([bom.name, bom.description, urbmDB.db, bom.input])
+		
 	def bomTableHeaders(self):
 		self.bomTable.attach(self.bomColLabel1, 0, 1, 0, 1)
 		self.bomTable.attach(self.bomColLabel2, 1, 2, 0, 1)
@@ -645,15 +653,29 @@ class URBM:
 		self.projectDeleteButton = gtk.ToolButton(None, "Delete Project")
 		self.projectFrame = gtk.Frame("Projects") 
 		self.projectScrollWin = gtk.ScrolledWindow()
-		self.projectTable = gtk.Table(50, 6, False)
 		
-		self.projectNameLabel = gtk.Label("Name")
-		self.projectDescriptionLabel = gtk.Label("Description \t")
-		self.projectDatabaseLabel = gtk.Label("Database")
-		self.projectInputLabel = gtk.Label("Input File")
-		self.projectContentLabels = []
-		self.projectRadioGroup = gtk.RadioButton(None)
-		self.projectRadios = self.createBomRadios(0)	# TODO: Update this method call
+		# Columns: Name, Description, Database, Input File
+		self.projectStore = gtk.ListStore(str, str, str, str)
+		self.projectNameCell = gtk.CellRendererText()
+		self.projectNameColumn = gtk.TreeViewColumn('Name', self.projectNameCell)
+		self.projectDescriptionCell = gtk.CellRendererText()
+		self.projectDescriptionColumn = gtk.TreeViewColumn('Description', self.projectDescriptionCell)
+		self.projectDBFileCell = gtk.CellRendererText()
+		self.projectDBFileColumn = gtk.TreeViewColumn('Database File', self.projectDBFileCell)
+		self.projectInputFileCell = gtk.CellRendererText()
+		self.projectInputFileColumn = gtk.TreeViewColumn('Input File', self.projectInputFileCell)
+		self.projectTreeView = gtk.TreeView() # Associate with self.projectStore later, not yet!
+		
+		
+		#self.projectTable = gtk.Table(50, 6, False)
+		
+		#self.projectNameLabel = gtk.Label("Name")
+		#self.projectDescriptionLabel = gtk.Label("Description \t")
+		#self.projectDatabaseLabel = gtk.Label("Database")
+		#self.projectInputLabel = gtk.Label("Input File")
+		#self.projectContentLabels = []
+		#self.projectRadioGroup = gtk.RadioButton(None)
+		#self.projectRadios = self.createBomRadios(0)	# TODO: Update this method call
 		
 		# --- BOM tab ---
 		self.bomTabBox = gtk.VBox(False, 0) # Second tab in notebook
@@ -763,9 +785,38 @@ class URBM:
 		self.window.connect("destroy", self.destroy)
 		
 		self.notebook.set_tab_pos(gtk.POS_TOP)
+		self.notebook.append_page(self.projectBox, self.projectTabLabel)
 		self.notebook.append_page(self.bomTabBox, self.bomTabLabel)
 		self.notebook.append_page(self.dbBox, self.dbTabLabel)
 		self.notebook.set_show_tabs(True)
+		
+		# Project selection tab
+		
+		#self.projectTreeView.set_fixed_height_mode(True)
+		self.projectTreeView.set_reorderable(True)
+		self.projectTreeView.set_headers_clickable(True)
+		
+		self.projectNameColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.projectDescriptionColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.projectDBFileColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.projectInputFileColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		
+		self.projectNameColumn.set_resizable(True)
+		self.projectDescriptionColumn.set_resizable(True)
+		self.projectDBFileColumn.set_resizable(True)
+		self.projectInputFileColumn.set_resizable(True)
+		
+		self.projectNameColumn.set_attributes(self.projectNameCell, text=0)
+		self.projectDescriptionColumn.set_attributes(self.projectDescriptionCell, text=1)
+		self.projectDBFileColumn.set_attributes(self.projectDBFileCell, text=2)
+		self.projectInputFileColumn.set_attributes(self.projectInputFileCell, text=3)
+		
+		self.projectTreeView.append_column(self.projectNameColumn)
+		self.projectTreeView.append_column(self.projectDescriptionColumn)
+		self.projectTreeView.append_column(self.projectDBFileColumn)
+		self.projectTreeView.append_column(self.projectInputFileColumn)
+		self.projectStorePopulate()
+		self.projectTreeView.set_model(self.projectStore)
 		
 		self.bomReadInputButton.connect("clicked", self.readInputCallback, "read")
 		self.bomReadDBButton.connect("clicked", self.bomReadDBCallback, "read")
@@ -809,6 +860,21 @@ class URBM:
 		self.mainBox.pack_start(self.menuBar)
 		self.mainBox.pack_start(self.notebook)
 		self.window.add(self.mainBox)
+		
+		# Project selection tab
+		self.projectBox.pack_start(self.projectToolbar)
+		self.projectToolbar.insert(self.projectNewButton, 0)
+		self.projectToolbar.insert(self.projectOpenButton, 1)
+		self.projectToolbar.insert(self.projectEditButton, 2)
+		self.projectToolbar.insert(self.projectDeleteButton, 3)
+		
+		self.projectBox.pack_start(self.projectFrame)
+		self.projectFrame.add(self.projectScrollWin)
+		self.projectScrollWin.add_with_viewport(self.projectTreeView)
+		
+		#self.projectTable.set_col_spacings(10)
+		
+		# BOM tab elements
 		
 		self.bomTabBox.pack_start(self.bomToolbar)
 		self.bomToolbar.insert(self.bomReadInputButton, 0)
