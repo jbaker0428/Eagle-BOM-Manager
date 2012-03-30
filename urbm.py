@@ -293,8 +293,9 @@ class URBM:
 		# Columns: Name, Description, Database, Input File
 		projectsList = listProjects()
 		for p in projectsList:
-			bom = BOM.readFromDB(urbmDB, p)
-			iter = self.projectStore.append([bom.name, bom.description, urbmDB.db, bom.input])
+			if p != 'dummy':
+				bom = BOM.readFromDB(urbmDB, p)
+				iter = self.projectStore.append([bom.name, bom.description, urbmDB.db, bom.input])
 		
 	def bomTableHeaders(self):
 		self.bomTable.attach(self.bomColLabel1, 0, 1, 0, 1)
