@@ -306,7 +306,7 @@ class URBM:
 		self.bomTable.attach(self.bomColLabel6, 5, 6, 0, 1)
 		self.bomTable.attach(self.bomColLabel7, 6, 7, 0, 1)
 	
-	''' Create an array of strings to set bomContentLabels texts to'''
+	''' Create an array of strings to set bomContentLabels texts to. '''
 	def setBomLabelTextsName(self):
 		bomLabelTexts = []
 		for p in active_bom.parts:
@@ -690,6 +690,28 @@ class URBM:
 		self.bomFrame = gtk.Frame("BOM") # Goes in left side of bomHPane
 		self.bomTableBox = gtk.VBox(False, 0) # Holds bomScrollWin and bomRadioBox
 		self.bomScrollWin = gtk.ScrolledWindow() # Holds bomTable
+		
+		# Columns: Name, Value, Device, Package, Description, MFG PN, Quantity
+		# str, str, str, str, str, str, int
+		self.bomStore = gtk.ListStore(str, str, str, str, str, str, int)
+		
+		self.bomNameCell = gtk.CellRendererText()
+		self.bomNameColumn = gtk.TreeViewColumn('Name', self.bomNameCell)
+		self.bomValueCell = gtk.CellRendererText()
+		self.bomValueColumn = gtk.TreeViewColumn('Value', self.bomValueCell)
+		self.bomDeviceCell = gtk.CellRendererText()
+		self.bomDeviceColumn = gtk.TreeViewColumn('Device', self.bomDeviceCell)
+		self.bomPackageCell = gtk.CellRendererText()
+		self.bomPackageColumn = gtk.TreeViewColumn('Package', self.bomPackageCell)
+		self.bomDescriptionCell = gtk.CellRendererText()
+		self.bomDescriptionColumn = gtk.TreeViewColumn('Description', self.bomDescriptionCell)
+		self.bomPNCell = gtk.CellRendererText()
+		self.bomPNColumn = gtk.TreeViewColumn('Part Number', self.bomPNCell)
+		self.bomQuantityCell = gtk.CellRendererText()
+		self.bomQuantityColumn = gtk.TreeViewColumn('Quantity', self.bomQuantityCell)
+		
+		self.bomTreeView = gtk.TreeView()
+		
 		self.bomTable = gtk.Table(1, 8, False) 
 		
 		# first table row will be column labels
@@ -818,6 +840,45 @@ class URBM:
 		self.projectTreeView.append_column(self.projectInputFileColumn)
 		self.projectStorePopulate()
 		self.projectTreeView.set_model(self.projectStore)
+		
+		# BOM tab
+		
+		self.bomTreeView.set_reorderable(True)
+		self.bomTreeView.set_headers_clickable(True)
+		
+		self.bomNameColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.bomValueColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.bomDeviceColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.bomPackageColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.bomDescriptionColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.bomPNColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.bomQuantityColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		
+		self.bomNameColumn.set_resizable(True)
+		self.bomValueColumn.set_resizable(True)
+		self.bomDeviceColumn.set_resizable(True)
+		self.bomPackageColumn.set_resizable(True)
+		self.bomDescriptionColumn.set_resizable(True)
+		self.bomPNColumn.set_resizable(True)
+		self.bomQuantityColumn.set_resizable(True)
+		
+		self.bomNameColumn.set_attributes(self.bomNameCell, text=0)
+		self.bomValueColumn.set_attributes(self.bomValueCell, text=0)
+		self.bomDeviceColumn.set_attributes(self.bomDeviceCell, text=0)
+		self.bomPackageColumn.set_attributes(self.bomPackageCell, text=0)
+		self.bomDescriptionColumn.set_attributes(self.bomDescriptionCell, text=0)
+		self.bomPNColumn.set_attributes(self.bomPNCell, text=0)
+		self.bomQuantityColumn.set_attributes(self.bomQuantityCell, text=0)
+		
+		self.bomTreeView.append_column(self.bomNameColumn)
+		self.bomTreeView.append_column(self.bomValueColumn)
+		self.bomTreeView.append_column(self.bomDeviceColumn)
+		self.bomTreeView.append_column(self.bomPackageColumn)
+		self.bomTreeView.append_column(self.bomDescriptionColumn)
+		self.bomTreeView.append_column(self.bomPNColumn)
+		self.bomTreeView.append_column(self.bomQuantityColumn)
+		#self.projectStorePopulate()
+		self.bomTreeView.set_model(self.bomStore)
 		
 		self.bomReadInputButton.connect("clicked", self.readInputCallback, "read")
 		self.bomReadDBButton.connect("clicked", self.bomReadDBCallback, "read")
