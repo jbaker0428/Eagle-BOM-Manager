@@ -11,6 +11,16 @@ class bomPart:
 		self.product = product
 		self.bom = parent_bom
 
+	''' A simple print method. '''
+	def show(self):
+		print 'Name: ', self.name, type(self.name)
+		print 'Value: ', self.value, type(self.value)
+		print 'Device: ', self.device, type(self.device)
+		print 'Package: ', self.package, type(self.package)
+		print 'Description: ', self.description, type(self.description)
+		print 'Product: ', self.product, type(self.product)
+		print 'BOM: ', self.bom, type(self.bom), '\n'
+		
 	''' Compares the bomPart to another bomPart.'''
 	def equals(self, p):
 		if type(p) != type(self):
