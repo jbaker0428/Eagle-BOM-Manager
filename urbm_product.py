@@ -45,7 +45,8 @@ class Product:
 		self.db = database
 		
 	''' Returns the (price break, unit price) list pair for the given purchase quantity.
-	If qty is below the lowest break, the lowest is returned.'''
+	If qty is below the lowest break, the lowest is returned.
+	TODO : Raise some kind of error/warning if not ordering enough PCBs to make the lowest break.'''
 	def getPriceBreak(self, qty):
 		breaks = self.prices.keys()
 		breaks.sort()
@@ -59,6 +60,7 @@ class Product:
 			elif  breaks[i] > qty:
 				return [breaks[i-1], self.prices[breaks[i-1]]]			
 	
+	''' Scrape method for Digikey. '''
 	def scrapeDK(self):
 		# Clear previous pricing data (in case price break keys change)
 		self.prices.clear()
@@ -141,7 +143,29 @@ class Product:
 		
 		self.writeToDB()
 	
+	''' Scrape method for Farnell. '''
+	def scrapeFAR(self):
+		print "Distributor scraping not yet implemented!"
+	
+	''' Scrape method for Future Electronics. '''
+	def scrapeFUE(self):
+		print "Distributor scraping not yet implemented!"
+		
+	''' Scrape method for Jameco. '''
+	def scrapeJAM(self):
+		print "Distributor scraping not yet implemented!"
+		
+	''' Scrape method for Mouser Electronics. '''
+	def scrapeME(self):
+		print "Distributor scraping not yet implemented!"
+	
+	''' Scrape method for Newark. '''
+	def scrapeNEW(self):
+		print "Distributor scraping not yet implemented!"
+	
+	''' Scrape method for Sparkfun. '''	
 	def scrapeSFE(self):
+		print "Distributor scraping not yet implemented!"
 		# Clear previous pricing data (in case price break keys change)
 		self.prices.clear()
 		
@@ -154,8 +178,16 @@ class Product:
 		# Proceed based on vendor
 		if self.vendor == Product.VENDOR_DK:
 			self.scrapeDK()
+		elif self.vendor == Product.VENDOR_FAR:
+			self.scrapeFAR()
+		elif self.vendor == Product.VENDOR_FUE:
+			self.scrapeFUE()
+		elif self.vendor == Product.VENDOR_JAM:
+			self.scrapeJAM()
 		elif self.vendor == Product.VENDOR_ME:
-			pass
+			self.scrapeME()
+		elif self.vendor == Product.VENDOR_NEW:
+			self.scrapeNEW()
 		elif self.vendor == Product.VENDOR_SFE:
 			self.scrapeSFE()
 		else:
