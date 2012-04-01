@@ -10,6 +10,7 @@ import types
 from urbm_product import Product
 from urbm_bompart import bomPart
 from urbm_bom import BOM
+import gobject
 
 urbmDB = y_serial.Main(os.path.join(os.getcwd(), "urbm.sqlite"))
 urbmDB.createtable('products')
@@ -39,7 +40,7 @@ def listProjects():
 	return projects
 
 '''Main GUI class'''
-class URBM:
+class URBM(gobject.GObject):
 	''' Query the database for all project tables.'''
 	
 	def delete_event(self, widget, event, data=None):
@@ -55,11 +56,11 @@ class URBM:
 		#Read back last entry
 		urbmDB.view(1, self.active_bom.name)
 		if self.bomGroupName.get_active():
-			self.drawBomByName()
+			self.bomStorePopulateByName()
 		elif self.bomGroupValue.get_active():
-			self.drawBomByValue()
+			self.bomStorePopulateByValue()
 		elif self.bomGroupPN.get_active():
-			self.drawBomByPN()
+			self.bomStorePopulateByPN()
 		self.window.show_all()
 	
 	'''Callback for the "Read DB" button on the BOM tab.'''
@@ -67,20 +68,22 @@ class URBM:
 		print "Read DB callback"
 		self.active_bom = BOM.readFromDB(urbmDB, activeProjectName)
 		if self.bomGroupName.get_active():
-			self.drawBomByName()
+			self.bomStorePopulateByName()
 		elif self.bomGroupValue.get_active():
-			self.drawBomByValue()
+			self.bomStorePopulateByVal()
 		elif self.bomGroupPN.get_active():
-			self.drawBomByPN()
+			self.bomStorePopulateByPN()
 		self.window.show_all()
 	
 	'''Callback method triggered when a BOM line item is selected.'''
-	def bomRadioCallback(self, widget, data=None):
+	def bomSelectionCallback(self, widget, data=None):
 		# Set class fields for currently selected item
-		self.curBomRow = int(data) 	# Convert str to int
-		self.selectedBomPart = urbmDB.select(self.bomContentLabels[self.curBomRow][0].get_text()[1:], self.active_bom.name)
+		(model, rowIter) = self.bomTreeView.get_selection().get_selected()
+		#print 'rowIter is: ', rowIter, '\n'
+		#print 'model.get(rowIter,0)[0] is: ', model.get(rowIter,0)[0]
+		self.selectedBomPart = urbmDB.select(model.get(rowIter,0)[0], self.active_bom.name)
 		# Grab the vendor part number for the selected item from the label text
-		selectedPN = self.bomContentLabels[self.curBomRow][5].get_text()
+		selectedPN = model.get(rowIter,5)[0]
 		print "selectedPN is: %s" % selectedPN
 		if selectedPN != "none": # Look up part in DB
 			# Set class field for currently selected product
@@ -95,22 +98,30 @@ class URBM:
 			self.clearPartInfoLabels()
 	
 	'''Callback method activated by the BOM grouping radio buttons.
-	Redraws the BOM table with the approporiate goruping for the selected radio.'''
+	Redraws the BOM TreeView with the approporiate goruping for the selected radio.'''
 	def bomGroupCallback(self, widget, data=None):
 		#print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
 		
 		# Figure out which button is now selected
 		if widget.get_active():
 			if 'name' in data:
-				self.drawBomByName()
+				self.bomStorePopulateByName()
 				
 			elif 'value' in data:
-				self.drawBomByValue()
+				self.bomStorePopulateByVal()
 					
 			elif 'product' in data:
-				self.drawBomByPN()
+				self.bomStorePopulateByPN()
 					
 			self.window.show_all()
+	
+	'''Callback method activated by clicking a BOM column header.
+	Sorts the BOM TreeView by the values in the clicked column.'''
+	def bomSortCallback(self, widget):
+		print widget.get_sort_order()
+		widget.set_sort_column_id(0)
+		# TODO: On sorting by a different column, the indicator does not go away
+		# This may be because with the current test set, the other columns are still technically sorted
 	
 	'''Callback method for the "Edit Part" button in the BOM tab.
 	Opens a dialog window with form fields for each BOM Part object field.'''
@@ -247,20 +258,13 @@ class URBM:
 		self.selectedBomPart.writeToDB()
 		self.active_bom.updateParts(self.selectedBomPart)
 		
-		self.bomContentLabels[self.curBomRow][0].set_label(self.editPartNameEntry.get_text())
-		self.bomContentLabels[self.curBomRow][0].show()
-		self.bomContentLabels[self.curBomRow][1].set_label(self.editPartValueEntry.get_text())
-		self.bomContentLabels[self.curBomRow][1].show()
-		self.bomContentLabels[self.curBomRow][2].set_label(self.editPartDeviceEntry.get_text())
-		self.bomContentLabels[self.curBomRow][2].show()
-		self.bomContentLabels[self.curBomRow][3].set_label(self.editPartPackageEntry.get_text())
-		self.bomContentLabels[self.curBomRow][3].show()
-		self.bomContentLabels[self.curBomRow][4].set_label(self.editPartDescriptionEntry.get_text())
-		self.bomContentLabels[self.curBomRow][4].show()
-		self.bomContentLabels[self.curBomRow][5].set_label(self.productEntryText)
-		self.bomContentLabels[self.curBomRow][5].show()
-		print "Part Number label text: %s" % self.bomContentLabels[self.curBomRow][5].get_text()
-		
+		if self.bomGroupName.get_active():
+			self.bomStorePopulateByName()
+		elif self.bomGroupValue.get_active():
+			self.bomStorePopulateByVal()
+		elif self.bomGroupPN.get_active():
+			self.bomStorePopulateByPN()
+				
 		self.bomSelectedProduct.vendor_pn = self.productEntryText
 		self.bomSelectedProduct.selectOrScrape()
 		if self.bomSelectedProduct.vendor_pn == "none":
@@ -302,10 +306,11 @@ class URBM:
 		self.bomStore.clear()
 		for p in self.active_bom.parts:
 			temp = urbmDB.select(p[0], self.active_bom.name)
-			iter = self.bomStore.append([temp.name, temp.value, temp.device, temp.package, temp.description, temp.product, 'fixme'])
+			iter = self.bomStore.append([temp.name, temp.value, temp.device, temp.package, temp.description, temp.product, 1])
 	
 	''' Clear self.bomStore and repopulate it, grouped by value. '''
 	def bomStorePopulateByVal(self):
+		self.bomStore.clear()
 		self.active_bom.sortByVal()
 		self.active_bom.setValCounts()
 		
@@ -320,10 +325,11 @@ class URBM:
 			# Replace trailing comma with tab
 			groupName = groupName[0:-2]
 			temp = group[group.keys()[0]][2]	# Part object
-			iter = self.bomStore.append([groupName, temp.value, temp.device, temp.package, temp.description, temp.product, str(self.active_bom.valCounts[val])])
+			iter = self.bomStore.append([groupName, temp.value, temp.device, temp.package, temp.description, temp.product, self.active_bom.valCounts[val]])
 	
 	''' Clear self.bomStore and repopulate it, grouped by part number. '''		
 	def bomStorePopulateByPN(self):
+		self.bomStore.clear()
 		self.active_bom.sortByProd()
 		self.active_bom.setProdCounts()
 		
@@ -344,178 +350,7 @@ class URBM:
 			groupName = groupName[0:-2]
 			
 			temp = group[group.keys()[0]][2]	# Part object
-			iter = self.bomStore.append([groupName, temp.value, temp.device, temp.package, temp.description, temp.product, str(self.active_bom.prodCounts[prod])])
-						
-	def bomTableHeaders(self):
-		self.bomTable.attach(self.bomColLabel1, 0, 1, 0, 1)
-		self.bomTable.attach(self.bomColLabel2, 1, 2, 0, 1)
-		self.bomTable.attach(self.bomColLabel3, 2, 3, 0, 1)
-		self.bomTable.attach(self.bomColLabel4, 3, 4, 0, 1)
-		self.bomTable.attach(self.bomColLabel5, 4, 5, 0, 1)
-		self.bomTable.attach(self.bomColLabel6, 5, 6, 0, 1)
-		self.bomTable.attach(self.bomColLabel7, 6, 7, 0, 1)
-	
-	''' Create an array of strings to set bomContentLabels texts to. '''
-	def setBomLabelTextsName(self):
-		bomLabelTexts = []
-		for p in active_bom.parts:
-			# temp is a bomPart object from the DB
-			temp = urbmDB.select(p[0], active_bom.name)
-			self.bomLabelTexts.append((part.name, part.value, part.device, part.package, part.description, part.product))
-			
-		return bomLabelTexts
-	
-	def populateBomRow(self, labelRow, stringsTuple, quantity=""):
-		for i in range(6):
-			labelRow[i].set_label(stringTuple[i])
-		labelRow[6].set_label(quantity)
-		return labelRow
-	
-	'''Create Label instances for a given number of BOM rows.'''	
-	def createBomLabels(self, numRows, labelTexts=None):
-		rows = []
-		if labelTexts is None:
-			for x in range(numRows):
-				row = []
-				for i in range(7):
-					row.append(gtk.Label(None))
-				rows.append(row)
-		else:
-			for x in range(numRows):
-				row = []
-				for i in range(7):
-					row.append(gtk.Label(labelTexts[x][i]))
-				rows.append(row)
-		return rows
-	
-	'''Destroy current self.bomContentLabels Label instances.''' 
-	def destroyBomLabels(self):
-		for x in self.bomContentLabels:
-			for y in x:
-				y.destroy()
-	
-	'''Create RadioButton instances for a given number of BOM rows.'''
-	def createBomRadios(self, numRows):
-		radios = []
-		for x in range(numRows):
-			radios.append(gtk.RadioButton(self.bomRadioGroup))
-			radios[x].connect("toggled", self.bomRadioCallback, str(x))
-		return radios
-	
-	def attachBomRadios(self):
-		r = 0
-		for radio in self.bomRadios:
-			self.bomTable.attach(radio,  0, 7, r+1, r+2)
-			r += 1
-	
-	def destroyBomRadios(self):
-		for r in self.bomRadios:
-			r.destroy()
-	
-	''' @param row considers index 0 to be the first row of content after headers'''
-	def populateBomRow(self, part, row, quantity=""):
-		self.bomContentLabels[row][0].set_label("\t" + part.name)
-		self.bomContentLabels[row][1].set_label(part.value)
-		self.bomContentLabels[row][2].set_label(part.device)
-		self.bomContentLabels[row][3].set_label(part.package)
-		self.bomContentLabels[row][4].set_label(part.description)
-		self.bomContentLabels[row][5].set_label(part.product)
-		self.bomContentLabels[row][6].set_label(str(quantity))
-	
-	''' @param row considers index 0 to be the first row of content after headers'''	
-	def attachBomRow(self, row):
-		i = 0
-		for label in self.bomContentLabels[row]:
-			self.bomTable.attach(label,  i, i+1, row+1, row+2)
-			i += 1
-	
-	'''Draw the BOM table, grouping components by name.'''
-	def drawBomByName(self):
-		self.active_bom.sortByName()
-		old = len(self.bomContentLabels)
-		self.destroyBomLabels()
-		self.destroyBomRadios()
-		del self.bomRadios[0:old]
-		del self.bomContentLabels[0:old]
-		self.bomTable.resize(len(self.active_bom.parts)+1, 8)
-		self.bomRadios = self.createBomRadios(len(self.active_bom.parts))
-		self.attachBomRadios()
-		self.bomContentLabels = self.createBomLabels(len(self.active_bom.parts))
-		rowNum = 0
-		for p in self.active_bom.parts:
-			# temp is a bomPart object from the DB
-			temp = urbmDB.select(p[0], self.active_bom.name)
-			self.populateBomRow(temp, rowNum)
-			self.attachBomRow(rowNum)
-			rowNum += 1
-	
-	'''Draw the BOM table, grouping components by value.'''
-	def drawBomByValue(self):
-		self.active_bom.sortByVal()
-		self.active_bom.setValCounts()
-		tableLen = 1 + len(self.active_bom.valCounts.keys())
-		old = len(self.bomContentLabels)
-		self.destroyBomLabels()
-		self.destroyBomRadios()
-		del self.bomRadios[0:old]
-		del self.bomContentLabels[0:old]
-		self.bomTable.resize(tableLen, 8)
-		self.bomRadios = self.createBomRadios(len(self.active_bom.valCounts.keys()))
-		self.attachBomRadios()
-		self.bomContentLabels = self.createBomLabels(len(self.active_bom.valCounts.keys()))
-		
-		rowNum = 0
-		# Will sort by value as well (kept for future reference)
-		#vals = sorted(self.active_bom.valCounts.keys())
-		#for val in vals: 
-		for val in self.active_bom.valCounts.keys():
-			groupName = "\t"	# Clear groupName and prepend a tab
-			group = urbmDB.selectdic("#val=" + val, self.active_bom.name)
-			for part in group.values():
-				groupName += part[2].name + ", "
-			
-			# Replace trailing comma with tab
-			groupName = groupName[0:-2]
-			self.populateBomRow(group[group.keys()[0]][2], rowNum, self.active_bom.valCounts[val])
-			self.bomContentLabels[rowNum][0].set_label(groupName)
-			self.attachBomRow(rowNum)
-			rowNum += 1
-	
-	'''Draw the BOM table, grouping components by vendor part number.'''
-	def drawBomByPN(self):
-		self.active_bom.sortByProd()
-		self.active_bom.setProdCounts()
-		tableLen = 1 + len(self.active_bom.prodCounts.keys())
-		old = len(self.bomContentLabels)
-		self.destroyBomLabels()
-		self.destroyBomRadios()
-		del self.bomRadios[0:old]
-		del self.bomContentLabels[0:old]
-		self.bomTable.resize(tableLen, 8)
-		self.bomRadios = self.createBomRadios(len(self.active_bom.prodCounts.keys()))
-		self.attachBomRadios()
-		self.bomContentLabels = self.createBomLabels(len(self.active_bom.prodCounts.keys()))
-		rowNum = 0
-		print "prodCounts.keys(): ", self.active_bom.prodCounts.keys()
-		for prod in self.active_bom.prodCounts.keys():
-			groupName = "\t"	# Clear groupName and prepend a tab
-			print "Querying with prod =", prod, " of length ", len(prod)
-			# Catch empty product string
-			if prod == ' ' or len(prod) == 0: 
-				print "Caught empty product"
-				group = urbmDB.selectdic("#prod=none", self.active_bom.name)
-			else:
-				group = urbmDB.selectdic("#prod=" + prod, self.active_bom.name)
-			print "Group: \n", group
-			for part in group.values():	# TODO: Ensure this data is what we expect
-				groupName += part[2].name + ", "
-			
-			# Replace trailing comma with tab
-			groupName = groupName[0:-2]
-			self.populateBomRow(group[group.keys()[0]][2], rowNum, self.active_bom.prodCounts[prod])
-			self.bomContentLabels[rowNum][0].set_label(groupName)
-			self.attachBomRow(rowNum)
-			rowNum += 1
+			iter = self.bomStore.append([groupName, temp.value, temp.device, temp.package, temp.description, temp.product, self.active_bom.prodCounts[prod]])
 	
 	'''Set the Part Information pane fields based on the fields of a given 
 	product object.'''		
@@ -716,17 +551,6 @@ class URBM:
 		self.projectInputFileColumn = gtk.TreeViewColumn('Input File', self.projectInputFileCell)
 		self.projectTreeView = gtk.TreeView() # Associate with self.projectStore later, not yet!
 		
-		
-		#self.projectTable = gtk.Table(50, 6, False)
-		
-		#self.projectNameLabel = gtk.Label("Name")
-		#self.projectDescriptionLabel = gtk.Label("Description \t")
-		#self.projectDatabaseLabel = gtk.Label("Database")
-		#self.projectInputLabel = gtk.Label("Input File")
-		#self.projectContentLabels = []
-		#self.projectRadioGroup = gtk.RadioButton(None)
-		#self.projectRadios = self.createBomRadios(0)	# TODO: Update this method call
-		
 		# --- BOM tab ---
 		self.bomTabBox = gtk.VBox(False, 0) # Second tab in notebook
 		self.bomToolbar = gtk.Toolbar()
@@ -737,13 +561,12 @@ class URBM:
 		self.bomVPane = gtk.VPaned()	# Goes in right side of bomHPane
 		
 		self.bomFrame = gtk.Frame("BOM") # Goes in left side of bomHPane
-		self.bomTableBox = gtk.VBox(False, 0) # Holds bomScrollWin and bomRadioBox
+		self.bomScrollBox = gtk.VBox(False, 0) # Holds bomScrollWin and bomRadioBox
 		self.bomScrollWin = gtk.ScrolledWindow() # Holds bomTable
 		
 		# Columns: Name, Value, Device, Package, Description, MFG PN, Quantity
-		# str, str, str, str, str, str, int
 		self.bomStore = gtk.ListStore(str, str, str, str, str, str, int)
-		
+									
 		self.bomNameCell = gtk.CellRendererText()
 		self.bomNameColumn = gtk.TreeViewColumn('Name', self.bomNameCell)
 		self.bomValueCell = gtk.CellRendererText()
@@ -760,20 +583,6 @@ class URBM:
 		self.bomQuantityColumn = gtk.TreeViewColumn('Quantity', self.bomQuantityCell)
 		
 		self.bomTreeView = gtk.TreeView()
-		
-		self.bomTable = gtk.Table(1, 8, False) 
-		
-		# first table row will be column labels
-		self.bomColLabel1 = gtk.Label("Part")
-		self.bomColLabel2 = gtk.Label("Value")
-		self.bomColLabel3 = gtk.Label("Device")
-		self.bomColLabel4 = gtk.Label("Package")
-		self.bomColLabel5 = gtk.Label("Description")
-		self.bomColLabel6 = gtk.Label("Part Number")
-		self.bomColLabel7 = gtk.Label("Quantity")
-		self.bomContentLabels = []
-		self.bomRadioGroup = gtk.RadioButton(None)
-		self.bomRadios = self.createBomRadios(0)
 		
 		self.bomRadioBox = gtk.HBox(False, 0)
 		self.bomRadioLabel = gtk.Label("Group by:")
@@ -892,9 +701,6 @@ class URBM:
 		
 		# BOM tab
 		
-		self.bomTreeView.set_reorderable(True)
-		self.bomTreeView.set_headers_clickable(True)
-		
 		self.bomNameColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
 		self.bomValueColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
 		self.bomDeviceColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
@@ -911,13 +717,42 @@ class URBM:
 		self.bomPNColumn.set_resizable(True)
 		self.bomQuantityColumn.set_resizable(True)
 		
+		self.bomNameColumn.set_clickable(True)
+		self.bomValueColumn.set_clickable(True)
+		self.bomDeviceColumn.set_clickable(True)
+		self.bomPackageColumn.set_clickable(True)
+		self.bomDescriptionColumn.set_clickable(True)
+		self.bomPNColumn.set_clickable(True)
+		self.bomQuantityColumn.set_clickable(True)
+		
+		#self.bomNameColumn.set_sort_indicator(True)
+		#self.bomValueColumn.set_sort_indicator(True)
+		#self.bomDeviceColumn.set_sort_indicator(True)
+		#self.bomPackageColumn.set_sort_indicator(True)
+		#self.bomDescriptionColumn.set_sort_indicator(True)
+		#self.bomPNColumn.set_sort_indicator(True)
+		#self.bomQuantityColumn.set_sort_indicator(True)
+		
 		self.bomNameColumn.set_attributes(self.bomNameCell, text=0)
-		self.bomValueColumn.set_attributes(self.bomValueCell, text=0)
-		self.bomDeviceColumn.set_attributes(self.bomDeviceCell, text=0)
-		self.bomPackageColumn.set_attributes(self.bomPackageCell, text=0)
-		self.bomDescriptionColumn.set_attributes(self.bomDescriptionCell, text=0)
-		self.bomPNColumn.set_attributes(self.bomPNCell, text=0)
-		self.bomQuantityColumn.set_attributes(self.bomQuantityCell, text=0)
+		self.bomValueColumn.set_attributes(self.bomValueCell, text=1)
+		self.bomDeviceColumn.set_attributes(self.bomDeviceCell, text=2)
+		self.bomPackageColumn.set_attributes(self.bomPackageCell, text=3)
+		self.bomDescriptionColumn.set_attributes(self.bomDescriptionCell, text=4)
+		self.bomPNColumn.set_attributes(self.bomPNCell, text=5)
+		self.bomQuantityColumn.set_attributes(self.bomQuantityCell, text=6)
+		
+		self.bomNameColumn.connect("clicked", self.bomSortCallback)
+		self.bomValueColumn.connect("clicked", self.bomSortCallback)
+		self.bomDeviceColumn.connect("clicked", self.bomSortCallback)
+		self.bomPackageColumn.connect("clicked", self.bomSortCallback)
+		self.bomDescriptionColumn.connect("clicked", self.bomSortCallback)
+		self.bomPNColumn.connect("clicked", self.bomSortCallback)
+		self.bomQuantityColumn.connect("clicked", self.bomSortCallback)
+		
+		self.bomTreeView.set_reorderable(True)
+		self.bomTreeView.set_enable_search(True)
+		self.bomTreeView.set_headers_clickable(True)
+		self.bomTreeView.set_headers_visible(True)
 		
 		self.bomTreeView.append_column(self.bomNameColumn)
 		self.bomTreeView.append_column(self.bomValueColumn)
@@ -927,6 +762,8 @@ class URBM:
 		self.bomTreeView.append_column(self.bomPNColumn)
 		self.bomTreeView.append_column(self.bomQuantityColumn)
 		#self.projectStorePopulate()
+		
+		self.bomTreeView.connect("cursor-changed", self.bomSelectionCallback)
 		self.bomTreeView.set_model(self.bomStore)
 		
 		self.bomReadInputButton.connect("clicked", self.readInputCallback, "read")
@@ -1001,16 +838,12 @@ class URBM:
 		self.bomVPane.add2(self.pricingFrame)
 		
 		# BOM Frame elements
-		self.bomFrame.add(self.bomTableBox)
+		self.bomFrame.add(self.bomScrollBox)
 		
-		self.bomTableBox.pack_start(self.bomScrollWin, True, True, 0)
-		self.bomScrollWin.add_with_viewport(self.bomTable)
-		self.bomTableBox.pack_end(self.bomRadioBox, False, False, 0)
+		self.bomScrollBox.pack_start(self.bomScrollWin, True, True, 0)
+		self.bomScrollWin.add_with_viewport(self.bomTreeView)
+		self.bomScrollBox.pack_end(self.bomRadioBox, False, False, 0)
 
-		self.bomTable.set_col_spacings(10)
-		self.bomTableHeaders()
-		self.attachBomRadios()
-		
 		self.bomRadioBox.pack_start(self.bomRadioLabel)
 		self.bomRadioBox.pack_start(self.bomGroupName)
 		self.bomRadioBox.pack_start(self.bomGroupValue)
