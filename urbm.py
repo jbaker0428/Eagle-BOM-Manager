@@ -296,7 +296,56 @@ class URBM:
 			if p != 'dummy':
 				bom = BOM.readFromDB(urbmDB, p)
 				iter = self.projectStore.append([bom.name, bom.description, urbmDB.db, bom.input])
+	
+	''' Clear self.bomStore and repopulate it, grouped by name. '''
+	def bomStorePopulateByName(self):
+		self.bomStore.clear()
+		for p in self.active_bom.parts:
+			temp = urbmDB.select(p[0], self.active_bom.name)
+			iter = self.bomStore.append([temp.name, temp.value, temp.device, temp.package, temp.description, temp.product, 'fixme'])
+	
+	''' Clear self.bomStore and repopulate it, grouped by value. '''
+	def bomStorePopulateByVal(self):
+		self.active_bom.sortByVal()
+		self.active_bom.setValCounts()
 		
+		for val in self.active_bom.valCounts.keys():
+			groupName = "\t"	# Clear groupName and prepend a tab
+			# TODO: Does this split up parts of the same value but different package?
+			# If not, the "part number" column will be bad
+			group = urbmDB.selectdic("#val=" + val, self.active_bom.name)
+			for part in group.values():
+				groupName += part[2].name + ", "
+			
+			# Replace trailing comma with tab
+			groupName = groupName[0:-2]
+			temp = group[group.keys()[0]][2]	# Part object
+			iter = self.bomStore.append([groupName, temp.value, temp.device, temp.package, temp.description, temp.product, str(self.active_bom.valCounts[val])])
+	
+	''' Clear self.bomStore and repopulate it, grouped by part number. '''		
+	def bomStorePopulateByPN(self):
+		self.active_bom.sortByProd()
+		self.active_bom.setProdCounts()
+		
+		for prod in self.active_bom.prodCounts.keys():
+			groupName = "\t"	# Clear groupName and prepend a tab
+			print "Querying with prod =", prod, " of length ", len(prod)
+			# Catch empty product string
+			if prod == ' ' or len(prod) == 0: 
+				print "Caught empty product"
+				group = urbmDB.selectdic("#prod=none", self.active_bom.name)
+			else:
+				group = urbmDB.selectdic("#prod=" + prod, self.active_bom.name)
+			print "Group: \n", group
+			for part in group.values():	# TODO: Ensure this data is what we expect
+				groupName += part[2].name + ", "
+			
+			# Replace trailing comma with tab
+			groupName = groupName[0:-2]
+			
+			temp = group[group.keys()[0]][2]	# Part object
+			iter = self.bomStore.append([groupName, temp.value, temp.device, temp.package, temp.description, temp.product, str(self.active_bom.prodCounts[prod])])
+						
 	def bomTableHeaders(self):
 		self.bomTable.attach(self.bomColLabel1, 0, 1, 0, 1)
 		self.bomTable.attach(self.bomColLabel2, 1, 2, 0, 1)
