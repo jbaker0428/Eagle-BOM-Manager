@@ -51,6 +51,34 @@ class URBM(gobject.GObject):
 		gtk.main_quit()
 
 	# -------- CALLBACK METHODS --------
+	''' Callback for the input file Open dialog in the New Project dialog. '''
+	def newProjectInputFileCallback(self, widget, data=None):
+		self.inputFileDialog.run()
+		self.inputFileDialog.hide()
+		self.newProjectInputFileEntry.set_text(self.inputFileDialog.get_filename())
+	
+	'''Callback for the New Project button. '''
+	def projectNewCallback(self, widget, data=None):
+		response = self.newProjectDialog.run()
+		self.newProjectDialog.hide()
+		newName = self.newProjectNameEntry.get_text()
+		curProjects = listProjects()
+		if newName in curProjects:
+			print 'Error: Name in use!'
+			self.projectNameTakenDialog.run()
+			self.projectNameTakenDialog.hide()
+		elif response == gtk.RESPONSE_ACCEPT: 
+			# Create project
+			print 'Creating new project'
+			new = BOM(newName, self.newProjectDescriptionEntry.get_text(), urbmDB, self.newProjectInputFileEntry.get_text())
+			new.writeToDB()
+			self.projectStorePopulate()
+		self.newProjectNameEntry.set_text('')
+		self.newProjectDescriptionEntry.set_text('')
+		#self.newProjectDatabaseFileEntry.set_text('')
+		self.newProjectInputFileEntry.set_text('')
+	
+	'''Callback for the "Read CSV" button on the BOM tab.'''
 	def readInputCallback(self, widget, data=None):
 		self.active_bom.readFromFile()
 		#Read back last entry
@@ -223,56 +251,57 @@ class URBM(gobject.GObject):
 		
 		# Show everything
 		editPartDialog.vbox.show_all()
-		editPartDialog.run()
+		response = editPartDialog.run()
 		editPartDialog.hide()
 		
-		# If the product text entry field is left blank, set the product to "none"
-		if type(self.editPartProductEntry.get_text()) is types.NoneType or len(self.editPartProductEntry.get_text()) == 0:
-			self.productEntryText = "none"
-		else:
-			self.productEntryText = self.editPartProductEntry.get_text()
-		
-		# Set selectedBomPart
-		# TODO: If grouping by value or PN, what to do? Grey out the name field?
-		# It should write the rest to ALL of the parts in the row
-		self.selectedBomPart.name = self.editPartNameEntry.get_text()
-		self.selectedBomPart.value = self.editPartValueEntry.get_text()
-		self.selectedBomPart.device = self.editPartDeviceEntry.get_text()
-		self.selectedBomPart.package = self.editPartPackageEntry.get_text()
-		self.selectedBomPart.description = self.editPartDescriptionEntry.get_text()
-		print "Setting selectedBomPart.product to: %s" % self.editPartProductEntry.get_text()
-		self.selectedBomPart.product = self.productEntryText
-		print "selectedBomPart's product field: %s" % self.selectedBomPart.product
-		
-		# Make sure the user selected a vendor
-		# If not, default to Digikey for now
-		# TODO: If a product was previously set, default to the current vendor
-		# TODO: Can this be a "required field" that will prevent the OK button 
-		# from working (greyed out) if a part number is also entered?
-		if type(editPartVendorCombo.get_active_text()) is types.NoneType:
-			print "NoneType caught"
-			self.bomSelectedProduct.vendor = Product.VENDOR_DK
-		else:	
-			self.bomSelectedProduct.vendor = editPartVendorCombo.get_active_text()
-		
-		self.selectedBomPart.writeToDB()
-		self.active_bom.updateParts(self.selectedBomPart)
-		
-		if self.bomGroupName.get_active():
-			self.bomStorePopulateByName()
-		elif self.bomGroupValue.get_active():
-			self.bomStorePopulateByVal()
-		elif self.bomGroupPN.get_active():
-			self.bomStorePopulateByPN()
-				
-		self.bomSelectedProduct.vendor_pn = self.productEntryText
-		self.bomSelectedProduct.selectOrScrape()
-		if self.bomSelectedProduct.vendor_pn == "none":
-			self.clearPartInfoLabels()
-			self.destroyPartPriceLabels()
-		else:
-			self.setPartInfoLabels(self.bomSelectedProduct)
-			self.setPartPriceLabels(self.bomSelectedProduct)
+		if response == gtk.RESPONSE_ACCEPT:
+			# If the product text entry field is left blank, set the product to "none"
+			if type(self.editPartProductEntry.get_text()) is types.NoneType or len(self.editPartProductEntry.get_text()) == 0:
+				self.productEntryText = "none"
+			else:
+				self.productEntryText = self.editPartProductEntry.get_text()
+			
+			# Set selectedBomPart
+			# TODO: If grouping by value or PN, what to do? Grey out the name field?
+			# It should write the rest to ALL of the parts in the row
+			self.selectedBomPart.name = self.editPartNameEntry.get_text()
+			self.selectedBomPart.value = self.editPartValueEntry.get_text()
+			self.selectedBomPart.device = self.editPartDeviceEntry.get_text()
+			self.selectedBomPart.package = self.editPartPackageEntry.get_text()
+			self.selectedBomPart.description = self.editPartDescriptionEntry.get_text()
+			print "Setting selectedBomPart.product to: %s" % self.editPartProductEntry.get_text()
+			self.selectedBomPart.product = self.productEntryText
+			print "selectedBomPart's product field: %s" % self.selectedBomPart.product
+			
+			# Make sure the user selected a vendor
+			# If not, default to Digikey for now
+			# TODO: If a product was previously set, default to the current vendor
+			# TODO: Can this be a "required field" that will prevent the OK button 
+			# from working (greyed out) if a part number is also entered?
+			if type(editPartVendorCombo.get_active_text()) is types.NoneType:
+				print "NoneType caught"
+				self.bomSelectedProduct.vendor = Product.VENDOR_DK
+			else:	
+				self.bomSelectedProduct.vendor = editPartVendorCombo.get_active_text()
+			
+			self.selectedBomPart.writeToDB()
+			self.active_bom.updateParts(self.selectedBomPart)
+			
+			if self.bomGroupName.get_active():
+				self.bomStorePopulateByName()
+			elif self.bomGroupValue.get_active():
+				self.bomStorePopulateByVal()
+			elif self.bomGroupPN.get_active():
+				self.bomStorePopulateByPN()
+					
+			self.bomSelectedProduct.vendor_pn = self.productEntryText
+			self.bomSelectedProduct.selectOrScrape()
+			if self.bomSelectedProduct.vendor_pn == "none":
+				self.clearPartInfoLabels()
+				self.destroyPartPriceLabels()
+			else:
+				self.setPartInfoLabels(self.bomSelectedProduct)
+				self.setPartPriceLabels(self.bomSelectedProduct)
 	
 	'''Callback for the "Read DB" button on the product DB tab.'''
 	def dbReadDBCallback(self, widget, data=None):
@@ -539,6 +568,35 @@ class URBM(gobject.GObject):
 		self.projectFrame = gtk.Frame("Projects") 
 		self.projectScrollWin = gtk.ScrolledWindow()
 		
+		# New Project menu
+		self.newProjectDialog = gtk.Dialog('New Project', self.window, 
+										gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT, 
+										(gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT, gtk.STOCK_OK, gtk.RESPONSE_ACCEPT))
+		
+		self.newProjectNameHBox = gtk.HBox()
+		self.newProjectDescriptionHBox = gtk.HBox()
+		#newProjectDatabaseFileHBox = gtk.HBox()
+		self.newProjectInputFileHBox = gtk.HBox()
+		
+		self.newProjectNameLabel = gtk.Label("Name: ")
+		self.newProjectDescriptionLabel = gtk.Label("Description: ")
+		#self.newProjectDatabaseFileLabel = gtk.Label("Database file: ")
+		self.newProjectInputFileLabel = gtk.Label("Input file: ")
+		
+		self.newProjectNameEntry = gtk.Entry()
+		self.newProjectDescriptionEntry = gtk.Entry()
+		# TODO: Add a database file Entry/FileDialog when adding multiple DB file support
+		self.newProjectInputFileButton = gtk.Button('Browse', gtk.STOCK_OPEN)
+		self.newProjectInputFileEntry = gtk.Entry()
+		self.inputFileDialog = gtk.FileChooserDialog('Select Input File', 
+													self.newProjectDialog, gtk.FILE_CHOOSER_ACTION_OPEN, 
+													(gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT, gtk.STOCK_OK, gtk.RESPONSE_ACCEPT))
+		
+		self.projectNameTakenDialog = gtk.MessageDialog(self.newProjectDialog, 
+												gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_ERROR, 
+												gtk.BUTTONS_OK, 'Error: Project name in use. \nPlease select a different name.')
+		
+		# Projects list
 		# Columns: Name, Description, Database, Input File
 		self.projectStore = gtk.ListStore(str, str, str, str)
 		self.projectNameCell = gtk.CellRendererText()
@@ -672,7 +730,15 @@ class URBM(gobject.GObject):
 		self.notebook.set_show_tabs(True)
 		
 		# Project selection tab
+		self.projectNewButton.connect("clicked", self.projectNewCallback)
+		self.newProjectInputFileButton.connect("clicked", self.newProjectInputFileCallback)
 		
+		self.newProjectNameLabel.set_alignment(0.0, 0.5)
+		self.newProjectDescriptionLabel.set_alignment(0.0, 0.5)
+		#self.newProjectDatabaseFileLabel.set_alignment(0.0, 0.5)
+		self.newProjectInputFileLabel.set_alignment(0.0, 0.5)
+		
+		self.projectScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
 		#self.projectTreeView.set_fixed_height_mode(True)
 		self.projectTreeView.set_reorderable(True)
 		self.projectTreeView.set_headers_clickable(True)
@@ -820,7 +886,26 @@ class URBM(gobject.GObject):
 		self.projectFrame.add(self.projectScrollWin)
 		self.projectScrollWin.add_with_viewport(self.projectTreeView)
 		
-		#self.projectTable.set_col_spacings(10)
+		self.newProjectNameHBox.pack_start(self.newProjectNameLabel, False, True, 0)
+		self.newProjectNameHBox.pack_end(self.newProjectNameEntry, False, True, 0)
+		
+		self.newProjectDescriptionHBox.pack_start(self.newProjectDescriptionLabel, False, True, 0)
+		self.newProjectDescriptionHBox.pack_end(self.newProjectDescriptionEntry, False, True, 0)
+		
+		#self.newProjectDatabaseFileHBox.pack_start(self.newProjectDatabaseFileLabel, False, True, 0)
+		#self.newProjectDatabaseFileHBox.pack_end(self.newProjectDatabaseFileEntry, False, True, 0)
+		
+		self.newProjectInputFileHBox.pack_start(self.newProjectInputFileLabel, False, True, 0)
+		self.newProjectInputFileHBox.pack_start(self.newProjectInputFileEntry, False, True, 0)
+		self.newProjectInputFileHBox.pack_end(self.newProjectInputFileButton, False, True, 0)
+		
+		self.newProjectDialog.vbox.set_spacing(1)
+		self.newProjectDialog.vbox.pack_start(self.newProjectNameHBox, True, True, 0)
+		self.newProjectDialog.vbox.pack_start(self.newProjectDescriptionHBox, True, True, 0)
+		#self.newProjectDialog.vbox.pack_start(self.newProjectDatabaseFileHBox, True, True, 0)
+		self.newProjectDialog.vbox.pack_start(self.newProjectInputFileHBox, True, True, 0)
+		
+		self.newProjectDialog.vbox.show_all()
 		
 		# BOM tab elements
 		
