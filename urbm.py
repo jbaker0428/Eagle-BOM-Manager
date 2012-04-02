@@ -92,6 +92,8 @@ class URBM(gobject.GObject):
 			self.bomStorePopulateByVal()
 		elif self.bomGroupPN.get_active():
 			self.bomStorePopulateByPN()
+			
+		self.bomTreeView.columns_autosize()
 		self.window.show_all()
 		
 	'''Callback for the "Read CSV" button on the BOM tab.'''
@@ -346,6 +348,7 @@ class URBM(gobject.GObject):
 			if p != 'dummy':
 				bom = BOM.readFromDB(urbmDB, p)
 				iter = self.projectStore.append([bom.name, bom.description, urbmDB.db, bom.input])
+		self.projectTreeView.columns_autosize()
 	
 	''' Clear self.bomStore and repopulate it, grouped by name. '''
 	def bomStorePopulateByName(self):
@@ -353,6 +356,8 @@ class URBM(gobject.GObject):
 		for p in self.active_bom.parts:
 			temp = urbmDB.select(p[0], self.active_bom.name)
 			iter = self.bomStore.append([temp.name, temp.value, temp.device, temp.package, temp.description, temp.product, 1])
+		
+		self.bomTreeView.columns_autosize()
 	
 	''' Clear self.bomStore and repopulate it, grouped by value. '''
 	def bomStorePopulateByVal(self):
@@ -372,6 +377,8 @@ class URBM(gobject.GObject):
 			groupName = groupName[0:-2]
 			temp = group[group.keys()[0]][2]	# Part object
 			iter = self.bomStore.append([groupName, temp.value, temp.device, temp.package, temp.description, temp.product, self.active_bom.valCounts[val]])
+		
+		self.bomTreeView.columns_autosize()
 	
 	''' Clear self.bomStore and repopulate it, grouped by part number. '''		
 	def bomStorePopulateByPN(self):
@@ -397,6 +404,8 @@ class URBM(gobject.GObject):
 			
 			temp = group[group.keys()[0]][2]	# Part object
 			iter = self.bomStore.append([groupName, temp.value, temp.device, temp.package, temp.description, temp.product, self.active_bom.prodCounts[prod]])
+		
+		self.bomTreeView.columns_autosize()
 	
 	'''Set the Part Information pane fields based on the fields of a given 
 	product object.'''		
