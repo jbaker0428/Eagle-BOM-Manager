@@ -77,7 +77,23 @@ class URBM(gobject.GObject):
 		self.newProjectDescriptionEntry.set_text('')
 		#self.newProjectDatabaseFileEntry.set_text('')
 		self.newProjectInputFileEntry.set_text('')
-	
+		
+	def projectOpenCallback(self, widget, data=None):
+		(model, rowIter) = self.projectTreeView.get_selection().get_selected()
+		self.active_bom = BOM.readFromDB(urbmDB, model.get(rowIter,0)[0])
+		activeProjectName = model.get(rowIter,0)[0]
+		inputFile = model.get(rowIter,3)[0]
+		print self.active_bom, type(self.active_bom)
+		print 'Project name: ', activeProjectName
+		print 'Project CSV: ', inputFile
+		if self.bomGroupName.get_active():
+			self.bomStorePopulateByName()
+		elif self.bomGroupValue.get_active():
+			self.bomStorePopulateByVal()
+		elif self.bomGroupPN.get_active():
+			self.bomStorePopulateByPN()
+		self.window.show_all()
+		
 	'''Callback for the "Read CSV" button on the BOM tab.'''
 	def readInputCallback(self, widget, data=None):
 		self.active_bom.readFromFile()
@@ -732,6 +748,8 @@ class URBM(gobject.GObject):
 		# Project selection tab
 		self.projectNewButton.connect("clicked", self.projectNewCallback)
 		self.newProjectInputFileButton.connect("clicked", self.newProjectInputFileCallback)
+		
+		self.projectOpenButton.connect("clicked", self.projectOpenCallback)
 		
 		self.newProjectNameLabel.set_alignment(0.0, 0.5)
 		self.newProjectDescriptionLabel.set_alignment(0.0, 0.5)
