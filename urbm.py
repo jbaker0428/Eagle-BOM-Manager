@@ -913,7 +913,7 @@ class URBM(gobject.GObject):
 		
 		self.projectBox.pack_start(self.projectFrame)
 		self.projectFrame.add(self.projectScrollWin)
-		self.projectScrollWin.add_with_viewport(self.projectTreeView)
+		self.projectScrollWin.add(self.projectTreeView)
 		
 		self.newProjectNameHBox.pack_start(self.newProjectNameLabel, False, True, 0)
 		self.newProjectNameHBox.pack_end(self.newProjectNameEntry, False, True, 0)
@@ -955,7 +955,7 @@ class URBM(gobject.GObject):
 		self.bomFrame.add(self.bomScrollBox)
 		
 		self.bomScrollBox.pack_start(self.bomScrollWin, True, True, 0)
-		self.bomScrollWin.add_with_viewport(self.bomTreeView)
+		self.bomScrollWin.add(self.bomTreeView)
 		self.bomScrollBox.pack_end(self.bomRadioBox, False, False, 0)
 
 		self.bomRadioBox.pack_start(self.bomRadioLabel)
