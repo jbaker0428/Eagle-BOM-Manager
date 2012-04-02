@@ -14,7 +14,7 @@ import gobject
 
 urbmDB = y_serial.Main(os.path.join(os.getcwd(), "urbm.sqlite"))
 urbmDB.createtable('products')
-activeProjectName = 'test1'
+#activeProjectName = 'test1'
 inputFile = os.path.join(os.getcwd(), "test.csv")	# TODO: Test dummy
 
 #active_bom = BOM("test1", 'Test BOM 1', urbmDB, os.path.join(os.getcwd(), "test.csv"))
@@ -81,10 +81,10 @@ class URBM(gobject.GObject):
 	def projectOpenCallback(self, widget, data=None):
 		(model, rowIter) = self.projectTreeView.get_selection().get_selected()
 		self.active_bom = BOM.readFromDB(urbmDB, model.get(rowIter,0)[0])
-		activeProjectName = model.get(rowIter,0)[0]
+		self.activeProjectName = model.get(rowIter,0)[0]
 		inputFile = model.get(rowIter,3)[0]
 		print self.active_bom, type(self.active_bom)
-		print 'Project name: ', activeProjectName
+		print 'Project name: ', self.activeProjectName
 		print 'Project CSV: ', inputFile
 		if self.bomGroupName.get_active():
 			self.bomStorePopulateByName()
@@ -110,7 +110,8 @@ class URBM(gobject.GObject):
 	'''Callback for the "Read DB" button on the BOM tab.'''
 	def bomReadDBCallback(self, widget, data=None):
 		print "Read DB callback"
-		self.active_bom = BOM.readFromDB(urbmDB, activeProjectName)
+		print 'Project name: ', self.activeProjectName
+		self.active_bom = BOM.readFromDB(urbmDB, self.activeProjectName)
 		if self.bomGroupName.get_active():
 			self.bomStorePopulateByName()
 		elif self.bomGroupValue.get_active():
@@ -565,6 +566,7 @@ class URBM(gobject.GObject):
 	def __init__(self):
 		# -------- DECLARATIONS --------
 		self.active_bom = BOM('dummy', 'Active BOM Declaration', urbmDB, inputFile)
+		self.activeProjectName = 'dummy'
 		
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
 		self.mainBox = gtk.VBox(False, 0)
