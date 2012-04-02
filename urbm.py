@@ -322,22 +322,31 @@ class URBM(gobject.GObject):
 				self.setPartInfoLabels(self.bomSelectedProduct)
 				self.setPartPriceLabels(self.bomSelectedProduct)
 	
+	''' Clear self.dbStore and repopulate it. '''
+	def dbStorePopulate(self):
+		self.dbStore.clear()
+		prodsDict = urbmDB.selectdic("*", "products")
+		
+		for p in prodsDict.values():
+			# p[2] is a Product object from the DB
+			iter = self.dbStore.append([p[2].vendor, p[2].vendor_pn, p[2].inventory, p[2].manufacturer, p[2].mfg_pn, p[2].description, p[2].datasheet, p[2].category, p[2].family, p[2].series, p[2].package])
+		self.dbTreeView.columns_autosize()
+	
 	'''Callback for the "Read DB" button on the product DB tab.'''
 	def dbReadDBCallback(self, widget, data=None):
 		print "Read DB callback"
-		#prodsDict = urbmDB.selectdic(Product.PROD_SEL_ALL, "products")
-		prodsDict = urbmDB.selectdic("*", "products")
-		self.dbDraw(prodsDict)
-		self.window.show_all()
+		self.dbStorePopulate()
 	
 	'''Callback method triggered when a product DB item is selected.'''
-	def dbRadioCallback(self, widget, data=None):
-		print "dbRadioCallback"
+	def dbSelectionCallback(self, widget, data=None):
 		# Set class fields for currently selected item
-		self.dbSelectedRow = int(data) 	# Convert str to int
-		# Grab the vendor part number for the selected item from the label text
-		selectedPN = self.dbContentLabels[self.dbSelectedRow][1].get_text()
-		self.dbSelectedProduct = urbmDB.select(selectedPN, "products")
+		(model, rowIter) = self.dbTreeView.get_selection().get_selected()
+		self.dbSelectedProduct = urbmDB.select(model.get(rowIter,0)[0], "products")
+	
+	'''Callback method activated by clicking a DB column header.
+	Sorts the DB TreeView by the values in the clicked column.'''
+	def dbSortCallback(self, widget):
+		widget.set_sort_column_id(0)
 	 
 	# -------- HELPER METHODS --------
 	def projectStorePopulate(self):
@@ -477,97 +486,6 @@ class URBM(gobject.GObject):
 			self.partInfoPricingTable.attach(self.priceBreakLabels[rowNum],  0, 1, rowNum, rowNum+1)
 			self.partInfoPricingTable.attach(self.unitPriceLabels[rowNum],  1, 2, rowNum, rowNum+1)
 			self.partInfoPricingTable.attach(self.extPriceLabels[rowNum],  2, 3, rowNum, rowNum+1)
-			rowNum += 1
-			
-		self.window.show_all()
-		
-	def dbTableHeaders(self):
-		self.dbTable.attach(self.dbVendorLabel, 0, 1, 0, 1)
-		self.dbTable.attach(self.dbVendorPNLabel, 1, 2, 0, 1)
-		self.dbTable.attach(self.dbInventoryLabel, 2, 3, 0, 1)
-		self.dbTable.attach(self.dbManufacturerLabel, 3, 4, 0, 1)
-		self.dbTable.attach(self.dbManufacturerPNLabel, 4, 5, 0, 1)
-		self.dbTable.attach(self.dbDescriptionLabel, 5, 6, 0, 1)
-		self.dbTable.attach(self.dbDatasheetLabel, 6, 7, 0, 1)
-		self.dbTable.attach(self.dbCategoryLabel, 7, 8, 0, 1)
-		self.dbTable.attach(self.dbFamilyLabel, 8, 9, 0, 1)
-		self.dbTable.attach(self.dbSeriesLabel, 9, 10, 0, 1)
-		self.dbTable.attach(self.dbPackageLabel, 10, 11, 0, 1)
-	
-	'''Create Label instances for a given number of Product DB rows.'''	
-	def dbCreateLabels(self, numRows):
-		rows = []
-		for x in range(numRows):
-			row = []
-			for i in range(11):
-				row.append(gtk.Label(None))
-			rows.append(row)
-		
-		return rows
-	
-	'''Destroy current self.dbContentLabels Label instances.''' 
-	def dbDestroyLabels(self):
-		for x in self.dbContentLabels:
-			for y in x:
-				y.destroy()
-				
-	'''Create RadioButton instances for a given number of Product DB rows.'''
-	def dbCreateRadios(self, numRows):
-		radios = []
-		for x in range(numRows):
-			radios.append(gtk.RadioButton(self.dbRadioGroup))
-			radios[x].connect("toggled", self.dbRadioCallback, str(x))
-		return radios
-	
-	def dbAttachRadios(self):
-		r = 0
-		for radio in self.dbRadios:
-			self.dbTable.attach(radio,  0, 11, r+1, r+2)
-			r += 1
-	
-	def dbDestroyRadios(self):
-		for r in self.dbRadios:
-			r.destroy()
-	
-	''' @param row considers index 0 to be the first row of content after headers'''
-	def dbPopulateRow(self, product, row):
-		self.dbContentLabels[row][0].set_label("\t" + product.vendor)
-		self.dbContentLabels[row][1].set_label(product.vendor_pn)
-		self.dbContentLabels[row][2].set_label(str(product.inventory))
-		self.dbContentLabels[row][3].set_label(product.manufacturer)
-		self.dbContentLabels[row][4].set_label(product.mfg_pn)
-		self.dbContentLabels[row][5].set_label(product.description)
-		self.dbContentLabels[row][6].set_label(product.datasheet)
-		self.dbContentLabels[row][7].set_label(product.category)
-		self.dbContentLabels[row][8].set_label(product.family)
-		self.dbContentLabels[row][9].set_label(product.series)
-		self.dbContentLabels[row][10].set_label(product.package)
-		
-	def dbAttachRow(self, row):
-		i = 0
-		for label in self.dbContentLabels[row]:
-			self.dbTable.attach(label,  i, i+1, row+1, row+2)
-			i += 1
-	
-	''' @param d Dictionary containing the contents of the "products" table.'''
-	def dbDraw(self, d):
-		nr = len(d)	# numRows
-		old = len(self.dbContentLabels)
-		self.dbDestroyLabels()
-		self.dbDestroyRadios()
-		del self.dbContentLabels[0:old]
-		del self.dbRadios[0:old]
-		
-		self.dbTable.resize(nr+1, 12)
-		self.dbContentLabels = self.dbCreateLabels(nr)
-		self.dbRadios = self.dbCreateRadios(nr)
-		self.dbAttachRadios()
-		
-		rowNum = 0
-		for p in d.values():
-			# p[2] is a Product object from the DB
-			self.dbPopulateRow(p[2], rowNum)
-			self.dbAttachRow(rowNum)
 			rowNum += 1
 			
 		self.window.show_all()
@@ -728,21 +646,33 @@ class URBM(gobject.GObject):
 		self.dbReadDBButton = gtk.ToolButton(None, "Read DB")
 		self.dbFrame = gtk.Frame("Product database") 
 		self.dbScrollWin = gtk.ScrolledWindow()
-		self.dbTable = gtk.Table(50, 6, False)
-		self.dbVendorLabel = gtk.Label("Vendor")
-		self.dbVendorPNLabel = gtk.Label("Vendor Part Number")
-		self.dbInventoryLabel = gtk.Label("Inventory")
-		self.dbManufacturerLabel = gtk.Label("Manufacturer")
-		self.dbManufacturerPNLabel = gtk.Label("Manufacturer Part Number")
-		self.dbDescriptionLabel = gtk.Label("Description")
-		self.dbDatasheetLabel = gtk.Label("Datasheet filename")
-		self.dbCategoryLabel = gtk.Label("Category")
-		self.dbFamilyLabel = gtk.Label("Family")
-		self.dbSeriesLabel = gtk.Label("Series")
-		self.dbPackageLabel = gtk.Label("Package/case")
-		self.dbContentLabels = []
-		self.dbRadioGroup = gtk.RadioButton(None)
-		self.dbRadios = self.dbCreateRadios(0)
+		
+		self.dbStore = gtk.ListStore(str, str, int, str, str, str, str, str, str, str, str)
+									
+		self.dbVendorCell = gtk.CellRendererText()
+		self.dbVendorColumn = gtk.TreeViewColumn('Vendor', self.dbVendorCell)
+		self.dbVendorPNCell = gtk.CellRendererText()
+		self.dbVendorPNColumn = gtk.TreeViewColumn('Vendor PN', self.dbVendorPNCell)
+		self.dbInventoryCell = gtk.CellRendererText()
+		self.dbInventoryColumn = gtk.TreeViewColumn('Inventory', self.dbInventoryCell)
+		self.dbManufacturerCell = gtk.CellRendererText()
+		self.dbManufacturerColumn = gtk.TreeViewColumn('Manufacturer', self.dbManufacturerCell)
+		self.dbManufacturerPNCell = gtk.CellRendererText()
+		self.dbManufacturerPNColumn = gtk.TreeViewColumn('Manufacturer PN', self.dbManufacturerPNCell)
+		self.dbDescriptionCell = gtk.CellRendererText()
+		self.dbDescriptionColumn = gtk.TreeViewColumn('Description', self.dbDescriptionCell)
+		self.dbDatasheetCell = gtk.CellRendererText()
+		self.dbDatasheetColumn = gtk.TreeViewColumn('Datasheet filename', self.dbDatasheetCell)
+		self.dbCategoryCell = gtk.CellRendererText()
+		self.dbCategoryColumn = gtk.TreeViewColumn('Category', self.dbCategoryCell)
+		self.dbFamilyCell = gtk.CellRendererText()
+		self.dbFamilyColumn = gtk.TreeViewColumn('Family', self.dbFamilyCell)
+		self.dbSeriesCell = gtk.CellRendererText()
+		self.dbSeriesColumn = gtk.TreeViewColumn('Series', self.dbSeriesCell)
+		self.dbPackageCell = gtk.CellRendererText()
+		self.dbPackageColumn = gtk.TreeViewColumn('Package/case', self.dbPackageCell)
+		
+		self.dbTreeView = gtk.TreeView()
 		
 		# -------- CONFIGURATION --------
 		self.window.set_title("Unified Robotics BOM Manager") 
@@ -899,6 +829,87 @@ class URBM(gobject.GObject):
 		self.dbScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
 		self.dbReadDBButton.connect("clicked", self.dbReadDBCallback, "read")
 		
+		self.dbVendorColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.dbVendorPNColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.dbInventoryColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.dbManufacturerColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.dbManufacturerPNColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.dbDescriptionColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.dbDatasheetColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.dbCategoryColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.dbFamilyColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.dbSeriesColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.dbPackageColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		
+		self.dbVendorColumn.set_resizable(True)
+		self.dbVendorPNColumn.set_resizable(True)
+		self.dbInventoryColumn.set_resizable(True)
+		self.dbManufacturerColumn.set_resizable(True)
+		self.dbManufacturerPNColumn.set_resizable(True)
+		self.dbDescriptionColumn.set_resizable(True)
+		self.dbDatasheetColumn.set_resizable(True)
+		self.dbCategoryColumn.set_resizable(True)
+		self.dbFamilyColumn.set_resizable(True)
+		self.dbSeriesColumn.set_resizable(True)
+		self.dbPackageColumn.set_resizable(True)
+		
+		self.dbVendorColumn.set_clickable(True)
+		self.dbVendorPNColumn.set_clickable(True)
+		self.dbInventoryColumn.set_clickable(True)
+		self.dbManufacturerColumn.set_clickable(True)
+		self.dbManufacturerPNColumn.set_clickable(True)
+		self.dbDescriptionColumn.set_clickable(True)
+		self.dbDatasheetColumn.set_clickable(True)
+		self.dbCategoryColumn.set_clickable(True)
+		self.dbFamilyColumn.set_clickable(True)
+		self.dbSeriesColumn.set_clickable(True)
+		self.dbPackageColumn.set_clickable(True)
+		
+		self.dbVendorColumn.set_attributes(self.dbVendorCell, text=0)
+		self.dbVendorPNColumn.set_attributes(self.dbVendorPNCell, text=1)
+		self.dbInventoryColumn.set_attributes(self.dbInventoryCell, text=2)
+		self.dbManufacturerColumn.set_attributes(self.dbManufacturerCell, text=3)
+		self.dbManufacturerPNColumn.set_attributes(self.dbManufacturerPNCell, text=4)
+		self.dbDescriptionColumn.set_attributes(self.dbDescriptionCell, text=5)
+		self.dbDatasheetColumn.set_attributes(self.dbDatasheetCell, text=6)
+		self.dbCategoryColumn.set_attributes(self.dbCategoryCell, text=7)
+		self.dbFamilyColumn.set_attributes(self.dbFamilyCell, text=8)
+		self.dbSeriesColumn.set_attributes(self.dbSeriesCell, text=9)
+		self.dbPackageColumn.set_attributes(self.dbPackageCell, text=10)
+		
+		self.dbVendorColumn.connect("clicked", self.dbSortCallback)
+		self.dbVendorPNColumn.connect("clicked", self.dbSortCallback)
+		self.dbInventoryColumn.connect("clicked", self.dbSortCallback)
+		self.dbManufacturerColumn.connect("clicked", self.dbSortCallback)
+		self.dbManufacturerPNColumn.connect("clicked", self.dbSortCallback)
+		self.dbDescriptionColumn.connect("clicked", self.dbSortCallback)
+		self.dbDatasheetColumn.connect("clicked", self.dbSortCallback)
+		self.dbCategoryColumn.connect("clicked", self.dbSortCallback)
+		self.dbFamilyColumn.connect("clicked", self.dbSortCallback)
+		self.dbSeriesColumn.connect("clicked", self.dbSortCallback)
+		self.dbPackageColumn.connect("clicked", self.dbSortCallback)
+		
+		self.dbTreeView.set_reorderable(True)
+		self.dbTreeView.set_enable_search(True)
+		self.dbTreeView.set_headers_clickable(True)
+		self.dbTreeView.set_headers_visible(True)
+		
+		self.dbTreeView.append_column(self.dbVendorColumn)
+		self.dbTreeView.append_column(self.dbVendorPNColumn)
+		self.dbTreeView.append_column(self.dbInventoryColumn)
+		self.dbTreeView.append_column(self.dbManufacturerColumn)
+		self.dbTreeView.append_column(self.dbManufacturerPNColumn)
+		self.dbTreeView.append_column(self.dbDescriptionColumn)
+		self.dbTreeView.append_column(self.dbDatasheetColumn)
+		self.dbTreeView.append_column(self.dbCategoryColumn)
+		self.dbTreeView.append_column(self.dbFamilyColumn)
+		self.dbTreeView.append_column(self.dbSeriesColumn)
+		self.dbTreeView.append_column(self.dbPackageColumn)
+		self.dbStorePopulate()
+		
+		self.dbTreeView.connect("cursor-changed", self.dbSelectionCallback)
+		self.dbTreeView.set_model(self.dbStore)
+		
 		# -------- PACKING AND ADDING --------
 		self.mainBox.pack_start(self.menuBar)
 		self.mainBox.pack_start(self.notebook)
@@ -997,9 +1008,7 @@ class URBM(gobject.GObject):
 		self.dbToolbar.insert(self.dbReadDBButton, 0)
 		self.dbBox.pack_start(self.dbFrame)
 		self.dbFrame.add(self.dbScrollWin)
-		self.dbScrollWin.add_with_viewport(self.dbTable)
-		self.dbTableHeaders()
-		self.dbTable.set_col_spacings(10)
+		self.dbScrollWin.add(self.dbTreeView)
 		
 		self.dbReadDBCallback(None)
 		# Show everything
