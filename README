@@ -1,12 +1,23 @@
-A BOM manager designed to interface with Eagle's bundled bom.ulp script.
+A BOM manager designed to interface with Eagle's BOM ULP scripts.
+
 Scrapes product information off of distributor product pages.
 All BOM and product information is stored in a local sqlite3 database compressed using y_serial.  
 
+The latest version of the BOM-AM and BOM-EX ULP scripts are available at:
+http://www.cadsoftusa.com/downloads/ulps
+Note that the basic bom.ulp script bundled with Eagle is not supported, BOM-AM and BOM-EX both work.
 
 Required third-party Python (2.7) modules:
 y_serial: http://yserial.sourceforge.net/
 Beautiful Soup: http://www.crummy.com/software/BeautifulSoup/
 PyGTK: http://www.pygtk.org/
+
+Importing data:
+Export a CSV file from either BOM script with the following columns (no column headers):
+Name, Value, Device, Package, Description
+
+The file should have one component per line -- do not group components by value in the ULP.
+
 
 The following distributors are currently supported:
 - Digikey
