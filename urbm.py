@@ -136,10 +136,10 @@ class URBM(gobject.GObject):
 			# Set class field for currently selected product
 			print "Querying with selectedPN: %s" % selectedPN
 			self.bomSelectedProduct.manufacturer_pn = selectedPN
-			#self.bomSelectedProduct.show()
 			# TODO: The following commented out lines need to be redone
 			# for the new Product model
 			self.bomSelectedProduct.selectOrScrape()
+			self.bomSelectedProduct.show()
 			self.setPartInfoLabels(self.bomSelectedProduct)
 			self.setPartInfoListingCombo(self.bomSelectedProduct)
 			#self.setPartPriceLabels(self.bomSelectedProduct)
@@ -336,7 +336,8 @@ class URBM(gobject.GObject):
 	''' Clear self.dbProductStore and repopulate it. '''
 	def dbStorePopulate(self):
 		self.dbProductStore.clear()
-		prodsDict = urbmDB.selectdic("*", "products")
+		#prodsDict = urbmDB.selectdic("*", "products")
+		prodsDict = urbmDB.selectdic("#prod", "products")
 		
 		for p in prodsDict.values():
 			# p[2] is a Product object from the DB
@@ -365,8 +366,11 @@ class URBM(gobject.GObject):
 		self.projectStore.clear()
 		# Columns: Name, Description, Database, Input File
 		projectsList = listProjects()
+		#print 'projectsList: ', projectsList
 		for p in projectsList:
-			if p != 'dummy':
+			if type(p) is types.NoneType:
+				print 'NoneType caught in projectsList'
+			elif p != 'dummy':
 				bom = BOM.readFromDB(urbmDB, p)
 				iter = self.projectStore.append([bom.name, bom.description, urbmDB.db, bom.input])
 		self.projectTreeView.columns_autosize()
@@ -461,18 +465,15 @@ class URBM(gobject.GObject):
 	def setPartInfoListingCombo(self, prod):
 		''' Populates self.partInfoListingCombo with vendorProduct listings
 		for the selected Product. '''
-		#titleList = []
 		print 'Setting Listing combo...'
-		print 'prod.vendorProds: ', prod.vendorProds
-		print 'prod.show:'
+		#print 'prod.vendorProds: ', prod.vendorProds
+		#print 'prod.show:'
 		#prod.show()
 		for listing in prod.vendorProds.values():
 			print 'Listing: ', type(listing), listing
 			title = listing.vendor + ': ' + listing.vendorPN + ' (' + listing.packaging + ')'
 			print 'Appending combo title: ', title
-			#titleList.append(title)
 			self.partInfoListingCombo.append_text(title)
-		#self.partInfoListingCombo.set_popdown_strings(titleList)
 		self.partInfoRowBox.show_all()
 	
 	def destroyPartPriceLabels(self):

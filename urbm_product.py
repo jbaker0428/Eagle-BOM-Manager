@@ -244,13 +244,12 @@ class Product:
 			else:
 				print 'Error: DK Packaging scrape failure!'
 			
-			newProd = vendorProduct(VENDOR_DK, vendor_pn, prices, inventory, packaging)
+			self.vendorProds[VENDOR_DK + ':' + vendor_pn] = vendorProduct(VENDOR_DK, vendor_pn, prices, inventory, packaging)
+			self.vendorProds[VENDOR_DK + ':' + vendor_pn].category = category
+			self.vendorProds[VENDOR_DK + ':' + vendor_pn].family = family
+			self.vendorProds[VENDOR_DK + ':' + vendor_pn].series = series
 			if "Digi-Reel" in packaging:
-				newProd.reelFee = 7
-			newProd.category = category
-			newProd.family = family
-			newProd.series = series
-			self.vendorProds[newProd.vendor + newProd.vendorPN] = newProd
+				self.vendorProds[VENDOR_DK + ':' + vendor_pn].reelFee = 7
 	
 	def scrapeFAR(self):
 		''' Scrape method for Farnell. '''
@@ -318,18 +317,19 @@ class Product:
 	
 	def writeToDB(self):
 		self.db.delete(self.manufacturer_pn, 'products')
-		self.db.insert(self, self.manufacturer_pn + " #" + self.manufacturer, 'products')
+		self.db.insert(self, self.manufacturer_pn + " #prod #" + self.manufacturer, 'products')
+		self.db.insert(self.vendorProds, self.manufacturer_pn + " #listing", 'products')
 		
 	''' Sets the product fields, pulling from the local DB if possible.'''	
 	def selectOrScrape(self):
 		if(self.isInDB()):
-			temp = self.db.select(self.manufacturer_pn, 'products')
+			temp = self.db.select(self.manufacturer_pn + " #prod #", 'products')
 			self.manufacturer = temp.manufacturer
 			self.manufacturer_pn = temp.manufacturer_pn
 			self.datasheet = temp.datasheet
 			self.description = temp.description
 			self.package = temp.package
-		# TODO: When done testing scrape, re-indent it and uncomment this elif
+			self.vendorProds = self.db.select(self.manufacturer_pn + " #listing", 'products')
 		elif self.manufacturer_pn != "none":
 			self.scrape()
 
