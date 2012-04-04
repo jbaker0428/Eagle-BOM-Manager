@@ -141,6 +141,7 @@ class URBM(gobject.GObject):
 			# for the new Product model
 			self.bomSelectedProduct.selectOrScrape()
 			self.setPartInfoLabels(self.bomSelectedProduct)
+			self.setPartInfoListingCombo(self.bomSelectedProduct)
 			#self.setPartPriceLabels(self.bomSelectedProduct)
 		else:
 			#self.destroyPartPriceLabels()
@@ -328,6 +329,10 @@ class URBM(gobject.GObject):
 				#self.setPartInfoLabels(self.bomSelectedProduct)
 				#self.setPartPriceLabels(self.bomSelectedProduct)
 	
+	def partInfoScrapeButtonCallback(self, widget):
+		''' Part info frame "Refresh" button callback. '''
+		self.bomSelectedProduct.scrape()
+	
 	''' Clear self.dbProductStore and repopulate it. '''
 	def dbStorePopulate(self):
 		self.dbProductStore.clear()
@@ -366,8 +371,8 @@ class URBM(gobject.GObject):
 				iter = self.projectStore.append([bom.name, bom.description, urbmDB.db, bom.input])
 		self.projectTreeView.columns_autosize()
 	
-	''' Clear self.bomStore and repopulate it, grouped by name. '''
 	def bomStorePopulateByName(self):
+		''' Clear self.bomStore and repopulate it, grouped by name. '''
 		self.bomStore.clear()
 		for p in self.active_bom.parts:
 			temp = urbmDB.select(p[0], self.active_bom.name)
@@ -375,8 +380,8 @@ class URBM(gobject.GObject):
 		
 		self.bomTreeView.columns_autosize()
 	
-	''' Clear self.bomStore and repopulate it, grouped by value. '''
 	def bomStorePopulateByVal(self):
+		''' Clear self.bomStore and repopulate it, grouped by value. '''
 		self.bomStore.clear()
 		self.active_bom.sortByVal()
 		self.active_bom.setValCounts()
@@ -396,8 +401,8 @@ class URBM(gobject.GObject):
 		
 		self.bomTreeView.columns_autosize()
 	
-	''' Clear self.bomStore and repopulate it, grouped by part number. '''		
 	def bomStorePopulateByPN(self):
+		''' Clear self.bomStore and repopulate it, grouped by part number. '''	
 		self.bomStore.clear()
 		self.active_bom.sortByProd()
 		self.active_bom.setProdCounts()
@@ -423,9 +428,9 @@ class URBM(gobject.GObject):
 		
 		self.bomTreeView.columns_autosize()
 	
-	'''Set the Part Information pane fields based on the fields of a given 
-	product object.'''		
 	def setPartInfoLabels(self, prod):
+		'''Set the Part Information pane fields based on the fields of a given 
+		product object.'''	
 		#self.partInfoVendorLabel2.set_text(prod.vendor)
 		#self.partInfoVendorPNLabel2.set_text(prod.vendor_pn)
 		#self.partInfoInventoryLabel2.set_text(str(prod.inventory))
@@ -438,9 +443,9 @@ class URBM(gobject.GObject):
 		#self.partInfoSeriesLabel2.set_text(prod.series)
 		self.partInfoPackageLabel2.set_text(prod.package)
 
-	'''Clears the Part Information pane fields, setting the text of each Label
-	object to a tab character.'''
 	def clearPartInfoLabels(self):
+		'''Clears the Part Information pane fields, setting the text of each Label
+		object to a tab character.'''
 		#self.partInfoVendorLabel2.set_text("\t")
 		#self.partInfoVendorPNLabel2.set_text("\t")
 		#self.partInfoInventoryLabel2.set_text("\t")
@@ -452,6 +457,23 @@ class URBM(gobject.GObject):
 		#self.partInfoFamilyLabel2.set_text("\t")
 		#self.partInfoSeriesLabel2.set_text("\t")
 		self.partInfoPackageLabel2.set_text("\t")
+	
+	def setPartInfoListingCombo(self, prod):
+		''' Populates self.partInfoListingCombo with vendorProduct listings
+		for the selected Product. '''
+		#titleList = []
+		print 'Setting Listing combo...'
+		print 'prod.vendorProds: ', prod.vendorProds
+		print 'prod.show:'
+		#prod.show()
+		for listing in prod.vendorProds.values():
+			print 'Listing: ', type(listing), listing
+			title = listing.vendor + ': ' + listing.vendorPN + ' (' + listing.packaging + ')'
+			print 'Appending combo title: ', title
+			#titleList.append(title)
+			self.partInfoListingCombo.append_text(title)
+		#self.partInfoListingCombo.set_popdown_strings(titleList)
+		self.partInfoRowBox.show_all()
 	
 	def destroyPartPriceLabels(self):
 		for r in self.priceBreakLabels:
@@ -604,7 +626,7 @@ class URBM(gobject.GObject):
 		self.selectedBomPart = bomPart("init", "init", "init", "init", self.active_bom)
 		
 		self.partInfoFrame = gtk.Frame("Part information") # Goes in top half of bomVPane
-		self.partInfoRowBox = gtk.VBox(False, 20) # Fill with HBoxes 
+		self.partInfoRowBox = gtk.VBox(False, 5) # Fill with HBoxes 
 		
 		self.partInfoInfoTable = gtk.Table(5, 2, False) # Vendor, PNs, inventory, etc
 		#self.partInfoVendorLabel1 = gtk.Label("Vendor: ")
@@ -630,6 +652,9 @@ class URBM(gobject.GObject):
 		self.partInfoPackageLabel1 = gtk.Label("Package/case: ")
 		self.partInfoPackageLabel2 = gtk.Label(None)
 		
+		self.partInfoListingLabel = gtk.Label("Product source: ")
+		self.partInfoListingCombo = gtk.combo_box_new_text()
+		
 		self.partInfoPricingTable = gtk.Table(8, 3 , False) # Price breaks
 		self.priceBreakLabels = []
 		
@@ -637,10 +662,10 @@ class URBM(gobject.GObject):
 		
 		self.extPriceLabels = []
 		
-		self.partInfoButtonBox = gtk.HBox(False, 0)
+		self.partInfoButtonBox = gtk.HBox(False, 5)
 
-		self.scrapeButton = gtk.Button("Scrape", stock=gtk.STOCK_REFRESH)
-		self.partDatasheetButton = gtk.Button("Datasheet", stock=gtk.STOCK_PROPERTIES)
+		self.partInfoScrapeButton = gtk.Button("Scrape", stock=gtk.STOCK_REFRESH)
+		self.partInfoDatasheetButton = gtk.Button("Datasheet", stock=gtk.STOCK_PROPERTIES)
 		
 		self.pricingFrame = gtk.Frame("Project pricing") # Goes in bottom half of bomVPane
 		self.orderSizeScaleAdj = gtk.Adjustment(1, 1, 10000, 1, 10, 200)
@@ -833,6 +858,8 @@ class URBM(gobject.GObject):
 		#self.partInfoSeriesLabel2.set_alignment(0.0, 0.5)
 		self.partInfoPackageLabel1.set_alignment(0.0, 0.5)
 		self.partInfoPackageLabel2.set_alignment(0.0, 0.5)
+		self.partInfoScrapeButton.connect("clicked", self.partInfoScrapeButtonCallback)
+		self.partInfoListingLabel.set_alignment(0.0, 0.5)
 		
 		self.dbScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
 		self.dbReadDBButton.connect("clicked", self.dbReadDBCallback, "read")
@@ -988,29 +1015,34 @@ class URBM(gobject.GObject):
 		#self.partInfoInfoTable.attach(self.partInfoVendorLabel1, 0, 1, 0, 1)
 		#self.partInfoInfoTable.attach(self.partInfoVendorPNLabel1, 0, 1, 1, 2)
 		#self.partInfoInfoTable.attach(self.partInfoInventoryLabel1, 0, 1, 2, 3)
-		self.partInfoInfoTable.attach(self.partInfoManufacturerLabel1, 0, 1, 3, 4)
-		self.partInfoInfoTable.attach(self.partInfoManufacturerPNLabel1, 0, 1, 4, 5)
-		self.partInfoInfoTable.attach(self.partInfoDescriptionLabel1, 0, 1, 5, 6)
-		self.partInfoInfoTable.attach(self.partInfoDatasheetLabel1, 0, 1, 6, 7)
+		self.partInfoInfoTable.attach(self.partInfoManufacturerLabel1, 0, 1, 0, 1)
+		self.partInfoInfoTable.attach(self.partInfoManufacturerPNLabel1, 0, 1, 1, 2)
+		self.partInfoInfoTable.attach(self.partInfoDescriptionLabel1, 0, 1, 2, 3)
+		self.partInfoInfoTable.attach(self.partInfoDatasheetLabel1, 0, 1, 3, 4)
 		#self.partInfoInfoTable.attach(self.partInfoCategoryLabel1, 0, 1, 7, 8)
 		#self.partInfoInfoTable.attach(self.partInfoFamilyLabel1, 0, 1, 8, 9)
 		#self.partInfoInfoTable.attach(self.partInfoSeriesLabel1, 0, 1, 9, 10)
-		self.partInfoInfoTable.attach(self.partInfoPackageLabel1, 0, 1, 10, 11)
+		self.partInfoInfoTable.attach(self.partInfoPackageLabel1, 0, 1, 4, 5)
 		
 		#self.partInfoInfoTable.attach(self.partInfoVendorLabel2, 1, 2, 0, 1)
 		#self.partInfoInfoTable.attach(self.partInfoVendorPNLabel2, 1, 2, 1, 2)
 		#self.partInfoInfoTable.attach(self.partInfoInventoryLabel2, 1, 2, 2, 3)
-		self.partInfoInfoTable.attach(self.partInfoManufacturerLabel2, 1, 2, 3, 4)
-		self.partInfoInfoTable.attach(self.partInfoManufacturerPNLabel2, 1, 2, 4, 5)
-		self.partInfoInfoTable.attach(self.partInfoDescriptionLabel2, 1, 2, 5, 6)
-		self.partInfoInfoTable.attach(self.partInfoDatasheetLabel2, 1, 2, 6, 7)
+		self.partInfoInfoTable.attach(self.partInfoManufacturerLabel2, 1, 2, 0, 1)
+		self.partInfoInfoTable.attach(self.partInfoManufacturerPNLabel2, 1, 2, 1, 2)
+		self.partInfoInfoTable.attach(self.partInfoDescriptionLabel2, 1, 2, 2, 3)
+		self.partInfoInfoTable.attach(self.partInfoDatasheetLabel2, 1, 2, 3, 4)
 		#self.partInfoInfoTable.attach(self.partInfoCategoryLabel2, 1, 2, 7, 8)
 		#self.partInfoInfoTable.attach(self.partInfoFamilyLabel2, 1, 2, 8, 9)
 		#self.partInfoInfoTable.attach(self.partInfoSeriesLabel2, 1, 2, 9, 10)
-		self.partInfoInfoTable.attach(self.partInfoPackageLabel2, 1, 2, 10, 11)
-			
+		self.partInfoInfoTable.attach(self.partInfoPackageLabel2, 1, 2, 4, 5)
+		
+		self.partInfoRowBox.pack_start(self.partInfoButtonBox, True, True, 5)
+		self.partInfoButtonBox.pack_start(self.partInfoScrapeButton, True, True, 5)
+		self.partInfoButtonBox.pack_start(self.partInfoDatasheetButton, True, True, 5)
+		self.partInfoRowBox.pack_start(self.partInfoListingLabel, False, False, 0)
+		self.partInfoRowBox.pack_start(self.partInfoListingCombo, False, False, 0)
 		self.partInfoRowBox.pack_start(self.partInfoPricingTable, True, True, 5)
-		self.partInfoRowBox.pack_start(self.partInfoButtonBox)
+		
 		
 		self.dbBox.pack_start(self.dbToolbar, False)
 		self.dbToolbar.insert(self.dbReadDBButton, 0)
