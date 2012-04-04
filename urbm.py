@@ -471,7 +471,7 @@ class URBM(gobject.GObject):
 		#prod.show()
 		for listing in prod.vendorProds.values():
 			print 'Listing: ', type(listing), listing
-			title = listing.vendor + ': ' + listing.vendorPN + ' (' + listing.packaging + ')'
+			title = listing.vendor + ': ' + listing.vendorPN# + ' (' + listing.packaging + ')'
 			print 'Appending combo title: ', title
 			self.partInfoListingCombo.append_text(title)
 		self.partInfoRowBox.show_all()
