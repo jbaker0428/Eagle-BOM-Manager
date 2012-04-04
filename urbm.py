@@ -135,14 +135,17 @@ class URBM(gobject.GObject):
 		if selectedPN != "none": # Look up part in DB
 			# Set class field for currently selected product
 			print "Querying with selectedPN: %s" % selectedPN
-			self.bomSelectedProduct.vendor_pn = selectedPN
-			
+			self.bomSelectedProduct.manufacturer_pn = selectedPN
+			#self.bomSelectedProduct.show()
+			# TODO: The following commented out lines need to be redone
+			# for the new Product model
 			self.bomSelectedProduct.selectOrScrape()
-			self.setPartInfoLabels(self.bomSelectedProduct)
-			self.setPartPriceLabels(self.bomSelectedProduct)
+			#self.setPartInfoLabels(self.bomSelectedProduct)
+			#self.setPartPriceLabels(self.bomSelectedProduct)
 		else:
-			self.destroyPartPriceLabels()
-			self.clearPartInfoLabels()
+			pass
+			#self.destroyPartPriceLabels()
+			#self.clearPartInfoLabels()
 	
 	'''Callback method activated by the BOM grouping radio buttons.
 	Redraws the BOM TreeView with the approporiate goruping for the selected radio.'''
@@ -186,8 +189,8 @@ class URBM(gobject.GObject):
 		editPartDeviceLabel = gtk.Label("Device: ")
 		editPartPackageLabel = gtk.Label("Package: ")
 		editPartDescriptionLabel = gtk.Label("Description: ")
-		editPartVendorLabel = gtk.Label("Vendor: ")
-		editPartVendorPNLabel = gtk.Label("Vendor Part Number: ")
+		editPartManufacturerLabel = gtk.Label("Manufacturer: ")
+		editPartManufacturerPNLabel = gtk.Label("Manufacturer Part Number: ")
 		
 		# Field entry elements
 		self.editPartNameEntry = gtk.Entry()
@@ -197,14 +200,14 @@ class URBM(gobject.GObject):
 		self.editPartDescriptionEntry = gtk.Entry()
 		self.editPartProductEntry = gtk.Entry()
 		
-		editPartVendorCombo = gtk.combo_box_new_text()
-		editPartVendorCombo.append_text(Product.VENDOR_DK)
-		editPartVendorCombo.append_text(Product.VENDOR_FAR)
-		editPartVendorCombo.append_text(Product.VENDOR_FUE)
-		editPartVendorCombo.append_text(Product.VENDOR_JAM)
-		editPartVendorCombo.append_text(Product.VENDOR_ME)
-		editPartVendorCombo.append_text(Product.VENDOR_NEW)
-		editPartVendorCombo.append_text(Product.VENDOR_SFE)
+		#editPartVendorCombo = gtk.combo_box_new_text()
+		#editPartVendorCombo.append_text(Product.VENDOR_DK)
+		#editPartVendorCombo.append_text(Product.VENDOR_FAR)
+		#editPartVendorCombo.append_text(Product.VENDOR_FUE)
+		#editPartVendorCombo.append_text(Product.VENDOR_JAM)
+		#editPartVendorCombo.append_text(Product.VENDOR_ME)
+		#editPartVendorCombo.append_text(Product.VENDOR_NEW)
+		#editPartVendorCombo.append_text(Product.VENDOR_SFE)
 		
 		# Return values
 		self.productEntryText = ""
@@ -215,8 +218,8 @@ class URBM(gobject.GObject):
 		editPartDialogDeviceHBox = gtk.HBox()
 		editPartDialogPackageHBox = gtk.HBox()
 		editPartDialogDescriptionHBox = gtk.HBox()
-		editPartDialogVendorHBox = gtk.HBox()
-		editPartDialogVendorPNHBox = gtk.HBox()
+		editPartDialogManufacturerHBox = gtk.HBox()
+		editPartDialogManufacturerPNHBox = gtk.HBox()
 		
 		# -------- CONFIGURATION --------
 		# Label alignment
@@ -225,8 +228,8 @@ class URBM(gobject.GObject):
 		editPartDeviceLabel.set_alignment(0.0, 0.5)
 		editPartPackageLabel.set_alignment(0.0, 0.5)
 		editPartDescriptionLabel.set_alignment(0.0, 0.5)
-		editPartVendorLabel.set_alignment(0.0, 0.5)
-		editPartVendorPNLabel.set_alignment(0.0, 0.5)
+		editPartManufacturerLabel.set_alignment(0.0, 0.5)
+		editPartManufacturerPNLabel.set_alignment(0.0, 0.5)
 		
 		# Set default text of entry fields to current part values
 		self.editPartNameEntry.set_text(self.selectedBomPart.name)
@@ -252,11 +255,11 @@ class URBM(gobject.GObject):
 		editPartDialogDescriptionHBox.pack_start(editPartDescriptionLabel, False, True, 0)
 		editPartDialogDescriptionHBox.pack_end(self.editPartDescriptionEntry, False, True, 0)
 		
-		editPartDialogVendorHBox.pack_start(editPartVendorLabel, True, True, 0)
-		editPartDialogVendorHBox.pack_end(editPartVendorCombo, True, True, 0)
+		#editPartDialogManufacturerHBox.pack_start(editPartManufacturerLabel, True, True, 0)
+		#editPartDialogManufacturerHBox.pack_end(editPartVendorCombo, True, True, 0)
 		
-		editPartDialogVendorPNHBox.pack_start(editPartVendorPNLabel, True, True, 0)
-		editPartDialogVendorPNHBox.pack_end(self.editPartProductEntry, gtk.RESPONSE_ACCEPT)
+		editPartDialogManufacturerPNHBox.pack_start(editPartManufacturerPNLabel, True, True, 0)
+		editPartDialogManufacturerPNHBox.pack_end(self.editPartProductEntry, gtk.RESPONSE_ACCEPT)
 		
 		# Pack HBoxes into vbox
 		editPartDialog.vbox.set_spacing(1)
@@ -265,8 +268,8 @@ class URBM(gobject.GObject):
 		editPartDialog.vbox.pack_start(editPartDialogDeviceHBox, True, True, 0)
 		editPartDialog.vbox.pack_start(editPartDialogPackageHBox, True, True, 0)
 		editPartDialog.vbox.pack_start(editPartDialogDescriptionHBox, True, True, 0)
-		editPartDialog.vbox.pack_start(editPartDialogVendorHBox, True, True, 0)
-		editPartDialog.vbox.pack_start(editPartDialogVendorPNHBox, True, True, 0)
+		#editPartDialog.vbox.pack_start(editPartDialogManufacturerHBox, True, True, 0)
+		editPartDialog.vbox.pack_start(editPartDialogManufacturerPNHBox, True, True, 0)
 		
 		# Show everything
 		editPartDialog.vbox.show_all()
@@ -297,11 +300,11 @@ class URBM(gobject.GObject):
 			# TODO: If a product was previously set, default to the current vendor
 			# TODO: Can this be a "required field" that will prevent the OK button 
 			# from working (greyed out) if a part number is also entered?
-			if type(editPartVendorCombo.get_active_text()) is types.NoneType:
-				print "NoneType caught"
-				self.bomSelectedProduct.vendor = Product.VENDOR_DK
-			else:	
-				self.bomSelectedProduct.vendor = editPartVendorCombo.get_active_text()
+			#if type(editPartVendorCombo.get_active_text()) is types.NoneType:
+			#	print "NoneType caught"
+			#	self.bomSelectedProduct.vendor = Product.VENDOR_DK
+			#else:	
+			#	self.bomSelectedProduct.vendor = editPartVendorCombo.get_active_text()
 			
 			self.selectedBomPart.writeToDB()
 			self.active_bom.updateParts(self.selectedBomPart)
@@ -313,23 +316,28 @@ class URBM(gobject.GObject):
 			elif self.bomGroupPN.get_active():
 				self.bomStorePopulateByPN()
 					
-			self.bomSelectedProduct.vendor_pn = self.productEntryText
+			self.bomSelectedProduct.manufacturer_pn = self.productEntryText
 			self.bomSelectedProduct.selectOrScrape()
-			if self.bomSelectedProduct.vendor_pn == "none":
-				self.clearPartInfoLabels()
-				self.destroyPartPriceLabels()
+			# TODO: The following commented out lines need to be redone
+			# for the new Product model
+			if self.bomSelectedProduct.manufacturer_pn == "none":
+				pass
+				#self.clearPartInfoLabels()
+				#self.destroyPartPriceLabels()
 			else:
-				self.setPartInfoLabels(self.bomSelectedProduct)
-				self.setPartPriceLabels(self.bomSelectedProduct)
+				pass
+				#self.setPartInfoLabels(self.bomSelectedProduct)
+				#self.setPartPriceLabels(self.bomSelectedProduct)
 	
-	''' Clear self.dbStore and repopulate it. '''
+	''' Clear self.dbProductStore and repopulate it. '''
 	def dbStorePopulate(self):
-		self.dbStore.clear()
+		self.dbProductStore.clear()
 		prodsDict = urbmDB.selectdic("*", "products")
 		
 		for p in prodsDict.values():
 			# p[2] is a Product object from the DB
-			iter = self.dbStore.append([p[2].vendor, p[2].vendor_pn, p[2].inventory, p[2].manufacturer, p[2].mfg_pn, p[2].description, p[2].datasheet, p[2].category, p[2].family, p[2].series, p[2].package])
+			iter = self.dbProductStore.append([p[2].manufacturer, p[2].manufacturer_pn, p[2].description, p[2].datasheet, p[2].package])
+			#iter = self.dbProductStore.append([p[2].vendor, p[2].vendor_pn, p[2].inventory, p[2].manufacturer, p[2].manufacturer_pn, p[2].description, p[2].datasheet, p[2].category, p[2].family, p[2].series, p[2].package])
 		self.dbTreeView.columns_autosize()
 	
 	'''Callback for the "Read DB" button on the product DB tab.'''
@@ -423,7 +431,7 @@ class URBM(gobject.GObject):
 		self.partInfoVendorPNLabel2.set_text(prod.vendor_pn)
 		self.partInfoInventoryLabel2.set_text(str(prod.inventory))
 		self.partInfoManufacturerLabel2.set_text(prod.manufacturer)
-		self.partInfoManufacturerPNLabel2.set_text(prod.mfg_pn)
+		self.partInfoManufacturerPNLabel2.set_text(prod.manufacturer_pn)
 		self.partInfoDescriptionLabel2.set_text(prod.description)
 		self.partInfoDatasheetLabel2.set_text(prod.datasheet)
 		self.partInfoCategoryLabel2.set_text(prod.category)
@@ -581,7 +589,7 @@ class URBM(gobject.GObject):
 		self.bomDescriptionCell = gtk.CellRendererText()
 		self.bomDescriptionColumn = gtk.TreeViewColumn('Description', self.bomDescriptionCell)
 		self.bomPNCell = gtk.CellRendererText()
-		self.bomPNColumn = gtk.TreeViewColumn('Part Number', self.bomPNCell)
+		self.bomPNColumn = gtk.TreeViewColumn('Manufacturer Part Number', self.bomPNCell)
 		self.bomQuantityCell = gtk.CellRendererText()
 		self.bomQuantityColumn = gtk.TreeViewColumn('Quantity', self.bomQuantityCell)
 		
@@ -593,7 +601,7 @@ class URBM(gobject.GObject):
 		self.bomGroupValue = gtk.RadioButton(self.bomGroupName, "Value")
 		self.bomGroupPN = gtk.RadioButton(self.bomGroupName, "Part Number")
 		
-		self.bomSelectedProduct = Product(Product.VENDOR_DK, "init", urbmDB)
+		self.bomSelectedProduct = Product("init", "init", urbmDB)
 		self.selectedBomPart = bomPart("init", "init", "init", "init", self.active_bom)
 		
 		self.partInfoFrame = gtk.Frame("Part information") # Goes in top half of bomVPane
@@ -647,14 +655,15 @@ class URBM(gobject.GObject):
 		self.dbFrame = gtk.Frame("Product database") 
 		self.dbScrollWin = gtk.ScrolledWindow()
 		
-		self.dbStore = gtk.ListStore(str, str, int, str, str, str, str, str, str, str, str)
+		#self.dbProductStore = gtk.ListStore(str, str, int, str, str, str, str, str, str, str, str)
+		self.dbProductStore = gtk.ListStore(str, str, str, str, str)
 									
-		self.dbVendorCell = gtk.CellRendererText()
-		self.dbVendorColumn = gtk.TreeViewColumn('Vendor', self.dbVendorCell)
-		self.dbVendorPNCell = gtk.CellRendererText()
-		self.dbVendorPNColumn = gtk.TreeViewColumn('Vendor PN', self.dbVendorPNCell)
-		self.dbInventoryCell = gtk.CellRendererText()
-		self.dbInventoryColumn = gtk.TreeViewColumn('Inventory', self.dbInventoryCell)
+		#self.dbVendorCell = gtk.CellRendererText()
+		#self.dbVendorColumn = gtk.TreeViewColumn('Vendor', self.dbVendorCell)
+		#self.dbVendorPNCell = gtk.CellRendererText()
+		#self.dbVendorPNColumn = gtk.TreeViewColumn('Vendor PN', self.dbVendorPNCell)
+		#self.dbInventoryCell = gtk.CellRendererText()
+		#self.dbInventoryColumn = gtk.TreeViewColumn('Inventory', self.dbInventoryCell)
 		self.dbManufacturerCell = gtk.CellRendererText()
 		self.dbManufacturerColumn = gtk.TreeViewColumn('Manufacturer', self.dbManufacturerCell)
 		self.dbManufacturerPNCell = gtk.CellRendererText()
@@ -663,12 +672,12 @@ class URBM(gobject.GObject):
 		self.dbDescriptionColumn = gtk.TreeViewColumn('Description', self.dbDescriptionCell)
 		self.dbDatasheetCell = gtk.CellRendererText()
 		self.dbDatasheetColumn = gtk.TreeViewColumn('Datasheet filename', self.dbDatasheetCell)
-		self.dbCategoryCell = gtk.CellRendererText()
-		self.dbCategoryColumn = gtk.TreeViewColumn('Category', self.dbCategoryCell)
-		self.dbFamilyCell = gtk.CellRendererText()
-		self.dbFamilyColumn = gtk.TreeViewColumn('Family', self.dbFamilyCell)
-		self.dbSeriesCell = gtk.CellRendererText()
-		self.dbSeriesColumn = gtk.TreeViewColumn('Series', self.dbSeriesCell)
+		#self.dbCategoryCell = gtk.CellRendererText()
+		#self.dbCategoryColumn = gtk.TreeViewColumn('Category', self.dbCategoryCell)
+		#self.dbFamilyCell = gtk.CellRendererText()
+		#self.dbFamilyColumn = gtk.TreeViewColumn('Family', self.dbFamilyCell)
+		#self.dbSeriesCell = gtk.CellRendererText()
+		#self.dbSeriesColumn = gtk.TreeViewColumn('Series', self.dbSeriesCell)
 		self.dbPackageCell = gtk.CellRendererText()
 		self.dbPackageColumn = gtk.TreeViewColumn('Package/case', self.dbPackageCell)
 		
@@ -829,64 +838,64 @@ class URBM(gobject.GObject):
 		self.dbScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
 		self.dbReadDBButton.connect("clicked", self.dbReadDBCallback, "read")
 		
-		self.dbVendorColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-		self.dbVendorPNColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-		self.dbInventoryColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		#self.dbVendorColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		#self.dbVendorPNColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		#self.dbInventoryColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
 		self.dbManufacturerColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
 		self.dbManufacturerPNColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
 		self.dbDescriptionColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
 		self.dbDatasheetColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-		self.dbCategoryColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-		self.dbFamilyColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-		self.dbSeriesColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		#self.dbCategoryColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		#self.dbFamilyColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		#self.dbSeriesColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
 		self.dbPackageColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
 		
-		self.dbVendorColumn.set_resizable(True)
-		self.dbVendorPNColumn.set_resizable(True)
-		self.dbInventoryColumn.set_resizable(True)
+		#self.dbVendorColumn.set_resizable(True)
+		#self.dbVendorPNColumn.set_resizable(True)
+		#self.dbInventoryColumn.set_resizable(True)
 		self.dbManufacturerColumn.set_resizable(True)
 		self.dbManufacturerPNColumn.set_resizable(True)
 		self.dbDescriptionColumn.set_resizable(True)
 		self.dbDatasheetColumn.set_resizable(True)
-		self.dbCategoryColumn.set_resizable(True)
-		self.dbFamilyColumn.set_resizable(True)
-		self.dbSeriesColumn.set_resizable(True)
+		#self.dbCategoryColumn.set_resizable(True)
+		#self.dbFamilyColumn.set_resizable(True)
+		#self.dbSeriesColumn.set_resizable(True)
 		self.dbPackageColumn.set_resizable(True)
 		
-		self.dbVendorColumn.set_clickable(True)
-		self.dbVendorPNColumn.set_clickable(True)
-		self.dbInventoryColumn.set_clickable(True)
+		#self.dbVendorColumn.set_clickable(True)
+		#self.dbVendorPNColumn.set_clickable(True)
+		#self.dbInventoryColumn.set_clickable(True)
 		self.dbManufacturerColumn.set_clickable(True)
 		self.dbManufacturerPNColumn.set_clickable(True)
 		self.dbDescriptionColumn.set_clickable(True)
 		self.dbDatasheetColumn.set_clickable(True)
-		self.dbCategoryColumn.set_clickable(True)
-		self.dbFamilyColumn.set_clickable(True)
-		self.dbSeriesColumn.set_clickable(True)
+		#self.dbCategoryColumn.set_clickable(True)
+		#self.dbFamilyColumn.set_clickable(True)
+		#self.dbSeriesColumn.set_clickable(True)
 		self.dbPackageColumn.set_clickable(True)
 		
-		self.dbVendorColumn.set_attributes(self.dbVendorCell, text=0)
-		self.dbVendorPNColumn.set_attributes(self.dbVendorPNCell, text=1)
-		self.dbInventoryColumn.set_attributes(self.dbInventoryCell, text=2)
-		self.dbManufacturerColumn.set_attributes(self.dbManufacturerCell, text=3)
-		self.dbManufacturerPNColumn.set_attributes(self.dbManufacturerPNCell, text=4)
-		self.dbDescriptionColumn.set_attributes(self.dbDescriptionCell, text=5)
-		self.dbDatasheetColumn.set_attributes(self.dbDatasheetCell, text=6)
-		self.dbCategoryColumn.set_attributes(self.dbCategoryCell, text=7)
-		self.dbFamilyColumn.set_attributes(self.dbFamilyCell, text=8)
-		self.dbSeriesColumn.set_attributes(self.dbSeriesCell, text=9)
-		self.dbPackageColumn.set_attributes(self.dbPackageCell, text=10)
+		#self.dbVendorColumn.set_attributes(self.dbVendorCell, text=0)
+		#self.dbVendorPNColumn.set_attributes(self.dbVendorPNCell, text=1)
+		#self.dbInventoryColumn.set_attributes(self.dbInventoryCell, text=2)
+		self.dbManufacturerColumn.set_attributes(self.dbManufacturerCell, text=0)
+		self.dbManufacturerPNColumn.set_attributes(self.dbManufacturerPNCell, text=1)
+		self.dbDescriptionColumn.set_attributes(self.dbDescriptionCell, text=2)
+		self.dbDatasheetColumn.set_attributes(self.dbDatasheetCell, text=3)
+		#self.dbCategoryColumn.set_attributes(self.dbCategoryCell, text=7)
+		#self.dbFamilyColumn.set_attributes(self.dbFamilyCell, text=8)
+		#self.dbSeriesColumn.set_attributes(self.dbSeriesCell, text=9)
+		self.dbPackageColumn.set_attributes(self.dbPackageCell, text=4)
 		
-		self.dbVendorColumn.connect("clicked", self.dbSortCallback)
-		self.dbVendorPNColumn.connect("clicked", self.dbSortCallback)
-		self.dbInventoryColumn.connect("clicked", self.dbSortCallback)
+		#self.dbVendorColumn.connect("clicked", self.dbSortCallback)
+		#self.dbVendorPNColumn.connect("clicked", self.dbSortCallback)
+		#self.dbInventoryColumn.connect("clicked", self.dbSortCallback)
 		self.dbManufacturerColumn.connect("clicked", self.dbSortCallback)
 		self.dbManufacturerPNColumn.connect("clicked", self.dbSortCallback)
 		self.dbDescriptionColumn.connect("clicked", self.dbSortCallback)
 		self.dbDatasheetColumn.connect("clicked", self.dbSortCallback)
-		self.dbCategoryColumn.connect("clicked", self.dbSortCallback)
-		self.dbFamilyColumn.connect("clicked", self.dbSortCallback)
-		self.dbSeriesColumn.connect("clicked", self.dbSortCallback)
+		#self.dbCategoryColumn.connect("clicked", self.dbSortCallback)
+		#self.dbFamilyColumn.connect("clicked", self.dbSortCallback)
+		#self.dbSeriesColumn.connect("clicked", self.dbSortCallback)
 		self.dbPackageColumn.connect("clicked", self.dbSortCallback)
 		
 		self.dbTreeView.set_reorderable(True)
@@ -894,21 +903,21 @@ class URBM(gobject.GObject):
 		self.dbTreeView.set_headers_clickable(True)
 		self.dbTreeView.set_headers_visible(True)
 		
-		self.dbTreeView.append_column(self.dbVendorColumn)
-		self.dbTreeView.append_column(self.dbVendorPNColumn)
-		self.dbTreeView.append_column(self.dbInventoryColumn)
+		#self.dbTreeView.append_column(self.dbVendorColumn)
+		#self.dbTreeView.append_column(self.dbVendorPNColumn)
+		#self.dbTreeView.append_column(self.dbInventoryColumn)
 		self.dbTreeView.append_column(self.dbManufacturerColumn)
 		self.dbTreeView.append_column(self.dbManufacturerPNColumn)
 		self.dbTreeView.append_column(self.dbDescriptionColumn)
 		self.dbTreeView.append_column(self.dbDatasheetColumn)
-		self.dbTreeView.append_column(self.dbCategoryColumn)
-		self.dbTreeView.append_column(self.dbFamilyColumn)
-		self.dbTreeView.append_column(self.dbSeriesColumn)
+		#self.dbTreeView.append_column(self.dbCategoryColumn)
+		#self.dbTreeView.append_column(self.dbFamilyColumn)
+		#self.dbTreeView.append_column(self.dbSeriesColumn)
 		self.dbTreeView.append_column(self.dbPackageColumn)
 		self.dbStorePopulate()
 		
 		self.dbTreeView.connect("cursor-changed", self.dbSelectionCallback)
-		self.dbTreeView.set_model(self.dbStore)
+		self.dbTreeView.set_model(self.dbProductStore)
 		
 		# -------- PACKING AND ADDING --------
 		self.mainBox.pack_start(self.menuBar)

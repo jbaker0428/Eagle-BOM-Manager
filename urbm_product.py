@@ -1,7 +1,7 @@
 import y_serial_v060 as y_serial
 import urllib2
 import csv
-from BeautifulSoup import BeautifulSoup
+from BeautifulSoup import BeautifulSoup, Tag, NavigableString
 import shutil
 import os
 import urlparse
@@ -18,36 +18,56 @@ def getFileName(url,openUrl):
 	# if no filename was found above, parse it out of the final URL.
 	return os.path.basename(urlparse.urlsplit(openUrl.url)[2])
 
-class Product:
-	VENDOR_DK = "Digi-Key"
-	VENDOR_FAR = "Farnell"
-	VENDOR_FUE = "Future"
-	VENDOR_JAM = "Jameco"
-	VENDOR_ME = "Mouser"
-	VENDOR_NEW = "Newark"
-	VENDOR_SFE = "SparkFun"
+VENDOR_DK = "Digi-Key"
+VENDOR_FAR = "Farnell"
+VENDOR_FUE = "Future"
+VENDOR_JAM = "Jameco"
+VENDOR_ME = "Mouser"
+VENDOR_NEW = "Newark"
+VENDOR_SFE = "SparkFun"
+
+# TODO : Set these based on program config file
+# This will allow the user to disable vendors they do not purchase from
+VENDOR_DK_EN = True
+VENDOR_FAR_EN = False
+VENDOR_FUE_EN = False
+VENDOR_JAM_EN = False
+VENDOR_ME_EN = False
+VENDOR_NEW_EN = False
+VENDOR_SFE_EN = False
+
+DOWNLOAD_DATASHEET = False	# TODO : Set this from program config
+ENFORCE_MIN_QTY = True
+
+class vendorProduct:
+	''' A distributor's listing for a Product object. '''
+	def __init__(self, vend, vendor_pn, pricesDict, inv, pkg):
+		self.vendor = vend
+		self.vendorPN = vendor_pn
+		self.prices = pricesDict
+		self.reelFee = 0	# Flat per-order reeling fee (Digi-reel, MouseReel, etc)
+		self.inventory = inv
+		self.packaging = pkg	# Cut Tape, Tape/Reel, Tray, Tube, etc.
+		self.category = ""	# "Capacitors"
+		self.family = ""	# "Ceramic"
+		self.series = ""	# "C" (TDK series C)
 	
-	# String for selecting parts from all vendors from product table
-	PROD_SEL_ALL = "#" + VENDOR_DK + ",#" + VENDOR_FAR + ",#" + VENDOR_FUE + ",#" + VENDOR_JAM + ",#" + VENDOR_ME + ",#" + VENDOR_NEW + ",#" + VENDOR_SFE
-	def __init__(self, vendor, vendor_pn, database):
-		self.vendor = vendor
-		self.vendor_pn = vendor_pn
-		self.manufacturer = ""
-		self.mfg_pn = ""
-		self.prices = {}
-		self.inventory = 0
-		self.datasheet = ""
-		self.description = ""
-		self.category = ""
-		self.family = ""
-		self.series = ""
-		self.package = ""
-		self.db = database
+	def show(self):
+		''' A simple print method. '''
+		print 'Vendor: ', self.vendor, type(self.vendor)
+		print 'Vendor PN: ', self.vendorPN, type(self.vendorPN)
+		print 'Prices: ', self.prices.items(), type(self.prices.items())
+		print 'Reel Fee: ', self.reelFee, type(self.reelFee)
+		print 'Inventory: ', self.inventory, type(self.inventory)
+		print 'Packaging: ', self.packaging, type(self.packaging)
+		print 'Category: ', self.category, type(self.category)
+		print 'Family: ', self.family, type(self.family)
+		print 'Series: ', self.series, type(self.series)
 		
-	''' Returns the (price break, unit price) list pair for the given purchase quantity.
-	If qty is below the lowest break, the lowest is returned.
-	TODO : Raise some kind of error/warning if not ordering enough PCBs to make the lowest break.'''
 	def getPriceBreak(self, qty):
+		''' Returns the (price break, unit price) list pair for the given purchase quantity.
+		If qty is below the lowest break, the lowest is returned.
+		TODO : Raise some kind of error/warning if not ordering enough PCBs to make the lowest break.'''
 		breaks = self.prices.keys()
 		breaks.sort()
 		if breaks[0] > qty:
@@ -58,113 +78,202 @@ class Product:
 			if breaks[i] == qty or breaks[i] == max(breaks):
 				return [breaks[i], self.prices[breaks[i]]]
 			elif  breaks[i] > qty:
-				return [breaks[i-1], self.prices[breaks[i-1]]]			
+				return [breaks[i-1], self.prices[breaks[i-1]]]		
+
+class Product:
+	''' A physical product, independent of distributor.
+	The primary identifying key is the manufacturer PN. '''
+	def __init__(self, mfg, mfg_pn, database):
+		self.manufacturer = mfg
+		self.manufacturer_pn = mfg_pn
+		self.datasheet = ""
+		self.description = ""
+		self.package = ""
+		self.vendorProds = {}	# Key is vendorProduct.vendor + vendorProduct.vendor_pn
+		self.db = database
 	
-	''' Scrape method for Digikey. '''
+	def show(self):
+		''' A simple print method. '''
+		print 'Manufacturer: ', self.manufacturer, type(self.manufacturer)
+		print 'Manufacturer PN: ', self.manufacturer_pn, type(self.manufacturer_pn)
+		print 'Datasheet: ', self.datasheet, type(self.datasheet)
+		print 'Description: ', self.description, type(self.description)
+		print 'Package: ', self.package, type(self.package)
+		print 'Listings:'
+		for listing in self.vendorProds.items():
+			print "\nListing key: ", listing[0]
+			listing[1].show()
+		print 'DB: ', self.db, type(self.db), '\n'
+		
+	def bestListing(self, qty):
+		''' Return the vendorProduct listing with the best price for the given order quantity. 
+		
+		If the "enforce minimum quantities" option is checked in the program config,
+		only returns listings where the order quantity meets/exceeds the minimum
+		order quantity for the listing.'''
+		lowestPrice = int('inf')
+		for listing in self.vendorProds.values():
+			priceBreak = listing.getPriceBreak(qty)
+			if priceBreak[0] > qty and ENFORCE_MIN_QTY:
+				pass
+			else:
+				if (priceBreak[1]*qty) + listing.reelFee < lowestPrice:
+					lowestPrice = (priceBreak[1]*qty) + listing.reelFee
+					best = listing
+		return best
+	
 	def scrapeDK(self):
+		''' Scrape method for Digikey. '''
 		# Clear previous pricing data (in case price break keys change)
-		self.prices.clear()
+		searchURL = 'http://search.digikey.com/us/en/products/' + self.manufacturer_pn
+		searchPage = urllib2.urlopen(searchURL)
+		searchSoup = BeautifulSoup(searchPage)
 		
-		url = "http://search.digikey.com/us/en/products/soup/" + self.vendor_pn
-		page = urllib2.urlopen(url)
-		soup = BeautifulSoup(page)
-		print "URL: %s" % url
-		# Get prices
-		priceTable = soup.body('table', id="pricing")
-		# priceTable.contents[x] should be the tr tags...
-		for t in priceTable:
-			for r in t:
-				# r.contents should be td Tags... except the first!
-				if r == '\n':
-					pass
-				elif r.contents[0].name == 'th':
-					print "Found r.name == th"
-					#pass	# do nothing
-				else:
-					newBreakString = r.contents[0].string
-					# Remove commas
-					if newBreakString.isdigit() == False:
-						newBreakString = newBreakString.replace(",", "")
-					print "newBreakString is: %s" % newBreakString					
-					newBreak = int(newBreakString)
-					newUnitPrice = float(r.contents[1].string)
-					self.prices[newBreak] = newUnitPrice
-				
-		# Get inventory
-		# If the item is out of stock, the <td> that normally holds the
-		# quantity available will have a text input box that we need to
-		# watch out for
-		invSoup = soup.body('td', id="quantityavailable")
-		print "Length of form search results: %s" % len(invSoup[0].findAll('form'))
-		if len(invSoup[0].findAll('form')) > 0:
-			self.inventory = 0
+		# Create a list of product URLs from the search page
+		prodURLs = []
+		searchTable = searchSoup.body('table', id="productTable")[0]
+		#print 'searchTable: \n', searchTable
+		#print 'searchTable.contents: \n', searchTable.contents
 		
-		else:
-			invString = invSoup[0].contents[0]
-			if invString.isdigit() == False:
-				invString = invString.replace(",", "")
-			self.inventory = int(invString)
+		# Find tbody tag in table
+		tBody = searchTable.find('tbody')
+		#print 'tbody: \n', type(tBody), tBody
+		#print 'tbody.contents: \n', type(tBody.contents), tBody.contents
+		#print 'tbody.contents[0]: \n', type(tBody.contents[0]), tBody.contents[0]
+		prodRows = tBody.findAll('tr')
+		#print 'prodrows: \n', type(prodRows), prodRows
+		for row in prodRows:
+			#print "Search row in prodRows: ", row
+			anchor = row.find('a')
+			# DK uses a relative path for these links
+			prodURLs.append('http://search.digikey.com' + anchor['href'])
+			#print 'Adding URL: ', 'http://search.digikey.com' + anchor['href']
 		
-		# Get manufacturer and PN
-		self.manufacturer = soup.body('th', text="Manufacturer")[0].parent.nextSibling.contents[0].string
-		print "manufacturer is: %s" % self.manufacturer
-		self.mfg_pn = soup.body('th', text="Manufacturer Part Number")[0].parent.nextSibling.contents[0].string
-		print "mfg_pn is: %s" % self.mfg_pn
+		for url in prodURLs:
 		
-		# Get datasheet filename and download
-		datasheetSoup = soup.body('th', text="Datasheets")[0].parent.nextSibling
-		datasheetA = datasheetSoup.findAllNext('a')[0]
-		print "datasheetSoup is: %s" % datasheetSoup
-		print "datasheetA is: %s" % datasheetA
-		datasheetURL = datasheetA['href']
-		print "datasheetURL is: %s" % datasheetURL
-		
-		r = urllib2.urlopen(urllib2.Request(datasheetURL))
-		try:
-			fileName = getFileName(url,r)
-			self.datasheet = fileName;
-			# TODO: Do not re-download if already saved
-			with open(fileName, 'wb') as f:
-				shutil.copyfileobj(r,f)
-		finally:
-			r.close()
-		print "datasheet is: %s" % self.datasheet
-		# Get remaining strings (desc, category, family, series, package)
-		self.description = soup.body('th', text="Description")[0].parent.nextSibling.contents[0].string
-		print "description is: %s" % self.description
-		self.category = soup.body('th', text="Category")[0].parent.nextSibling.contents[0].string
-		print "category is: %s" % self.category
-		self.family = soup.body('th', text="Family")[0].parent.nextSibling.contents[0].string
-		print "family is: %s" % self.family
-		self.series = soup.body('th', text="Series")[0].parent.nextSibling.contents[0].string
-		print "series is: %s" % self.series
-		self.package = soup.body('th', text="Package / Case")[0].parent.nextSibling.contents[0].string
-		print "package is: %s" % self.package
-		
-		self.writeToDB()
+			page = urllib2.urlopen(url)
+			soup = BeautifulSoup(page)
+			print "URL: %s" % url
+			# Get prices
+			prices = {}
+			priceTable = soup.body('table', id="pricing")
+			# priceTable.contents[x] should be the tr tags...
+			for t in priceTable:
+				for r in t:
+					# r.contents should be td Tags... except the first!
+					if r == '\n':
+						pass
+					elif r.contents[0].name == 'th':
+						pass
+						#print "Found r.name == th"
+					else:
+						newBreakString = r.contents[0].string
+						# Remove commas
+						if newBreakString.isdigit() == False:
+							newBreakString = newBreakString.replace(",", "")
+						#print "newBreakString is: %s" % newBreakString					
+						newBreak = int(newBreakString)
+						newUnitPrice = float(r.contents[1].string)
+						prices[newBreak] = newUnitPrice
+						#print 'Adding break/price to pricing dict: ', (newBreak, newUnitPrice)
+					
+			# Get inventory
+			# If the item is out of stock, the <td> that normally holds the
+			# quantity available will have a text input box that we need to
+			# watch out for
+			invSoup = soup.body('td', id="quantityavailable")
+			#print 'invSoup: ', type(invSoup), invSoup
+			#print "Length of form search results: %s" % len(invSoup[0].findAll('form'))
+			if len(invSoup[0].findAll('form')) > 0:
+				inventory = 0
+			
+			else:
+				invString = invSoup[0].contents[0]
+				#print 'invString: ', type(invString), invString
+				if invString.isdigit() == False:
+					invString = invString.replace(",", "")
+				inventory = int(invString)
+				#print 'inventory: ', type(inventory), inventory
+			
+			vendor_pn = soup.body('th', text="Digi-Key Part Number")[0].parent.nextSibling.contents[0].string.__str__()
+			# Get manufacturer and PN
+			self.manufacturer = soup.body('th', text="Manufacturer")[0].parent.nextSibling.contents[0].string.__str__()
+			#print "manufacturer is: %s" % self.manufacturer
+			self.manufacturer_pn = soup.body('th', text="Manufacturer Part Number")[0].parent.nextSibling.contents[0].string.__str__()
+			#print "manufacturer_pn is: %s" % self.manufacturer_pn
+			
+			# Get datasheet filename and download
+			datasheetSoup = soup.body('th', text="Datasheets")[0].parent.nextSibling
+			datasheetA = datasheetSoup.findAllNext('a')[0]
+			#print "datasheetSoup is: %s" % datasheetSoup
+			#print "datasheetA is: %s" % datasheetA
+			self.datasheetURL = datasheetA['href']
+			#print "self.datasheetURL is: %s" % self.datasheetURL
+			
+			r = urllib2.urlopen(urllib2.Request(self.datasheetURL))
+			try:
+				fileName = getFileName(url,r)
+				self.datasheet = fileName;
+				# TODO: Do not re-download if already saved
+				if DOWNLOAD_DATASHEET:
+					with open(fileName, 'wb') as f:
+						shutil.copyfileobj(r,f)
+			finally:
+				r.close()
+			#print "datasheet is: %s" % self.datasheet
+			# Get remaining strings (desc, category, family, series, package)
+			self.description = soup.body('th', text="Description")[0].parent.nextSibling.contents[0].string.__str__()
+			#print "description is: %s" % self.description
+			category = soup.body('th', text="Category")[0].parent.nextSibling.contents[0].string.__str__()
+			#print "category is: %s" % category
+			family = soup.body('th', text="Family")[0].parent.nextSibling.contents[0].string.__str__()
+			#print "family is: %s" % family
+			series = soup.body('th', text="Series")[0].parent.nextSibling.contents[0].string.__str__()
+			#print "series is: %s" % series
+			self.package = soup.body('th', text="Package / Case")[0].parent.nextSibling.contents[0].string.__str__()
+			#print "package is: %s" % self.package
+			
+			packagingSoup = soup.body('th', text="Packaging")[0].parent.parent.nextSibling.contents[0]
+			#print "packagingSoup: ", type(packagingSoup), packagingSoup
+			if type(packagingSoup) == NavigableString:
+				packaging = packagingSoup.string.__str__()
+				#print "packaging (from text): ", type(packaging), packaging
+			elif type(packagingSoup) == Tag:
+				packaging = packagingSoup.contents[0].string.__str__()
+				#print "packaging (from link): ", type(packaging), packaging
+			else:
+				print 'Error: DK Packaging scrape failure!'
+			
+			newProd = vendorProduct(VENDOR_DK, vendor_pn, prices, inventory, packaging)
+			if "Digi-Reel" in packaging:
+				newProd.reelFee = 7
+			newProd.category = category
+			newProd.family = family
+			newProd.series = series
+			self.vendorProds[newProd.vendor + newProd.vendorPN] = newProd
 	
-	''' Scrape method for Farnell. '''
 	def scrapeFAR(self):
+		''' Scrape method for Farnell. '''
 		print "Distributor scraping not yet implemented!"
 	
-	''' Scrape method for Future Electronics. '''
 	def scrapeFUE(self):
+		''' Scrape method for Future Electronics. '''
 		print "Distributor scraping not yet implemented!"
 		
-	''' Scrape method for Jameco. '''
 	def scrapeJAM(self):
+		''' Scrape method for Jameco. '''
 		print "Distributor scraping not yet implemented!"
 		
-	''' Scrape method for Mouser Electronics. '''
 	def scrapeME(self):
+		''' Scrape method for Mouser Electronics. '''
 		print "Distributor scraping not yet implemented!"
 	
-	''' Scrape method for Newark. '''
 	def scrapeNEW(self):
+		''' Scrape method for Newark. '''
 		print "Distributor scraping not yet implemented!"
 	
-	''' Scrape method for Sparkfun. '''	
 	def scrapeSFE(self):
+		''' Scrape method for Sparkfun. '''	
 		print "Distributor scraping not yet implemented!"
 		# Clear previous pricing data (in case price break keys change)
 		self.prices.clear()
@@ -175,52 +284,54 @@ class Product:
 		soup = BeautifulSoup(page)
 			
 	def scrape(self):
-		# Proceed based on vendor
-		if self.vendor == Product.VENDOR_DK:
+		''' Scrape each vendor page to refresh product pricing info. '''
+		self.vendorProds.clear()
+		# Proceed based on vendor config
+		if VENDOR_DK_EN:
 			self.scrapeDK()
-		elif self.vendor == Product.VENDOR_FAR:
+		if VENDOR_FAR_EN:
 			self.scrapeFAR()
-		elif self.vendor == Product.VENDOR_FUE:
+		if VENDOR_FUE_EN:
 			self.scrapeFUE()
-		elif self.vendor == Product.VENDOR_JAM:
+		if VENDOR_JAM_EN:
 			self.scrapeJAM()
-		elif self.vendor == Product.VENDOR_ME:
+		if VENDOR_ME_EN:
 			self.scrapeME()
-		elif self.vendor == Product.VENDOR_NEW:
+		if VENDOR_NEW_EN:
 			self.scrapeNEW()
-		elif self.vendor == Product.VENDOR_SFE:
+		if VENDOR_SFE_EN:
 			self.scrapeSFE()
-		else:
-			print 'Error: %s has invalid vendor: %s' % (self.pn, self.vendor)
+		
+		print 'Writing the following Product to DB: \n'
+		self.show()
+		self.writeToDB()
+				
 
 	def isInDB(self):
-		if(len(self.db.selectdic(self.vendor_pn, "products")) != 0):
+		d = self.db.selectdic(self.manufacturer_pn, "products")
+		#print 'Product.isInDB: len(d) = ', len(d)
+		if(len(d) != 0):
+			#print 'Product.isInDB returning True.'
 			return True
 		else:
 			return False
 	
 	def writeToDB(self):
-		self.db.delete(self.vendor_pn, 'products')
-		self.db.insert(self, self.vendor_pn + " #" + self.vendor + " #" + \
-		self.mfg_pn, 'products')
+		self.db.delete(self.manufacturer_pn, 'products')
+		self.db.insert(self, self.manufacturer_pn + " #" + self.manufacturer, 'products')
 		
 	''' Sets the product fields, pulling from the local DB if possible.'''	
 	def selectOrScrape(self):
 		if(self.isInDB()):
-			temp = self.db.select(self.vendor_pn, 'products')
-			self.vendor = temp.vendor
-			self.vendor_pn = temp.vendor_pn
+			temp = self.db.select(self.manufacturer_pn, 'products')
 			self.manufacturer = temp.manufacturer
-			self.mfg_pn = temp.mfg_pn
-			self.prices = temp.prices
-			self.inventory = temp.inventory
+			self.manufacturer_pn = temp.manufacturer_pn
 			self.datasheet = temp.datasheet
 			self.description = temp.description
-			self.category = temp.category
-			self.family = temp.family
-			self.series = temp.series
 			self.package = temp.package
-		elif self.vendor_pn != "none":
+		# TODO: When done testing scrape, re-indent it and uncomment this elif
+		elif self.manufacturer_pn != "none":
 			self.scrape()
 
-#call sorted(prices.keys(), reverse=True) on prices.keys() to evaluate the price breaks in order
+
+		

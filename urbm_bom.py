@@ -75,8 +75,9 @@ class BOM:
 				print "Warning: BOM.getCost() skipped a part with no product"
 			else:
 				product = self.db.select(x[0], 'products')
-				priceBreak = product.getPriceBreak(x[1])
-				cost += priceBreak[1] * projProdCounts[x[0]]
+				listing = product.bestListing(projProdCounts[x[0]])
+				priceBreak = listing.getPriceBreak(x[1])
+				cost += (priceBreak[1] * projProdCounts[x[0]]) + listing.reelFee
 				
 		return cost
 	
