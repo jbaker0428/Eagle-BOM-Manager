@@ -297,17 +297,6 @@ class URBM(gobject.GObject):
 			self.selectedBomPart.product = self.productEntryText
 			print "selectedBomPart's product field: %s" % self.selectedBomPart.product
 			
-			# Make sure the user selected a vendor
-			# If not, default to Digikey for now
-			# TODO: If a product was previously set, default to the current vendor
-			# TODO: Can this be a "required field" that will prevent the OK button 
-			# from working (greyed out) if a part number is also entered?
-			#if type(editPartVendorCombo.get_active_text()) is types.NoneType:
-			#	print "NoneType caught"
-			#	self.bomSelectedProduct.vendor = Product.VENDOR_DK
-			#else:	
-			#	self.bomSelectedProduct.vendor = editPartVendorCombo.get_active_text()
-			
 			self.selectedBomPart.writeToDB()
 			self.active_bom.updateParts(self.selectedBomPart)
 			
@@ -320,16 +309,11 @@ class URBM(gobject.GObject):
 					
 			self.bomSelectedProduct.manufacturer_pn = self.productEntryText
 			self.bomSelectedProduct.selectOrScrape()
-			# TODO: The following commented out lines need to be redone
-			# for the new Product model
+			self.setPartInfoListingCombo(self.bomSelectedProduct)
 			if self.bomSelectedProduct.manufacturer_pn == "none":
-				pass
-				#self.clearPartInfoLabels()
-				#self.destroyPartPriceLabels()
+				self.clearPartInfoLabels()
 			else:
-				pass
-				#self.setPartInfoLabels(self.bomSelectedProduct)
-				#self.setPartPriceLabels(self.bomSelectedProduct)
+				self.setPartInfoLabels(self.bomSelectedProduct)
 	
 	def partInfoScrapeButtonCallback(self, widget):
 		''' Part info frame "Refresh" button callback. '''
@@ -476,9 +460,10 @@ class URBM(gobject.GObject):
 		self.partInfoListingCombo.get_model().clear()
 		
 		if type(prod) is not types.NoneType and prod.manufacturer_pn != "none":
-			for listing in prod.vendorProds.values():
+			#for listing in prod.vendorProds.values():
+			for listing in prod.vendorProds.keys():
 				#print 'Listing: ', type(listing), listing
-				title = listing.vendor + ': ' + listing.vendorPN# + ' (' + listing.packaging + ')'
+				title = listing
 				#print 'Appending combo title: ', title
 				self.partInfoListingCombo.append_text(title)
 		
