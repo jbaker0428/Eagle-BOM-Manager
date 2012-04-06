@@ -39,10 +39,9 @@ def listProjects():
 		projects.append(p[0])
 	return projects
 
-'''Main GUI class'''
+
 class URBM(gobject.GObject):
-	''' Query the database for all project tables.'''
-	
+	'''Main GUI class'''
 	def delete_event(self, widget, event, data=None):
 		print "delete event occurred"
 		return False
@@ -136,15 +135,18 @@ class URBM(gobject.GObject):
 			# Set class field for currently selected product
 			print "Querying with selectedPN: %s" % selectedPN
 			self.bomSelectedProduct.manufacturer_pn = selectedPN
-			# TODO: The following commented out lines need to be redone
-			# for the new Product model
+			
 			self.bomSelectedProduct.selectOrScrape()
-			self.bomSelectedProduct.show()
+			#self.bomSelectedProduct.show()
 			self.setPartInfoLabels(self.bomSelectedProduct)
 			self.setPartInfoListingCombo(self.bomSelectedProduct)
-			#self.setPartPriceLabels(self.bomSelectedProduct)
+			self.destroyPartPriceLabels()
+			print 'self.bomSelectedProduct.vendorProds: \n', self.bomSelectedProduct.vendorProds
+			if type(self.partInfoListingCombo.get_active_text()) is not types.NoneType and self.partInfoListingCombo.get_active_text() != '':
+				self.setPartPriceLabels(self.bomSelectedProduct.vendorProds[self.partInfoListingCombo.get_active_text()])
 		else:
-			#self.destroyPartPriceLabels()
+			self.setPartInfoListingCombo()
+			self.destroyPartPriceLabels()
 			self.clearPartInfoLabels()
 	
 	'''Callback method activated by the BOM grouping radio buttons.
@@ -333,6 +335,11 @@ class URBM(gobject.GObject):
 		''' Part info frame "Refresh" button callback. '''
 		self.bomSelectedProduct.scrape()
 	
+	def partInfoListingComboCallback(self, widget, data=None):
+		self.destroyPartPriceLabels()
+		if type(self.partInfoListingCombo.get_active_text()) is not types.NoneType and self.partInfoListingCombo.get_active_text() != '':
+			self.setPartPriceLabels(self.bomSelectedProduct.vendorProds[self.partInfoListingCombo.get_active_text()])
+	
 	''' Clear self.dbProductStore and repopulate it. '''
 	def dbStorePopulate(self):
 		self.dbProductStore.clear()
@@ -462,18 +469,22 @@ class URBM(gobject.GObject):
 		#self.partInfoSeriesLabel2.set_text("\t")
 		self.partInfoPackageLabel2.set_text("\t")
 	
-	def setPartInfoListingCombo(self, prod):
+	def setPartInfoListingCombo(self, prod=None):
 		''' Populates self.partInfoListingCombo with vendorProduct listings
 		for the selected Product. '''
 		print 'Setting Listing combo...'
-		#print 'prod.vendorProds: ', prod.vendorProds
-		#print 'prod.show:'
-		#prod.show()
-		for listing in prod.vendorProds.values():
-			print 'Listing: ', type(listing), listing
-			title = listing.vendor + ': ' + listing.vendorPN# + ' (' + listing.packaging + ')'
-			print 'Appending combo title: ', title
-			self.partInfoListingCombo.append_text(title)
+		self.partInfoListingCombo.get_model().clear()
+		
+		if type(prod) is not types.NoneType and prod.manufacturer_pn != "none":
+			for listing in prod.vendorProds.values():
+				#print 'Listing: ', type(listing), listing
+				title = listing.vendor + ': ' + listing.vendorPN# + ' (' + listing.packaging + ')'
+				#print 'Appending combo title: ', title
+				self.partInfoListingCombo.append_text(title)
+		
+		# TODO: Set default active to user-selected listing
+		# If the user has not chosen one, that defaults to prod.bestListing
+		self.partInfoListingCombo.set_active(0)
 		self.partInfoRowBox.show_all()
 	
 	def destroyPartPriceLabels(self):
@@ -485,13 +496,18 @@ class URBM(gobject.GObject):
 			
 		for r in self.extPriceLabels:
 			r.destroy()
+			
+		del self.priceBreakLabels[:]
+		del self.unitPriceLabels[:]
+		del self.extPriceLabels[:]
 		
-	def setPartPriceLabels(self, prod):
-		n = len(prod.prices)
-		print "n =", n
-		k = sorted(prod.prices.keys())
-		print "prod.prices = \n", prod.prices
-		print "sorted(prod.prices.keys()) = \n", k
+	def setPartPriceLabels(self, vprod):
+		''' Given a vendorProduct listing, sets the pricing table labels. '''
+		n = len(vprod.prices)
+		#print "n =", n
+		priceKeys = sorted(vprod.prices.keys())
+		#print "vprod.prices = \n", vprod.prices
+		#print "sorted(vprod.prices.keys()) = \n", priceKeys
 		self.partInfoPricingTable.resize(n+1, 3)
 		self.destroyPartPriceLabels()
 		
@@ -505,12 +521,12 @@ class URBM(gobject.GObject):
 		
 		rowNum = 1
 		for i in range(n):
-			#k[i] is a key of prod.prices()
-			self.priceBreakLabels.append(gtk.Label(str(k[i]) + '   '))
+			#priceKeys[i] is a key of vprod.prices()
+			self.priceBreakLabels.append(gtk.Label(str(priceKeys[i]) + '   '))
 			self.priceBreakLabels[rowNum].set_alignment(0.5, 0.5)
-			self.unitPriceLabels.append(gtk.Label(str(prod.prices[k[i]]) + '   '))
+			self.unitPriceLabels.append(gtk.Label(str(vprod.prices[priceKeys[i]]) + '   '))
 			self.unitPriceLabels[rowNum].set_alignment(1.0, 0.5)
-			self.extPriceLabels.append(gtk.Label(str( k[i] *  prod.prices[k[i]]) + '   '))
+			self.extPriceLabels.append(gtk.Label(str( priceKeys[i] *  vprod.prices[priceKeys[i]]) + '   '))
 			self.extPriceLabels[rowNum].set_alignment(1.0, 0.5)
 			
 			self.partInfoPricingTable.attach(self.priceBreakLabels[rowNum],  0, 1, rowNum, rowNum+1)
@@ -518,7 +534,7 @@ class URBM(gobject.GObject):
 			self.partInfoPricingTable.attach(self.extPriceLabels[rowNum],  2, 3, rowNum, rowNum+1)
 			rowNum += 1
 			
-		self.window.show_all()
+		self.partInfoFrame.show_all()
 		
 	def __init__(self):
 		# -------- DECLARATIONS --------
@@ -655,6 +671,8 @@ class URBM(gobject.GObject):
 		
 		self.partInfoListingLabel = gtk.Label("Product source: ")
 		self.partInfoListingCombo = gtk.combo_box_new_text()
+		#self.partInfoListingCombo = gtk.combo_box_text_new_with_entry()
+		
 		
 		self.partInfoPricingTable = gtk.Table(8, 3 , False) # Price breaks
 		self.priceBreakLabels = []
@@ -861,6 +879,7 @@ class URBM(gobject.GObject):
 		self.partInfoPackageLabel2.set_alignment(0.0, 0.5)
 		self.partInfoScrapeButton.connect("clicked", self.partInfoScrapeButtonCallback)
 		self.partInfoListingLabel.set_alignment(0.0, 0.5)
+		self.partInfoListingCombo.connect("changed", self.partInfoListingComboCallback)
 		
 		self.dbScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
 		self.dbReadDBButton.connect("clicked", self.dbReadDBCallback, "read")

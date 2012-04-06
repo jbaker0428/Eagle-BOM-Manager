@@ -244,12 +244,12 @@ class Product:
 			else:
 				print 'Error: DK Packaging scrape failure!'
 			
-			self.vendorProds[VENDOR_DK + ':' + vendor_pn] = vendorProduct(VENDOR_DK, vendor_pn, prices, inventory, packaging)
-			self.vendorProds[VENDOR_DK + ':' + vendor_pn].category = category
-			self.vendorProds[VENDOR_DK + ':' + vendor_pn].family = family
-			self.vendorProds[VENDOR_DK + ':' + vendor_pn].series = series
+			self.vendorProds[VENDOR_DK + ': ' + vendor_pn] = vendorProduct(VENDOR_DK, vendor_pn, prices, inventory, packaging)
+			self.vendorProds[VENDOR_DK + ': ' + vendor_pn].category = category
+			self.vendorProds[VENDOR_DK + ': ' + vendor_pn].family = family
+			self.vendorProds[VENDOR_DK + ': ' + vendor_pn].series = series
 			if "Digi-Reel" in packaging:
-				self.vendorProds[VENDOR_DK + ':' + vendor_pn].reelFee = 7
+				self.vendorProds[VENDOR_DK + ': ' + vendor_pn].reelFee = 7
 	
 	def scrapeFAR(self):
 		''' Scrape method for Farnell. '''
