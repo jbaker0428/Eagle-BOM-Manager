@@ -966,12 +966,12 @@ class URBM(gobject.GObject):
 		self.dbTreeView.set_model(self.dbProductStore)
 		
 		# -------- PACKING AND ADDING --------
-		self.mainBox.pack_start(self.menuBar)
+		self.mainBox.pack_start(self.menuBar, False)
 		self.mainBox.pack_start(self.notebook)
 		self.window.add(self.mainBox)
 		
 		# Project selection tab
-		self.projectBox.pack_start(self.projectToolbar)
+		self.projectBox.pack_start(self.projectToolbar, False)
 		self.projectToolbar.insert(self.projectNewButton, 0)
 		self.projectToolbar.insert(self.projectOpenButton, 1)
 		self.projectToolbar.insert(self.projectEditButton, 2)
@@ -1004,7 +1004,7 @@ class URBM(gobject.GObject):
 		
 		# BOM tab elements
 		
-		self.bomTabBox.pack_start(self.bomToolbar)
+		self.bomTabBox.pack_start(self.bomToolbar, False)
 		self.bomToolbar.insert(self.bomReadInputButton, 0)
 		self.bomToolbar.insert(self.bomReadDBButton, 1)
 		self.bomToolbar.insert(self.bomEditPartButton, 2)
