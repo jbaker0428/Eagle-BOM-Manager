@@ -13,10 +13,8 @@ class bomPart:
 		self.product = product
 		self.bom = parent_bom
 
-	
-
-	''' A simple print method. '''
 	def show(self):
+		''' A simple print method. '''
 		print 'Name: ', self.name, type(self.name)
 		print 'Value: ', self.value, type(self.value)
 		print 'Device: ', self.device, type(self.device)
@@ -25,8 +23,8 @@ class bomPart:
 		print 'Product: ', self.product, type(self.product)
 		print 'BOM: ', self.bom, type(self.bom), '\n'
 		
-	''' Compares the bomPart to another bomPart.'''
 	def equals(self, p):
+		''' Compares the bomPart to another bomPart.'''
 		if type(p) != type(self):
 			return False
 		eq = True
@@ -46,6 +44,7 @@ class bomPart:
 		
 
 	def findInBOM(self, bomFile):
+		''' Check if a BOM part of this name is in the given CSV BOM. '''
 		with open(bomFile, 'rb') as f:
 			db = csv.reader(f, delimiter=',', quotechar = '"', quoting=csv.QUOTE_ALL)
 			rownum = 0
