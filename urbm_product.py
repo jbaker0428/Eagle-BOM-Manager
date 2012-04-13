@@ -1,5 +1,4 @@
 import urllib2
-import csv
 from BeautifulSoup import BeautifulSoup, Tag, NavigableString
 import shutil
 import os
