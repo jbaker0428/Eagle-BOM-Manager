@@ -7,37 +7,58 @@ import shutil
 import os
 import sqlite3
 import types
-from urbm_product import Product
+from urbm_product import Product, vendorProduct
 from urbm_bompart import bomPart
 from urbm_bom import BOM
 import gobject
 
-urbmDB = y_serial.Main(os.path.join(os.getcwd(), "urbm.sqlite"))
-urbmDB.createtable('products')
+class Workspace:
+	''' Each Workspace has its own persistent database file. '''
+	db0 = os.path.join(os.getcwd(), 'urbm.sqlite')
+	
+	def __init__(self, db=db0):
+		self.db = db
+	
+	def con_cursor(self):
+		''' Connect to the DB, enable foreign keys, set autocommit mode,  
+		and return a (connection, cursor) pair. '''
+		con = sqlite3.connect(self.db)
+		con.isolation_level = None
+		con.execute('PRAGMA foreign_keys = ON')
+		cur = con.cursor()
+		return (con, cur)
+		
+	def listProjects(self):
+		''' Returns a list of BOM project tables in the DB. '''
+		(con, cur) = self.con_cursor()
+		projects = []
+		a = "SELECT name FROM sqlite_master"
+		b = "WHERE type='table' AND name IS NOT 'products' OR 'dummy'"
+		c = "ORDER BY name"
+		sql = ' '.join( [a, b, c] )
+		cur.execute(sql)
+		answer = cur.fetchall()
+		cur.close()
+		con.close()
+		for p in answer:
+			projects.append(p[0])
+		return projects
+	
+	def createTables(self):
+		''' Create the workspace-wide database tables. '''
+		Product.createTable(self)
+		vendorProduct.createTables(self)
+
+urbmDB = Workspace()
+urbmDB.createTables()
+#urbmDB = y_serial.Main(os.path.join(os.getcwd(), "urbm.sqlite"))
+#urbmDB.createtable('products')
 #activeProjectName = 'test1'
 inputFile = os.path.join(os.getcwd(), "test.csv")	# TODO: Test dummy
 
 #active_bom = BOM("test1", 'Test BOM 1', urbmDB, os.path.join(os.getcwd(), "test.csv"))
 
-def getProductDBSize():
-	dict = urbmDB.selectdic("?", 'products')
 
-''' Returns a list of BOM project tables in the DB. '''
-def listProjects():
-	conn = sqlite3.connect("urbm.sqlite")
-	cur = conn.cursor()
-	projects = []
-	a = "SELECT name FROM sqlite_master"
-	b = "WHERE type='table' AND name IS NOT 'products' OR 'dummy'"
-	c = "ORDER BY name"
-	sql = ' '.join( [a, b, c] )
-	cur.execute(sql)
-	answer = cur.fetchall()
-	cur.close()
-	conn.close()
-	for p in answer:
-		projects.append(p[0])
-	return projects
 
 
 class URBM(gobject.GObject):
@@ -61,7 +82,7 @@ class URBM(gobject.GObject):
 		response = self.newProjectDialog.run()
 		self.newProjectDialog.hide()
 		newName = self.newProjectNameEntry.get_text()
-		curProjects = listProjects()
+		curProjects = urbmDB.listProjects()
 		if newName in curProjects:
 			print 'Error: Name in use!'
 			self.projectNameTakenDialog.run()
@@ -356,7 +377,7 @@ class URBM(gobject.GObject):
 	def projectStorePopulate(self):
 		self.projectStore.clear()
 		# Columns: Name, Description, Database, Input File
-		projectsList = listProjects()
+		projectsList = urbmDB.listProjects()
 		#print 'projectsList: ', projectsList
 		for p in projectsList:
 			if type(p) is types.NoneType:

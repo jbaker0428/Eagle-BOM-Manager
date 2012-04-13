@@ -5,6 +5,8 @@ from BeautifulSoup import BeautifulSoup, Tag, NavigableString
 import shutil
 import os
 import urlparse
+import sqlite3
+from urbm import Workspace
 
 def getFileName(url,openUrl):
 	if 'Content-Disposition' in openUrl.info():
@@ -41,6 +43,32 @@ ENFORCE_MIN_QTY = True
 
 class vendorProduct:
 	''' A distributor's listing for a Product object. '''
+	
+	@staticmethod
+	def createTables(wspace):
+		''' Create the vendorProducts table for a given Workspace. '''
+		try:
+			(con, cur) = wspace.con_cursor()
+			cur.execute('''CREATE TABLE IF NOT EXISTS vendorproducts
+			(vendor TEXT, 
+			vendor_pn TEXT PRIMARY KEY, 
+			datasheet TEXT, 
+			description TEXT, 
+			package INTEGER)''')
+			
+			cur.execute('''CREATE TABLE IF NOT EXISTS pricebreaks
+			(id INTEGER PRIMARY KEY
+			pn TEXT REFERENCES vendorproducts(vendor_pn) 
+			qty INTEGER
+			unit DOUBLE)''')
+			
+		except:
+			print 'Product.createTable exception, probably because table already created.'
+			
+		finally:
+			cur.close()
+			con.close()
+	
 	def __init__(self, vend, vendor_pn, pricesDict, inv, pkg):
 		self.vendor = vend
 		self.vendorPN = vendor_pn
@@ -83,6 +111,27 @@ class vendorProduct:
 class Product:
 	''' A physical product, independent of distributor.
 	The primary identifying key is the manufacturer PN. '''
+	
+	@staticmethod
+	def createTable(wspace):
+		''' Create the Products table for a given Workspace. '''
+		try:
+			(con, cur) = wspace.con_cursor()
+			# TODO: Add error handling clauses to the foreign key constraints
+			cur.execute('''CREATE TABLE IF NOT EXISTS products
+			(manufacturer TEXT, 
+			manufacturer_pn TEXT PRIMARY KEY, 
+			datasheet TEXT, 
+			description TEXT, 
+			package INTEGER)''')
+			
+		except:
+			print 'Product.createTable exception, probably because table already created.'
+			
+		finally:
+			cur.close()
+			con.close()
+		
 	def __init__(self, mfg, mfg_pn, database):
 		self.manufacturer = mfg
 		self.manufacturer_pn = mfg_pn
