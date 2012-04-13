@@ -11,9 +11,9 @@ from urbm import Workspace
 
 '''For determining the name of a project's bomPart table.'''			
 class BOM:
-	''' Return any BOM object from a DB based on its table name. '''
 	@staticmethod
 	def readFromDB(database, name):
+		''' Return any BOM object from a DB based on its table name. '''
 		bom = database.select('bom', name)
 		return bom
 	
@@ -61,8 +61,8 @@ class BOM:
 			else:
 				self.prodCounts[x[2]] = 1
 	
-	''' Get the total project BOM cost for a given production run size'''		
 	def getCost(self, runSize=1):
+		''' Get the total project BOM cost for a given production run size'''
 		# Beware of sorting self.parts screwing with GUI BOM list sorting!
 		self.setProdCounts()
 		projProdCounts = self.prodCounts.copy()
@@ -83,8 +83,8 @@ class BOM:
 				
 		return cost
 	
-	''' Take in a bomPart, find it in self.parts, update product.name entry'''
 	def updateParts(self, part):
+		''' Take in a bomPart, find it in self.parts, update product.name entry'''
 		# Find p in self.parts by name
 		for p in self.parts:
 			if p[0] == part.name:
