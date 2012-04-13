@@ -52,6 +52,7 @@ class vendorProduct:
 			cur.execute('''CREATE TABLE IF NOT EXISTS vendorproducts
 			(vendor TEXT, 
 			vendor_pn TEXT PRIMARY KEY, 
+			mfg_pn TEXT REFERENCES products(manufacturer_pn), 
 			reelfee FLOAT, 
 			inventory INTEGER, 
 			packaging TEXT,
