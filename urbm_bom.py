@@ -58,7 +58,8 @@ class BOM:
 			value TEXT, 
 			device TEXT, 
 			package TEXT, 
-			description TEXT)''', symbol)
+			description TEXT, 
+			product TEXT REFERENCES products(manufacturer_pn))''', symbol)
 			
 		except:
 			print 'BOM(%s).createTable exception, probably because table already created.' % self.name
