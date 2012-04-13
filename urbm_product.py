@@ -52,9 +52,12 @@ class vendorProduct:
 			cur.execute('''CREATE TABLE IF NOT EXISTS vendorproducts
 			(vendor TEXT, 
 			vendor_pn TEXT PRIMARY KEY, 
-			datasheet TEXT, 
-			description TEXT, 
-			package INTEGER)''')
+			reelfee FLOAT, 
+			inventory INTEGER, 
+			packaging TEXT,
+			category TEXT,
+			family TEXT,
+			series TEXT)''')
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS pricebreaks
 			(id INTEGER PRIMARY KEY
@@ -69,16 +72,16 @@ class vendorProduct:
 			cur.close()
 			con.close()
 	
-	def __init__(self, vend, vendor_pn, pricesDict, inv, pkg):
+	def __init__(self, vend, vendor_pn, pricesDict, inv, pkg, reel=0, cat='NULL', fam='NULL', ser='NULL'):
 		self.vendor = vend
 		self.vendorPN = vendor_pn
 		self.prices = pricesDict
-		self.reelFee = 0	# Flat per-order reeling fee (Digi-reel, MouseReel, etc)
+		self.reelFee = reel	# Flat per-order reeling fee (Digi-reel, MouseReel, etc)
 		self.inventory = inv
 		self.packaging = pkg	# Cut Tape, Tape/Reel, Tray, Tube, etc.
-		self.category = ""	# "Capacitors"
-		self.family = ""	# "Ceramic"
-		self.series = ""	# "C" (TDK series C)
+		self.category = cat	# "Capacitors"
+		self.family = fam	# "Ceramic"
+		self.series = ser	# "C" (TDK series C)
 	
 	def show(self):
 		''' A simple print method. '''
@@ -91,6 +94,76 @@ class vendorProduct:
 		print 'Category: ', self.category, type(self.category)
 		print 'Family: ', self.family, type(self.family)
 		print 'Series: ', self.series, type(self.series)
+	
+	def update(self, wspace):
+		''' Update an existing vendorProduct record in the DB. '''
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (self.vendor, self.vendorPN, self.reelFee, self.inventory, 
+					self.packaging, self.category, self.family, self.series, self.vendorPN,)
+			cur.execute('''UPDATE vendorproducts 
+			SET vendor=?, vendor_pn=?, reelfee=?, inventory=?, packaging=?, 
+			category=?, family=?, series=? 
+			WHERE vendor_pn=?''', symbol)
+				
+		except:
+			print 'Exception in vendorProduct.update()'
+			
+		finally:
+			cur.close()
+			con.close()
+	
+	def insert(self, wspace):
+		''' Write the vendorProduct to the DB. '''
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (self.vendor, self.vendorPN, self.reelFee, self.inventory, 
+					self.packaging, self.category, self.family, self.series,)
+			# INSERTing 'NULL' for the integer primary key column autogenerates an id
+			cur.execute('INSERT INTO vendorproducts VALUES (?,?,?,?,?,?,?,?)', symbol)
+				
+		except:
+			print 'Exception in vendorProduct.insert()'
+			
+		finally:
+			cur.close()
+			con.close()
+	
+	def delete(self, wspace):
+		''' Delete the vendorProduct from the DB. '''
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (self.vendorPN,)
+			cur.execute('DELETE FROM vendorproducts WHERE vendor_pn=?', symbol)
+				
+		except:
+			print 'Exception in vendorProduct.delete()'
+			
+		finally:
+			cur.close()
+			con.close()
+	
+	def fetchPriceBreaks(self, wspace):
+		''' Fetch price breaks dictionary for this vendorProduct. 
+		Clears and sets the self.prices dictionary directly. '''
+		self.prices.clear()
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (self.vendorPN,)
+			cur.execute('SELECT qty, unit FROM pricebreaks WHERE pn=? ORDER BY qty', symbol)
+			for row in cur.fetchall():
+				self.prices[row[0]] = row[1]
+				
+		except:
+			print 'Exception in Product(%s).fetchPriceBreaks' % self.vendorPN
+			
+		finally:
+			cur.close()
+			con.close()
 		
 	def getPriceBreak(self, qty):
 		''' Returns the (price break, unit price) list pair for the given purchase quantity.
