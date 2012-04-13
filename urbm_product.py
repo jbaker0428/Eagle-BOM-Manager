@@ -453,7 +453,7 @@ class Product:
 		page = urllib2.urlopen(url)
 		soup = BeautifulSoup(page)
 			
-	def scrape(self):
+	def scrape(self, wspace):
 		''' Scrape each vendor page to refresh product pricing info. '''
 		self.vendorProds.clear()
 		# Proceed based on vendor config
@@ -474,7 +474,7 @@ class Product:
 		
 		print 'Writing the following Product to DB: \n'
 		self.show()
-		self.insert()
+		self.insert(wspace)
 				
 
 	def isInDB(self, wspace):
@@ -497,8 +497,8 @@ class Product:
 			return ret
 		
 	''' Sets the product fields, pulling from the local DB if possible.'''	
-	def selectOrScrape(self):
-		if(self.isInDB()):
+	def selectOrScrape(self, wspace):
+		if(self.isInDB(wspace)):
 			temp = self.db.select(self.manufacturer_pn + " #prod #", 'products')
 			self.manufacturer = temp.manufacturer
 			self.manufacturer_pn = temp.manufacturer_pn
@@ -507,7 +507,7 @@ class Product:
 			self.package = temp.package
 			self.vendorProds = self.db.select(self.manufacturer_pn + " #listing", 'products')
 		elif self.manufacturer_pn != "none":
-			self.scrape()
+			self.scrape(wspace)
 
 
 		
