@@ -4,7 +4,7 @@ import sqlite3
 from urbm import Workspace
 
 class bomPart:
-	def __init__(self, name, value, device, package, parent_bom, description="", product="none"):
+	def __init__(self, name, value, device, package, parent_bom, description='NULL', product='NULL'):
 		self.name = name
 		self.value = value
 		self.device = device
