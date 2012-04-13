@@ -80,6 +80,15 @@ class BOM:
 		self.parts.sort(key=itemgetter(2))
 	
 	def setValCounts(self):
+		# TODO: see new plan below
+		''' 
+		Select value column for all parts in project
+		Make a list of the values
+		For each item in the values list, select name column from 
+		parts in project where value = vallist[iter]
+		Record len(cursor.fetchall()
+		valCounts[val list iter] = len(cursor.fetchall()
+		'''
 		print "BOM.setValCounts"
 		self.valCounts.clear()
 		
