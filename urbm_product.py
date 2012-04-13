@@ -203,15 +203,35 @@ class Product:
 		finally:
 			cur.close()
 			con.close()
+	
+	@staticmethod
+	def select_by_pn(pn, wspace):
+		''' Return the Product of given part number. '''
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (pn,)
+			cur.execute('SELECT * FROM products WHERE manufacturer_pn=?', symbol)
+			row = cur.fetchone()
+			if row != None:
+				prod = Product(row[0], row[1], row[2], row[3], row[4])
+			else:
+				prod = None
+		except:
+			print 'Exception in Product.select_by_pn( %s )' % pn
+			
+		finally:
+			cur.close()
+			con.close()
+			return prod
 		
-	def __init__(self, mfg, mfg_pn, database):
+	def __init__(self, mfg, mfg_pn, dsheet='NULL', desc='NULL', pkg='NULL'):
 		self.manufacturer = mfg
 		self.manufacturer_pn = mfg_pn
-		self.datasheet = ""
-		self.description = ""
-		self.package = ""
+		self.datasheet = dsheet
+		self.description = desc
+		self.package = pkg
 		self.vendorProds = {}	# Key is vendorProduct.vendor + vendorProduct.vendor_pn
-		self.db = database
 	
 	def show(self):
 		''' A simple print method. '''
@@ -224,7 +244,6 @@ class Product:
 		for listing in self.vendorProds.items():
 			print "\nListing key: ", listing[0]
 			listing[1].show()
-		print 'DB: ', self.db, type(self.db), '\n'
 	
 	def update(self, wspace):
 		''' Update an existing Product record in the DB. '''
@@ -499,7 +518,7 @@ class Product:
 	''' Sets the product fields, pulling from the local DB if possible.'''	
 	def selectOrScrape(self, wspace):
 		if(self.isInDB(wspace)):
-			temp = self.db.select(self.manufacturer_pn + " #prod #", 'products')
+			temp = Product.select_by_pn(self.manufacturer_pn, wspace)
 			self.manufacturer = temp.manufacturer
 			self.manufacturer_pn = temp.manufacturer_pn
 			self.datasheet = temp.datasheet
