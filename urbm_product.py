@@ -477,14 +477,24 @@ class Product:
 		self.writeToDB()
 				
 
-	def isInDB(self):
-		d = self.db.selectdic(self.manufacturer_pn, "products")
-		#print 'Product.isInDB: len(d) = ', len(d)
-		if(len(d) != 0):
-			#print 'Product.isInDB returning True.'
-			return True
-		else:
-			return False
+	def isInDB(self, wspace):
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (self.manufacturer_pn,)
+			cur.execute('SELECT * FROM products WHERE manufacturer_pn=?', symbol)
+			row = cur.fetchone()
+			if row != None:
+				ret = True
+			else:
+				ret = False
+		except:
+			print 'Exception in Product(%s).isInDB()' % self.manufacturer_pn
+			
+		finally:
+			cur.close()
+			con.close()
+			return ret
 	
 	def writeToDB(self):
 		self.db.delete(self.manufacturer_pn, 'products')
