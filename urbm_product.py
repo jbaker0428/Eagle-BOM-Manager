@@ -1,4 +1,3 @@
-import y_serial_v060 as y_serial
 import urllib2
 import csv
 from BeautifulSoup import BeautifulSoup, Tag, NavigableString
@@ -551,7 +550,7 @@ class Product:
 			self.datasheet = temp.datasheet
 			self.description = temp.description
 			self.package = temp.package
-			self.vendorProds = self.db.select(self.manufacturer_pn + " #listing", 'products')
+			self.fetchListings(wspace)
 		elif self.manufacturer_pn != "none":
 			self.scrape(wspace)
 
