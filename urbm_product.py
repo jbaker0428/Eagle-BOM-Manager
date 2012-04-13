@@ -122,7 +122,6 @@ class vendorProduct:
 			
 			symbol = (self.vendor, self.vendorPN, self.reelFee, self.inventory, 
 					self.packaging, self.category, self.family, self.series,)
-			# INSERTing 'NULL' for the integer primary key column autogenerates an id
 			cur.execute('INSERT INTO vendorproducts VALUES (?,?,?,?,?,?,?,?)', symbol)
 				
 		except:
@@ -191,13 +190,12 @@ class Product:
 		''' Create the Products table for a given Workspace. '''
 		try:
 			(con, cur) = wspace.con_cursor()
-			# TODO: Add error handling clauses to the foreign key constraints
 			cur.execute('''CREATE TABLE IF NOT EXISTS products
 			(manufacturer TEXT, 
 			manufacturer_pn TEXT PRIMARY KEY, 
 			datasheet TEXT, 
 			description TEXT, 
-			package INTEGER)''')
+			package TEXT)''')
 			
 		except:
 			print 'Product.createTable exception, probably because table already created.'
@@ -227,6 +225,54 @@ class Product:
 			print "\nListing key: ", listing[0]
 			listing[1].show()
 		print 'DB: ', self.db, type(self.db), '\n'
+	
+	def update(self, wspace):
+		''' Update an existing Product record in the DB. '''
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (self.manufacturer, self.manufacturer_pn, self.datasheet, self.description, 
+					self.package, self.manufacturer_pn,)
+			cur.execute('''UPDATE products 
+			SET manufacturer=?, manufacturer_pn=?, datasheet=?, description=?, package=?, 
+			WHERE manufacturer_pn=?''', symbol)
+				
+		except:
+			print 'Exception in Product(%s).update()' % self.manufacturer_pn
+			
+		finally:
+			cur.close()
+			con.close()
+	
+	def insert(self, wspace):
+		''' Write the Product to the DB. '''
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (self.manufacturer, self.manufacturer_pn, self.datasheet, self.description, self.package,)
+			cur.execute('INSERT INTO products VALUES (?,?,?,?,?)', symbol)
+				
+		except:
+			print 'Exception in Product(%s).insert()' % self.manufacturer_pn
+			
+		finally:
+			cur.close()
+			con.close()
+	
+	def delete(self, wspace):
+		''' Delete the Product from the DB. '''
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (self.manufacturer_pn,)
+			cur.execute('DELETE FROM products WHERE manufacturer_pn=?', symbol)
+				
+		except:
+			print 'Exception in Product(%s).delete()' % self.manufacturer_pn
+			
+		finally:
+			cur.close()
+			con.close()
 		
 	def bestListing(self, qty):
 		''' Return the vendorProduct listing with the best price for the given order quantity. 
