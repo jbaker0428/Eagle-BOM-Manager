@@ -53,9 +53,9 @@ class vendorProduct:
 			(vendor TEXT, 
 			vendor_pn TEXT PRIMARY KEY, 
 			mfg_pn TEXT REFERENCES products(manufacturer_pn), 
-			reelfee FLOAT, 
 			inventory INTEGER, 
 			packaging TEXT,
+			reelfee FLOAT, 
 			category TEXT,
 			family TEXT,
 			series TEXT)''')
@@ -77,9 +77,9 @@ class vendorProduct:
 		self.vendor = vend
 		self.vendorPN = vendor_pn
 		self.prices = pricesDict
-		self.reelFee = reel	# Flat per-order reeling fee (Digi-reel, MouseReel, etc)
 		self.inventory = inv
 		self.packaging = pkg	# Cut Tape, Tape/Reel, Tray, Tube, etc.
+		self.reelFee = reel	# Flat per-order reeling fee (Digi-reel, MouseReel, etc)
 		self.category = cat	# "Capacitors"
 		self.family = fam	# "Ceramic"
 		self.series = ser	# "C" (TDK series C)
@@ -165,7 +165,7 @@ class vendorProduct:
 				self.prices[row[0]] = row[1]
 				
 		except:
-			print 'Exception in Product(%s).fetchPriceBreaks' % self.vendorPN
+			print 'Exception in vendorProduct(%s).fetchPriceBreaks' % self.vendorPN
 			
 		finally:
 			cur.close()
@@ -294,6 +294,27 @@ class Product:
 				
 		except:
 			print 'Exception in Product(%s).delete()' % self.manufacturer_pn
+			
+		finally:
+			cur.close()
+			con.close()
+	
+	def fetchListings(self, wspace):
+		''' Fetch vendorProds dictionary for this Product. 
+		Clears and sets the self.vendorProds dictionary directly. '''
+		self.vendorProds.clear()
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (self.manufacturer_pn,)
+			cur.execute('SELECT * FROM vendorproducts WHERE mfg_pn=? ORDER BY vendor', symbol)
+			for row in cur.fetchall():
+				vprod = vendorProduct(row[0], row[1], {}, row[2], row[3], row[4], row[5], row[6], row[7])
+				vprod.fetchPriceBreaks(wspace)
+				self.vendorProds[vprod.key()] = vprod
+				
+		except:
+			print 'Exception in Product(%s).fetchListings' % self.manufacturer_pn
 			
 		finally:
 			cur.close()
