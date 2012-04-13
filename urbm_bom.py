@@ -6,6 +6,8 @@ from urbm_bompart import bomPart
 from urbm_product import Product
 import y_serial_v060 as y_serial
 from operator import itemgetter
+import sqlite3
+from urbm import Workspace
 
 '''For determining the name of a project's bomPart table.'''			
 class BOM:

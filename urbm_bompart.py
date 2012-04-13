@@ -1,5 +1,7 @@
 import y_serial_v060 as y_serial
 import types
+import sqlite3
+from urbm import Workspace
 
 class bomPart:
 	def __init__(self, name, value, device, package, parent_bom, description="", product="none"):
@@ -10,6 +12,8 @@ class bomPart:
 		self.description = description
 		self.product = product
 		self.bom = parent_bom
+
+	
 
 	''' A simple print method. '''
 	def show(self):
