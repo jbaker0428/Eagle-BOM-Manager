@@ -32,8 +32,8 @@ class Workspace:
 		''' Returns a list of BOM project tables in the DB. '''
 		(con, cur) = self.con_cursor()
 		projects = []
-		a = "SELECT name FROM sqlite_master"
-		b = "WHERE type='table' AND name IS NOT 'products' OR 'dummy'"
+		a = "SELECT name FROM projects"
+		b = "WHERE type='table'"
 		c = "ORDER BY name"
 		sql = ' '.join( [a, b, c] )
 		cur.execute(sql)
@@ -48,6 +48,17 @@ class Workspace:
 		''' Create the workspace-wide database tables. '''
 		Product.createTable(self)
 		vendorProduct.createTables(self)
+		
+		try:
+			(con, cur) = self.con_cursor()
+			cur.execute('CREATE TABLE IF NOT EXISTS projects(name TEXT PRIMARY KEY)')
+			
+		except:
+			print 'Workspace.createTables exception, probably because projects table already created.'
+			
+		finally:
+			cur.close()
+			con.close()
 
 urbmDB = Workspace()
 urbmDB.createTables()
@@ -90,8 +101,7 @@ class URBM(gobject.GObject):
 		elif response == gtk.RESPONSE_ACCEPT: 
 			# Create project
 			print 'Creating new project'
-			new = BOM(newName, self.newProjectDescriptionEntry.get_text(), urbmDB, self.newProjectInputFileEntry.get_text())
-			new.writeToDB()
+			new = BOM.newProject(newName, self.newProjectDescriptionEntry.get_text(), self.newProjectInputFileEntry.get_text(), urbmDB)
 			self.projectStorePopulate()
 		self.newProjectNameEntry.set_text('')
 		self.newProjectDescriptionEntry.set_text('')

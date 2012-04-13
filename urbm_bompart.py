@@ -4,14 +4,13 @@ import sqlite3
 from urbm import Workspace
 
 class bomPart:
-	def __init__(self, name, value, device, package, parent_bom, description='NULL', product='NULL'):
+	def __init__(self, name, value, device, package, description='NULL', product='NULL'):
 		self.name = name
 		self.value = value
 		self.device = device
 		self.package = package
 		self.description = description
 		self.product = product
-		self.bom = parent_bom
 
 	def show(self):
 		''' A simple print method. '''
@@ -21,7 +20,6 @@ class bomPart:
 		print 'Package: ', self.package, type(self.package)
 		print 'Description: ', self.description, type(self.description)
 		print 'Product: ', self.product, type(self.product)
-		print 'BOM: ', self.bom, type(self.bom), '\n'
 		
 	def equals(self, p):
 		''' Compares the bomPart to another bomPart.'''
@@ -54,12 +52,12 @@ class bomPart:
 				rownum = rownum + 1
 			return -1
 	
-	def isInDB(self, wspace):
+	def isInDB(self, project, wspace):
 		''' Check if a BOM part of this name is in the project's database. '''
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			symbol = (self.bom.name, self.name,)
+			symbol = (project, self.name,)
 			cur.execute('SELECT * FROM ? WHERE name=?', symbol)
 			row = cur.fetchone()
 			if row != None:
@@ -74,9 +72,9 @@ class bomPart:
 			con.close()
 			return ret	
 			
-	def writeToDB(self):
-		print "bomPart.writeToDB writing part %s to table %s" % (self.name, self.bom.name)
+	def writeToDB(self, project, wspace):
+		print "bomPart.writeToDB writing part %s to table %s" % (self.name, project)
 		print "Part's product: %s" % self.product
-		self.bom.db.delete(self.name, self.bom.name)
-		self.bom.db.insert(self, self.name + " #prt, #val=" + self.value + " #dev=" + \
-		self.device + " #pkg=" + self.package + " #prod=" + self.product, self.bom.name)
+		project.db.delete(self.name, self.project)
+		project.db.insert(self, self.name + " #prt, #val=" + self.value + " #dev=" + \
+		self.device + " #pkg=" + self.package + " #prod=" + self.product, project)

@@ -17,7 +17,28 @@ class BOM:
 		bom = database.select('bom', name)
 		return bom
 	
-	def __init__(self, name, desc, database, inputFile="bom.csv"):
+	@staticmethod
+	def newProject(name, desc, infile, wspace):
+		''' Create a new BOM object and its part table.
+		Add the BOM to the Workspace's projects table.
+		Returns the created BOM object. '''
+		new = BOM(name, desc, infile)
+		new.createTable(wspace)
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (name,)
+			cur.execute('INSERT INTO projects VALUES (?)', symbol)
+			
+		except:
+			print 'BOM.newProject exception.'
+			
+		finally:
+			cur.close()
+			con.close()
+			return new
+	
+	def __init__(self, name, desc, inputFile="bom.csv"):
 		self.name = name	# Table name
 		self.description = desc # Longer description string
 		self.input = inputFile
@@ -25,8 +46,26 @@ class BOM:
 		# This is used for sorting in the BOM table in the GUI
 		self.valCounts = {}
 		self.prodCounts = {}
-		self.db = database
-		self.db.createtable(self.name)
+	
+	def createTable(self, wspace):
+		''' Create the Parts table for a project in the given Workspace. '''
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (self.name,)
+			cur.execute('''CREATE TABLE IF NOT EXISTS ?
+			(name TEXT PRIMARY KEY, 
+			value TEXT, 
+			device TEXT, 
+			package TEXT, 
+			description TEXT)''', symbol)
+			
+		except:
+			print 'BOM(%s).createTable exception, probably because table already created.' % self.name
+			
+		finally:
+			cur.close()
+			con.close()
 		
 	def delete(self):
 		self.db.droptable(self.name)
