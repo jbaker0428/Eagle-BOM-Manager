@@ -38,7 +38,7 @@ VENDOR_ME_EN = False
 VENDOR_NEW_EN = False
 VENDOR_SFE_EN = False
 
-DOWNLOAD_DATASHEET = False	# TODO : Set this from program config
+DOWNLOAD_DATASHEET = False	# TODO : Set these from program config
 ENFORCE_MIN_QTY = True
 
 class vendorProduct:
@@ -67,7 +67,7 @@ class vendorProduct:
 			unit DOUBLE)''')
 			
 		except:
-			print 'Product.createTable exception, probably because table already created.'
+			print 'Product.createTables exception, probably because tables already created.'
 			
 		finally:
 			cur.close()
