@@ -495,11 +495,6 @@ class Product:
 			cur.close()
 			con.close()
 			return ret
-	
-	def writeToDB(self):
-		self.db.delete(self.manufacturer_pn, 'products')
-		self.db.insert(self, self.manufacturer_pn + " #prod #" + self.manufacturer, 'products')
-		self.db.insert(self.vendorProds, self.manufacturer_pn + " #listing", 'products')
 		
 	''' Sets the product fields, pulling from the local DB if possible.'''	
 	def selectOrScrape(self):
