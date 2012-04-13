@@ -474,7 +474,7 @@ class Product:
 		
 		print 'Writing the following Product to DB: \n'
 		self.show()
-		self.writeToDB()
+		self.insert()
 				
 
 	def isInDB(self, wspace):
