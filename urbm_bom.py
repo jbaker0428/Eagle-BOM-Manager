@@ -81,25 +81,38 @@ class BOM:
 		self.parts.sort(key=itemgetter(2))
 	
 	def setValCounts(self):
-		# TODO: see new plan below
+		print "BOM.setValCounts"
+		self.valCounts.clear()
+		vals = set()
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (self.name,)
+			cur.execute('SELECT DISTINCT value FROM ?', symbol)
+			for row in cur.fetchall():
+				vals.add(row[0])
+			for v in vals:
+				symbol = (self.name, v,)
+				cur.execute('SELECT name FROM ? WHERE value=?', symbol)
+				self.valCounts[v] = len(cursor.fetchall())
+
+		except:
+			print 'Exception in BOM(%s).setValCounts()' % self.name
+			
+		finally:
+			cur.close()
+			con.close()		
+
+	def setProdCounts(self):
+		# TODO: see new plan below, replacing "value" with product...
 		''' 
 		Select value column for all parts in project
 		Make a list of the values
 		For each item in the values list, select name column from 
 		parts in project where value = vallist[iter]
 		Record len(cursor.fetchall()
-		valCounts[val list iter] = len(cursor.fetchall()
+		valCounts[val list iter] = len(cursor.fetchall())
 		'''
-		print "BOM.setValCounts"
-		self.valCounts.clear()
-		
-		for x in self.parts:
-			if x[1] in self.valCounts.keys():
-				self.valCounts[x[1]] += 1
-			else:
-				self.valCounts[x[1]] = 1
-
-	def setProdCounts(self):
 		print "BOM.setProdCounts"
 		self.prodCounts.clear()
 		print "BOM.parts: ", self.parts
