@@ -109,7 +109,7 @@ class vendorProduct:
 			WHERE vendor_pn=?''', symbol)
 				
 		except:
-			print 'Exception in vendorProduct.update()'
+			print 'Exception in vendorProduct(%s).update()' % self.vendorPN
 			
 		finally:
 			cur.close()
@@ -126,7 +126,7 @@ class vendorProduct:
 			cur.execute('INSERT INTO vendorproducts VALUES (?,?,?,?,?,?,?,?)', symbol)
 				
 		except:
-			print 'Exception in vendorProduct.insert()'
+			print 'Exception in vendorProduct(%s).insert()' % self.vendorPN
 			
 		finally:
 			cur.close()
@@ -141,7 +141,7 @@ class vendorProduct:
 			cur.execute('DELETE FROM vendorproducts WHERE vendor_pn=?', symbol)
 				
 		except:
-			print 'Exception in vendorProduct.delete()'
+			print 'Exception in vendorProduct(%s).delete()' % self.vendorPN
 			
 		finally:
 			cur.close()
