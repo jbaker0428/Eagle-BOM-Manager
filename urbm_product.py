@@ -96,6 +96,12 @@ class vendorProduct:
 		print 'Family: ', self.family, type(self.family)
 		print 'Series: ', self.series, type(self.series)
 	
+	def key(self):
+		''' Return a dictionary key as used by the GUI for this vendorProduct.
+		Format: key = vendor + ': ' + vendor_pn + ' (' + packaging + ')' '''
+		key = self.vendor + ': ' + self.vendorPN + ' (' + self.packaging + ')'
+		return key
+	
 	def update(self, wspace):
 		''' Update an existing vendorProduct record in the DB. '''
 		try:
@@ -231,7 +237,7 @@ class Product:
 		self.datasheet = dsheet
 		self.description = desc
 		self.package = pkg
-		self.vendorProds = {}	# Key is vendorProduct.vendor + vendorProduct.vendor_pn
+		self.vendorProds = {}	# Key is key = vendor + ': ' + vendor_pn + ' (' + packaging + ')'
 	
 	def show(self):
 		''' A simple print method. '''
