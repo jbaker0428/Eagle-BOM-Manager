@@ -38,10 +38,29 @@ class bomPart:
 			cur.execute('SELECT * FROM ? WHERE value=?', symbol)
 			for row in cur.fetchall():
 				part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
-				part.fetchListings(wspace)
 				parts.append(part)
 		except:
 			print 'Exception in bomPart.select_by_value( %s )' % val
+			
+		finally:
+			cur.close()
+			con.close()
+			return parts
+		
+	@staticmethod
+	def select_by_product(prod, project, wspace):
+		''' Return the bomPart(s) of given product in a list. '''
+		parts = []
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (project, prod,)
+			cur.execute('SELECT * FROM ? WHERE product=?', symbol)
+			for row in cur.fetchall():
+				part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
+				parts.append(part)
+		except:
+			print 'Exception in bomPart.select_by_product( %s )' % prod
 			
 		finally:
 			cur.close()

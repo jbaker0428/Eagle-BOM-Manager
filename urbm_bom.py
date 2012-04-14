@@ -280,4 +280,24 @@ class BOM:
 			cur.close()
 			con.close()
 			return parts
+	
+	@staticmethod
+	def select_parts_by_product(prod, wspace):
+		''' Return the bomPart(s) of given product in a list. '''
+		parts = []
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (self.name, prod,)
+			cur.execute('SELECT * FROM ? WHERE product=?', symbol)
+			for row in cur.fetchall():
+				part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
+				parts.append(part)
+		except:
+			print 'Exception in BOM(%s).select_parts_by_product( %s )' % self.name, prod
+			
+		finally:
+			cur.close()
+			con.close()
+			return parts
 		
