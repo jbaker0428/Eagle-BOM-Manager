@@ -80,7 +80,7 @@ class BOM:
 	def sortByProd(self):
 		self.parts.sort(key=itemgetter(2))
 	
-	def setValCounts(self):
+	def setValCounts(self, wspace):
 		print "BOM.setValCounts"
 		self.valCounts.clear()
 		vals = set()
@@ -103,7 +103,7 @@ class BOM:
 			cur.close()
 			con.close()
 
-	def setProdCounts(self):
+	def setProdCounts(self, wspace):
 		print "BOM.setProdCounts"
 		self.prodCounts.clear()
 		
@@ -138,7 +138,7 @@ class BOM:
 			
 		for x in projProdCounts.items():
 			# Find x[0] (the dict key) in the product DB
-			if x[0] is "none":
+			if x[0] is "none" or 'NULL':
 				# TODO : Print a warning on screen?
 				print "Warning: BOM.getCost() skipped a part with no product"
 			else:
