@@ -189,7 +189,7 @@ class BOM:
 			con.close()
 			return newParts
 		
-	def readFromFile(self):
+	def readFromFile(self, wspace):
 		print "BOM.readFromFile"
 		# Clear self.parts
 		del self.parts[:]
@@ -197,13 +197,17 @@ class BOM:
 			reader = csv.reader(f, delimiter=',', quotechar = '"', quoting=csv.QUOTE_ALL)
 			for row in reader:
 				print row
-				part = bomPart(row[0], row[1], row[2], row[3], self, row[4])
+				# Check for optional product column
+				if len(row[5] > 0):
+					part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
+				else:
+					part = bomPart(row[0], row[1], row[2], row[3], row[4])
 				#print "Part: %s %s %s %s" % (part.name, part.value, part.device, part.package)
 				# Check if identical part is already in DB with a product
 				# If so, preserve the product entry
 				if(part.isInDB()):
 					print "Part already in DB"
-					oldPart = self.db.select(part.name + " #prt", self.name)
+					oldPart = bomPart.select_by_name(part.name, self.name, wspace)
 					print "oldPart: ", oldPart.name, oldPart.value, oldPart.package, oldPart.product
 					if(part.value == oldPart.value and part.device == oldPart.device and part.package == oldPart.package):
 						if oldPart.product != 'none':
@@ -211,12 +215,11 @@ class BOM:
 							part.product = oldPart.product
 						else:
 							print "Part found in DB without product entry, overwriting..."
-							part.writeToDB()
+							part.update(self.name, wspace)
 				else:
 					print "Part not in DB, writing..."
-					part.writeToDB()
+					part.insert(self.name, wspace)
 				self.parts.append([part.name, part.value, part.product])
-		self.writePartsListToDB() # deletes old partslist
-		self.writeToDB()
+				
 		print "Parts list: ", self.parts
 		

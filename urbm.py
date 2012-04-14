@@ -128,7 +128,7 @@ class URBM(gobject.GObject):
 		
 	'''Callback for the "Read CSV" button on the BOM tab.'''
 	def readInputCallback(self, widget, data=None):
-		self.active_bom.readFromFile()
+		self.active_bom.readFromFile(urbmDB)
 		#Read back last entry
 		urbmDB.view(1, self.active_bom.name)
 		if self.bomGroupName.get_active():
