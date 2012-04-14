@@ -179,7 +179,7 @@ class BOM:
 			symbol = (self.name,)
 			cur.execute('SELECT name, value, product FROM ?', symbol)
 			for row in cur.fetchall():
-				newParts.append((row[0], row[1], row[2]))
+				newParts.append([row[0], row[1], row[2]])
 				
 		except:
 			print 'Exception in BOM(%s).readPartsListFromDB(%s)' % self.name, wspace
