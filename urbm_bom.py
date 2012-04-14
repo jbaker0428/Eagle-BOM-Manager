@@ -2,11 +2,11 @@ import csv
 import shutil
 import os
 import urlparse
-from urbm_bompart import bomPart
-from urbm_product import Product
 from operator import itemgetter
 import sqlite3
 from urbm import Workspace
+from urbm_bompart import bomPart
+from urbm_product import Product
 
 '''For determining the name of a project's bomPart table.'''			
 class BOM:

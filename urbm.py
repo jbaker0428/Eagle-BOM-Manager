@@ -7,9 +7,6 @@ import shutil
 import os
 import sqlite3
 import types
-from urbm_product import Product, vendorProduct
-from urbm_bompart import bomPart
-from urbm_bom import BOM
 import gobject
 
 class Workspace:
@@ -46,13 +43,34 @@ class Workspace:
 		return projects
 	
 	def createTables(self):
-		''' Create the workspace-wide database tables. '''
-		Product.createTable(self)
-		vendorProduct.createTables(self)
-		
+		''' Create the workspace-wide database tables. '''		
 		try:
 			(con, cur) = self.con_cursor()
 			cur.execute('CREATE TABLE IF NOT EXISTS projects(name TEXT PRIMARY KEY)')
+			
+			cur.execute('''CREATE TABLE IF NOT EXISTS products
+			(manufacturer TEXT, 
+			manufacturer_pn TEXT PRIMARY KEY, 
+			datasheet TEXT, 
+			description TEXT, 
+			package TEXT)''')
+			
+			cur.execute('''CREATE TABLE IF NOT EXISTS vendorproducts
+			(vendor TEXT, 
+			vendor_pn TEXT PRIMARY KEY, 
+			mfg_pn TEXT REFERENCES products(manufacturer_pn), 
+			inventory INTEGER, 
+			packaging TEXT,
+			reelfee FLOAT, 
+			category TEXT,
+			family TEXT,
+			series TEXT)''')
+			
+			cur.execute('''CREATE TABLE IF NOT EXISTS pricebreaks
+			(id INTEGER PRIMARY KEY
+			pn TEXT REFERENCES vendorproducts(vendor_pn) 
+			qty INTEGER
+			unit DOUBLE)''')
 			
 		except:
 			print 'Workspace.createTables exception, probably because projects table already created.'
@@ -63,6 +81,7 @@ class Workspace:
 
 urbmDB = Workspace()
 urbmDB.createTables()
+
 #urbmDB = y_serial.Main(os.path.join(os.getcwd(), "urbm.sqlite"))
 #urbmDB.createtable('products')
 #activeProjectName = 'test1'
@@ -1099,5 +1118,8 @@ def main():
 	gtk.main()
 	
 if __name__ == "__main__":
+	from urbm_product import *
+	from urbm_bompart import bomPart
+	from urbm_bom import BOM
 	URBM()
 	main()
