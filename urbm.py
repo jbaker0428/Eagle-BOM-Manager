@@ -379,13 +379,9 @@ class URBM(gobject.GObject):
 	''' Clear self.dbProductStore and repopulate it. '''
 	def dbStorePopulate(self):
 		self.dbProductStore.clear()
-		#prodsDict = urbmDB.selectdic("*", "products")
-		prodsDict = urbmDB.selectdic("#prod", "products")
-		
-		for p in prodsDict.values():
-			# p[2] is a Product object from the DB
-			iter = self.dbProductStore.append([p[2].manufacturer, p[2].manufacturer_pn, p[2].description, p[2].datasheet, p[2].package])
-			#iter = self.dbProductStore.append([p[2].vendor, p[2].vendor_pn, p[2].inventory, p[2].manufacturer, p[2].manufacturer_pn, p[2].description, p[2].datasheet, p[2].category, p[2].family, p[2].series, p[2].package])
+		prods = Product.select_by_pn('*', urbmDB)
+		for p in prods:
+			iter = self.dbProductStore.append([p.manufacturer, p.manufacturer_pn, p.description, p.datasheet, p.package])
 		self.dbTreeView.columns_autosize()
 	
 	'''Callback for the "Read DB" button on the product DB tab.'''
