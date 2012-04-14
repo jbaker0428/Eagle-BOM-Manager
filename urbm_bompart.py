@@ -1,4 +1,3 @@
-import y_serial_v060 as y_serial
 import types
 import sqlite3
 from urbm import Workspace
