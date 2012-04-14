@@ -127,22 +127,22 @@ class BOM:
 			cur.close()
 			con.close()
 	
-	def getCost(self, runSize=1):
-		''' Get the total project BOM cost for a given production run size'''
-		# Beware of sorting self.parts screwing with GUI BOM list sorting!
+	def getCost(self, wspace, runSize=1):
+		''' Get the total project BOM cost for a given production run size. '''
 		self.setProdCounts()
 		projProdCounts = self.prodCounts.copy()
 		cost = 0
 		for x in projProdCounts.keys():
-			projProdCounts[x] = projProdCounts[x] * runSize
+			projProdCounts[x] = self.prodCounts[x] * runSize
 			
 		for x in projProdCounts.items():
 			# Find x[0] (the dict key) in the product DB
-			if x[0] is "none" or 'NULL':
+			if x[0] is "none" or x[0] is 'NULL':
 				# TODO : Print a warning on screen?
 				print "Warning: BOM.getCost() skipped a part with no product"
 			else:
-				product = self.db.select(x[0], 'products')
+				prod = Product.select_by_pn(x[0], wspace)
+				prod.fetchListings(wspace)
 				listing = product.bestListing(projProdCounts[x[0]])
 				priceBreak = listing.getPriceBreak(x[1])
 				cost += (priceBreak[1] * projProdCounts[x[0]]) + listing.reelFee
