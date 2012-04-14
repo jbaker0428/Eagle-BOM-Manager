@@ -186,7 +186,7 @@ class URBM(gobject.GObject):
 			self.setPartInfoLabels(self.bomSelectedProduct)
 			self.setPartInfoListingCombo(self.bomSelectedProduct)
 			self.destroyPartPriceLabels()
-			print 'self.bomSelectedProduct.vendorProds: \n', self.bomSelectedProduct.vendorProds
+			#print 'self.bomSelectedProduct.vendorProds: \n', self.bomSelectedProduct.vendorProds
 			if type(self.partInfoListingCombo.get_active_text()) is not types.NoneType and self.partInfoListingCombo.get_active_text() != '':
 				self.setPartPriceLabels(self.bomSelectedProduct.vendorProds[self.partInfoListingCombo.get_active_text()])
 		else:
@@ -366,6 +366,13 @@ class URBM(gobject.GObject):
 	def partInfoScrapeButtonCallback(self, widget):
 		''' Part info frame "Refresh" button callback. '''
 		self.bomSelectedProduct.scrape(urbmDB)
+		if self.bomGroupName.get_active():
+			self.bomStorePopulateByName()
+		elif self.bomGroupValue.get_active():
+			self.bomStorePopulateByVal()
+		elif self.bomGroupPN.get_active():
+			self.bomStorePopulateByPN()
+		self.window.show_all()
 	
 	def partInfoListingComboCallback(self, widget, data=None):
 		self.destroyPartPriceLabels()

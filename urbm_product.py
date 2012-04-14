@@ -103,10 +103,10 @@ class vendorProduct:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			symbol = (self.vendor, self.vendorPN, self.manufacturer_pn, self.reelFee, self.inventory, 
-					self.packaging, self.category, self.family, self.series, self.vendorPN,)
+			symbol = (self.vendor, self.vendorPN, self.manufacturer_pn, self.inventory, self.packaging,
+					self.reelFee, self.category, self.family, self.series, self.vendorPN,)
 			cur.execute('''UPDATE vendorproducts 
-			SET vendor=?, vendor_pn=?, self.mfg_pn=?, reelfee=?, inventory=?, packaging=? 
+			SET vendor=?, vendor_pn=?, self.mfg_pn=?, inventory=?, packaging=?, reelfee=?, 
 			category=?, family=?, series=? 
 			WHERE vendor_pn=?''', symbol)
 			
@@ -119,14 +119,13 @@ class vendorProduct:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			symbol = (self.vendor, self.vendorPN, self.manufacturer_pn, self.reelFee, self.inventory, 
-					self.packaging, self.category, self.family, self.series,)
+			symbol = (self.vendor, self.vendorPN, self.manufacturer_pn, self.inventory, self.packaging,
+					self.reelFee, self.category, self.family, self.series,)
 			cur.execute('INSERT OR REPLACE INTO vendorproducts VALUES (?,?,?,?,?,?,?,?,?)', symbol)
 			
 			cur.execute('DELETE FROM pricebreaks WHERE pn=?', (self.vendorPN,))
 			for pb in self.prices.items():
 				t = (self.vendorPN, pb[0], pb[1],)
-				print 'Inserting price break: ', t
 				cur.execute('INSERT OR REPLACE INTO pricebreaks VALUES (NULL,?,?,?)', t)
 		finally:
 			cur.close()
@@ -386,7 +385,7 @@ class Product:
 				if invString.isdigit() == False:
 					invString = invString.replace(",", "")
 				inventory = int(invString)
-				#print 'inventory: ', type(inventory), inventory
+				print 'inventory: ', type(inventory), inventory
 			
 			vendor_pn = soup.body('th', text="Digi-Key Part Number")[0].parent.nextSibling.contents[0].string.__str__()
 			# Get manufacturer and PN
@@ -430,16 +429,17 @@ class Product:
 			#print "packagingSoup: ", type(packagingSoup), packagingSoup
 			if type(packagingSoup) == NavigableString:
 				packaging = packagingSoup.string.__str__()
-				#print "packaging (from text): ", type(packaging), packaging
+				print "packaging (from text): ", type(packaging), packaging
 			elif type(packagingSoup) == Tag:
 				packaging = packagingSoup.contents[0].string.__str__()
-				#print "packaging (from link): ", type(packaging), packaging
+				print "packaging (from link): ", type(packaging), packaging
 			else:
 				print 'Error: DK Packaging scrape failure!'
 			if "Digi-Reel" in packaging:
 				packaging = "Digi-Reel"	# Remove Restricted symbol
 			key = VENDOR_DK + ': ' + vendor_pn + ' (' + packaging + ')'
 			self.vendorProds[key] = vendorProduct(VENDOR_DK, vendor_pn, self.manufacturer_pn, prices, inventory, packaging)
+			#v = vendorProduct(VENDOR_DK, vendor_pn, self.manufacturer_pn, prices, inventory, pkg, reel, cat, fam, ser)
 			self.vendorProds[key].category = category
 			self.vendorProds[key].family = family
 			self.vendorProds[key].series = series
@@ -497,7 +497,7 @@ class Product:
 			self.scrapeSFE()
 		
 		print 'Writing the following Product to DB: \n'
-		self.show()
+		#self.show()
 		if self.isInDB(wspace):
 			self.update(wspace)
 		else:
