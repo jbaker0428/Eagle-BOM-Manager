@@ -64,16 +64,14 @@ class vendorProduct:
 			qty INTEGER
 			unit DOUBLE)''')
 			
-		except:
-			print 'Product.createTables exception, probably because tables already created.'
-			
 		finally:
 			cur.close()
 			con.close()
 	
-	def __init__(self, vend, vendor_pn, pricesDict, inv, pkg, reel=0, cat='NULL', fam='NULL', ser='NULL'):
+	def __init__(self, vend, vendor_pn, mfg_pn, pricesDict, inv, pkg, reel=0, cat='NULL', fam='NULL', ser='NULL'):
 		self.vendor = vend
 		self.vendorPN = vendor_pn
+		self.manufacturer_pn = mfg_pn
 		self.prices = pricesDict
 		self.inventory = inv
 		self.packaging = pkg	# Cut Tape, Tape/Reel, Tray, Tube, etc.
@@ -105,15 +103,12 @@ class vendorProduct:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			symbol = (self.vendor, self.vendorPN, self.reelFee, self.inventory, 
+			symbol = (self.vendor, self.vendorPN, self.manufacturer_pn, self.reelFee, self.inventory, 
 					self.packaging, self.category, self.family, self.series, self.vendorPN,)
 			cur.execute('''UPDATE vendorproducts 
-			SET vendor=?, vendor_pn=?, reelfee=?, inventory=?, packaging=? 
+			SET vendor=?, vendor_pn=?, self.mfg_pn=?, reelfee=?, inventory=?, packaging=? 
 			category=?, family=?, series=? 
 			WHERE vendor_pn=?''', symbol)
-				
-		except:
-			print 'Exception in vendorProduct(%s).update()' % self.vendorPN
 			
 		finally:
 			cur.close()
@@ -124,13 +119,15 @@ class vendorProduct:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			symbol = (self.vendor, self.vendorPN, self.reelFee, self.inventory, 
+			symbol = (self.vendor, self.vendorPN, self.manufacturer_pn, self.reelFee, self.inventory, 
 					self.packaging, self.category, self.family, self.series,)
-			cur.execute('INSERT INTO vendorproducts VALUES (?,?,?,?,?,?,?,?)', symbol)
-				
-		except:
-			print 'Exception in vendorProduct(%s).insert()' % self.vendorPN
+			cur.execute('INSERT OR REPLACE INTO vendorproducts VALUES (?,?,?,?,?,?,?,?,?)', symbol)
 			
+			cur.execute('DELETE FROM pricebreaks WHERE pn=?', (self.vendorPN,))
+			for pb in self.prices.items():
+				t = (self.vendorPN, pb[0], pb[1],)
+				print 'Inserting price break: ', t
+				cur.execute('INSERT OR REPLACE INTO pricebreaks VALUES (NULL,?,?,?)', t)
 		finally:
 			cur.close()
 			con.close()
@@ -142,9 +139,6 @@ class vendorProduct:
 			
 			symbol = (self.vendorPN,)
 			cur.execute('DELETE FROM vendorproducts WHERE vendor_pn=?', symbol)
-				
-		except:
-			print 'Exception in vendorProduct(%s).delete()' % self.vendorPN
 			
 		finally:
 			cur.close()
@@ -153,6 +147,7 @@ class vendorProduct:
 	def fetchPriceBreaks(self, wspace):
 		''' Fetch price breaks dictionary for this vendorProduct. 
 		Clears and sets the self.prices dictionary directly. '''
+		#print 'self.prices: ', type(self.prices), self.prices
 		self.prices.clear()
 		try:
 			(con, cur) = wspace.con_cursor()
@@ -161,10 +156,7 @@ class vendorProduct:
 			cur.execute('SELECT qty, unit FROM pricebreaks WHERE pn=? ORDER BY qty', symbol)
 			for row in cur.fetchall():
 				self.prices[row[0]] = row[1]
-				
-		except:
-			print 'Exception in vendorProduct(%s).fetchPriceBreaks' % self.vendorPN
-			
+
 		finally:
 			cur.close()
 			con.close()
@@ -268,7 +260,7 @@ class Product:
 			(con, cur) = wspace.con_cursor()
 			
 			symbol = (self.manufacturer, self.manufacturer_pn, self.datasheet, self.description, self.package,)
-			cur.execute('INSERT INTO products VALUES (?,?,?,?,?)', symbol)
+			cur.execute('INSERT OR REPLACE INTO products VALUES (?,?,?,?,?)', symbol)
 				
 		finally:
 			cur.close()
@@ -296,9 +288,11 @@ class Product:
 			symbol = (self.manufacturer_pn,)
 			cur.execute('SELECT * FROM vendorproducts WHERE mfg_pn=? ORDER BY vendor', symbol)
 			for row in cur.fetchall():
-				vprod = vendorProduct(row[0], row[1], {}, row[2], row[3], row[4], row[5], row[6], row[7])
+				vprod = vendorProduct(row[0], row[1], row[2], {}, row[3], row[4], row[5], row[6], row[7], row[8])
 				vprod.fetchPriceBreaks(wspace)
 				self.vendorProds[vprod.key()] = vprod
+				print 'Setting vendorProds[%s] = ' % vprod.key()
+				vprod.show()
 			
 		finally:
 			cur.close()
@@ -321,7 +315,7 @@ class Product:
 					best = listing
 		return best
 	
-	def scrapeDK(self):
+	def scrapeDK(self, wspace):
 		''' Scrape method for Digikey. '''
 		# Clear previous pricing data (in case price break keys change)
 		searchURL = 'http://search.digikey.com/us/en/products/' + self.manufacturer_pn
@@ -445,7 +439,7 @@ class Product:
 			if "Digi-Reel" in packaging:
 				packaging = "Digi-Reel"	# Remove Restricted symbol
 			key = VENDOR_DK + ': ' + vendor_pn + ' (' + packaging + ')'
-			self.vendorProds[key] = vendorProduct(VENDOR_DK, vendor_pn, prices, inventory, packaging)
+			self.vendorProds[key] = vendorProduct(VENDOR_DK, vendor_pn, self.manufacturer_pn, prices, inventory, packaging)
 			self.vendorProds[key].category = category
 			self.vendorProds[key].family = family
 			self.vendorProds[key].series = series
@@ -488,7 +482,7 @@ class Product:
 		self.vendorProds.clear()
 		# Proceed based on vendor config
 		if VENDOR_DK_EN:
-			self.scrapeDK()
+			self.scrapeDK(wspace)
 		if VENDOR_FAR_EN:
 			self.scrapeFAR()
 		if VENDOR_FUE_EN:
@@ -504,7 +498,12 @@ class Product:
 		
 		print 'Writing the following Product to DB: \n'
 		self.show()
-		self.insert(wspace)
+		if self.isInDB(wspace):
+			self.update(wspace)
+		else:
+			self.insert(wspace)
+		for vprod in self.vendorProds.values():
+			vprod.insert(wspace)
 				
 
 	def isInDB(self, wspace):
@@ -513,18 +512,26 @@ class Product:
 			
 			symbol = (self.manufacturer_pn,)
 			cur.execute('SELECT * FROM products WHERE manufacturer_pn=?', symbol)
+			#rows = cur.fetchall
+			#if len(rows) == 0:
+			#	return False
+			#else:
+			#	return True
 			row = cur.fetchone()
-			if row != None:
-				ret = True
-			else:
-				ret = False
-		except:
-			print 'Exception in Product(%s).isInDB()' % self.manufacturer_pn
+			#if row == tuple:
+			#	return True
+			#else:
+			#	return False
+			print 'Row: ', row
+			#print 'Rows: ', rows
 			
 		finally:
 			cur.close()
 			con.close()
-			return ret
+			if row is None:
+				return False
+			else:
+				return True
 		
 	''' Sets the product fields, pulling from the local DB if possible.'''	
 	def selectOrScrape(self, wspace):
@@ -538,6 +545,7 @@ class Product:
 			self.fetchListings(wspace)
 		elif self.manufacturer_pn != 'none' and self.manufacturer_pn != 'NULL':
 			self.scrape(wspace)
+			self.fetchListings(wspace)
 
 
 		

@@ -129,8 +129,8 @@ class URBM(gobject.GObject):
 		self.active_bom.parts = self.active_bom.readPartsListFromDB(urbmDB)
 		inputFile = model.get(rowIter,3)[0]
 		print self.active_bom, type(self.active_bom)
-		print 'Project name: ', self.activeProjectName
-		print 'Project CSV: ', inputFile
+		#print 'Project name: ', self.activeProjectName
+		#print 'Project CSV: ', inputFile
 		if self.bomGroupName.get_active():
 			self.bomStorePopulateByName()
 		elif self.bomGroupValue.get_active():
@@ -181,6 +181,7 @@ class URBM(gobject.GObject):
 			self.bomSelectedProduct.manufacturer_pn = selectedPN
 			
 			self.bomSelectedProduct.selectOrScrape(urbmDB)
+			self.bomSelectedProduct.fetchListings(urbmDB)
 			#self.bomSelectedProduct.show()
 			self.setPartInfoLabels(self.bomSelectedProduct)
 			self.setPartInfoListingCombo(self.bomSelectedProduct)

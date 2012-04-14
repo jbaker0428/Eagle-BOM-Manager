@@ -196,7 +196,7 @@ class BOM:
 		finally:
 			cur.close()
 			con.close()
-			print 'readPartsListFromDB: newParts = ', newParts
+			#print 'readPartsListFromDB: newParts = ', newParts
 			return newParts
 		
 	def readFromFile(self, wspace):
