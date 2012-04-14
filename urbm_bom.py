@@ -101,27 +101,31 @@ class BOM:
 			
 		finally:
 			cur.close()
-			con.close()		
+			con.close()
 
 	def setProdCounts(self):
-		# TODO: see new plan below, replacing "value" with product...
-		''' 
-		Select value column for all parts in project
-		Make a list of the values
-		For each item in the values list, select name column from 
-		parts in project where value = vallist[iter]
-		Record len(cursor.fetchall()
-		valCounts[val list iter] = len(cursor.fetchall())
-		'''
 		print "BOM.setProdCounts"
 		self.prodCounts.clear()
-		print "BOM.parts: ", self.parts
-		for x in self.parts:
-			#print "x in BOM.parts: ", x
-			if x[2] in self.prodCounts.keys():
-				self.prodCounts[x[2]] += 1
-			else:
-				self.prodCounts[x[2]] = 1
+		
+		prods = set()
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (self.name,)
+			cur.execute('SELECT DISTINCT product FROM ?', symbol)
+			for row in cur.fetchall():
+				prods.add(row[0])
+			for p in prods:
+				symbol = (self.name, p,)
+				cur.execute('SELECT name FROM ? WHERE product=?', symbol)
+				self.prodCounts[p] = len(cursor.fetchall())
+
+		except:
+			print 'Exception in BOM(%s).setprodCounts()' % self.name
+			
+		finally:
+			cur.close()
+			con.close()
 	
 	def getCost(self, runSize=1):
 		''' Get the total project BOM cost for a given production run size'''
