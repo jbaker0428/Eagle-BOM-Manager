@@ -170,16 +170,24 @@ class BOM:
 		self.db.insert(self, "bom", self.name)
 		
 		
-	def readPartsListFromDB(self):
+	def readPartsListFromDB(self, wspace):
 		print "BOM.readPartsListFromDB"
-		newParts = []
-		self.parts = self.db.select("parts", self.name)
-		print "BOM.parts from DB: ", self.parts
-		# Delete any erroneously saved "init" entry
-		self.db.delete("init", self.name)
-		partsDic = self.db.selectdic("#prt", self.name)
-		print "partsDic: \n", partsDic
-		return partsDic
+		newParts = []	# List of 3-element lists of part name, value, and product
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (self.name,)
+			cur.execute('SELECT name, value, product FROM ?', symbol)
+			for row in cur.fetchall():
+				newParts.append((row[0], row[1], row[2]))
+				
+		except:
+			print 'Exception in BOM(%s).readPartsListFromDB(%s)' % self.name, wspace
+			
+		finally:
+			cur.close()
+			con.close()
+			return newParts
 		
 	def readFromFile(self):
 		print "BOM.readFromFile"
