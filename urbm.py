@@ -454,19 +454,19 @@ class URBM(gobject.GObject):
 			groupName = "\t"	# Clear groupName and prepend a tab
 			print "Querying with prod =", prod, " of length ", len(prod)
 			# Catch empty product string
-			if prod == ' ' or len(prod) == 0: 
+			if prod == ' ' or len(prod) == 0 or prod == 'none' or prod == 'NULL': 
 				print "Caught empty product"
-				group = urbmDB.selectdic("#prod=none", self.active_bom.name)
+				group = self.active_bom.select_parts_by_product('NULL', urbmDB)
 			else:
-				group = urbmDB.selectdic("#prod=" + prod, self.active_bom.name)
+				group = self.active_bom.select_parts_by_product(prod, urbmDB)
 			print "Group: \n", group
-			for part in group.values():	# TODO: Ensure this data is what we expect
-				groupName += part[2].name + ", "
+			for part in group:	# TODO: Ensure this data is what we expect
+				groupName += part.name + ", "
 			
 			# Replace trailing comma with tab
 			groupName = groupName[0:-2]
 			
-			temp = group[group.keys()[0]][2]	# Part object
+			temp = group[0]	# Part object
 			iter = self.bomStore.append([groupName, temp.value, temp.device, temp.package, temp.description, temp.product, self.active_bom.prodCounts[prod]])
 		
 		self.bomTreeView.columns_autosize()
