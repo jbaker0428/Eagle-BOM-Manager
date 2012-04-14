@@ -8,13 +8,30 @@ from urbm import Workspace
 from urbm_bompart import bomPart
 from urbm_product import Product
 
-'''For determining the name of a project's bomPart table.'''			
+			
 class BOM:
+	'''For determining the name of a project's bomPart table.'''
+	
 	@staticmethod
-	def readFromDB(database, name):
+	def readFromDB(name, wspace):
 		''' Return any BOM object from a DB based on its table name. '''
-		bom = database.select('bom', name)
-		return bom
+		boms = []
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (name,)
+			cur.execute('SELECT * FROM projects WHERE name=?', symbol)
+			row = cur.fetchone()
+			for row in cur.fetchall():
+				bom = BOM(row[0], row[1], row[2])
+				boms.append(bom)
+			
+			print 'Exception in BOM.readFromDB(%s)' % name
+			
+		finally:
+			cur.close()
+			con.close()
+			return boms
 	
 	@staticmethod
 	def newProject(name, desc, infile, wspace):
@@ -26,8 +43,8 @@ class BOM:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			symbol = (name,)
-			cur.execute('INSERT INTO projects VALUES (?)', symbol)
+			symbol = (name, desc, infile,)
+			cur.execute('INSERT INTO projects VALUES (?,?,?)', symbol)
 			
 		except:
 			print 'BOM.newProject exception.'
