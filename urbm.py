@@ -84,14 +84,10 @@ urbmDB = Workspace()
 urbmDB.createTables()
 urbmDB.projects = urbmDB.listProjects()
 
-#urbmDB = y_serial.Main(os.path.join(os.getcwd(), "urbm.sqlite"))
-#urbmDB.createtable('products')
 #activeProjectName = 'test1'
 inputFile = os.path.join(os.getcwd(), "test.csv")	# TODO: Test dummy
 
 #active_bom = BOM("test1", 'Test BOM 1', urbmDB, os.path.join(os.getcwd(), "test.csv"))
-
-
 
 
 class URBM(gobject.GObject):
