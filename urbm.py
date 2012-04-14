@@ -328,7 +328,12 @@ class URBM(gobject.GObject):
 			self.selectedBomPart.product = self.productEntryText
 			print "selectedBomPart's product field: %s" % self.selectedBomPart.product
 			
-			self.selectedBomPart.writeToDB()
+			# We need to check the products table for this Product, creating an entry
+			# for it if necessary, before updating selectedBomPart in the DB.
+			self.bomSelectedProduct.manufacturer_pn = self.productEntryText
+			self.bomSelectedProduct.selectOrScrape()
+			
+			self.selectedBomPart.update(self.active_bom.name, urbmDB)
 			self.active_bom.updateParts(self.selectedBomPart)
 			
 			if self.bomGroupName.get_active():
@@ -338,8 +343,6 @@ class URBM(gobject.GObject):
 			elif self.bomGroupPN.get_active():
 				self.bomStorePopulateByPN()
 					
-			self.bomSelectedProduct.manufacturer_pn = self.productEntryText
-			self.bomSelectedProduct.selectOrScrape()
 			self.setPartInfoListingCombo(self.bomSelectedProduct)
 			if self.bomSelectedProduct.manufacturer_pn == "none":
 				self.clearPartInfoLabels()
