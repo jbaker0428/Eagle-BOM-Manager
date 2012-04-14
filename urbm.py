@@ -418,7 +418,7 @@ class URBM(gobject.GObject):
 		''' Clear self.bomStore and repopulate it, grouped by name. '''
 		self.bomStore.clear()
 		for p in self.active_bom.parts:
-			temp = urbmDB.select(p[0], self.active_bom.name)
+			temp = bomPart.select_by_name(p[0], self.active_bom.name, urbmDB)
 			iter = self.bomStore.append([temp.name, temp.value, temp.device, temp.package, temp.description, temp.product, 1])
 		
 		self.bomTreeView.columns_autosize()
