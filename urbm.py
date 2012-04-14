@@ -171,7 +171,7 @@ class URBM(gobject.GObject):
 		(model, rowIter) = self.bomTreeView.get_selection().get_selected()
 		#print 'rowIter is: ', rowIter, '\n'
 		#print 'model.get(rowIter,0)[0] is: ', model.get(rowIter,0)[0]
-		self.selectedBomPart = self.active_bom.select_parts_by_name(model.get(rowIter,0)[0], urbmDB)
+		self.selectedBomPart = self.active_bom.select_parts_by_name(model.get(rowIter,0)[0], urbmDB)[0]
 		# Grab the vendor part number for the selected item from the label text
 		selectedPN = model.get(rowIter,5)[0]
 		print "selectedPN is: %s" % selectedPN
