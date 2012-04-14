@@ -12,15 +12,12 @@ class bomPart:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			symbol = (project, name,)
-			cur.execute('SELECT * FROM ? WHERE name=?', symbol)
-			row = cur.fetchone()
+			sql = 'SELECT * FROM %s WHERE name=?' % project
+			symbol = (name,)
+			cur.execute(sql, symbol)
 			for row in cur.fetchall():
 				part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
 				parts.append(part)
-				
-		except:
-			print 'Exception in bomPart.select_by_name( %s )' % name
 			
 		finally:
 			cur.close()
@@ -34,13 +31,12 @@ class bomPart:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			symbol = (project, val,)
-			cur.execute('SELECT * FROM ? WHERE value=?', symbol)
+			sql = 'SELECT * FROM %s WHERE value=?' % project
+			symbol = (val,)
+			cur.execute(sql, symbol)
 			for row in cur.fetchall():
 				part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
 				parts.append(part)
-		except:
-			print 'Exception in bomPart.select_by_value( %s )' % val
 			
 		finally:
 			cur.close()
@@ -54,13 +50,12 @@ class bomPart:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			symbol = (project, prod,)
-			cur.execute('SELECT * FROM ? WHERE product=?', symbol)
+			sql = 'SELECT * FROM %s WHERE product=?' % project
+			symbol = (prod,)
+			cur.execute(sql, symbol)
 			for row in cur.fetchall():
 				part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
 				parts.append(part)
-		except:
-			print 'Exception in bomPart.select_by_product( %s )' % prod
 			
 		finally:
 			cur.close()
@@ -120,34 +115,28 @@ class bomPart:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			symbol = (project, self.name,)
-			cur.execute('SELECT * FROM ? WHERE name=?', symbol)
+			sql = 'SELECT * FROM %s WHERE name=?' % project
+			symbol = (self.name,)
+			cur.execute(sql, symbol)
 			row = cur.fetchone()
-			if row != None:
-				ret = True
+			if row == tuple:
+				return True
 			else:
-				ret = False
-		except:
-			print 'Exception in bomPart(%s).isInDB()' % self.name
+				return False
 			
 		finally:
 			cur.close()
 			con.close()
-			return ret	
 	
 	def update(self, project, wspace):
 		''' Update an existing bomPart record in the DB. '''
 		try:
 			(con, cur) = wspace.con_cursor()
-			
-			symbol = (project, self.name, self.value, self.device, self.package,  
-					self.description, self.product, self.name,)
-			cur.execute('''UPDATE ? 
-			SET name=?, value=?, device=?, package=?, description=?, product=? 
-			WHERE name=?''', symbol)
 				
-		except:
-			print 'Exception in bomPart(%s).update(%s, %s)' % self.name, project, wspace
+			sql = 'UPDATE %s SET name=?, value=?, device=?, package=?, description=?, product=? WHERE name=?' % project
+			symbol = (self.name, self.value, self.device, self.package,  
+					self.description, self.product, self.name,)
+			cur.execute(sql, symbol)
 			
 		finally:
 			cur.close()
@@ -158,14 +147,13 @@ class bomPart:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			symbol = (project, self.name, self.value, self.device, self.package,  
+			sql = 'INSERT OR REPLACE INTO %s VALUES (?,?,?,?,?,?)' % project
+			symbol = (self.name, self.value, self.device, self.package,  
 					self.description, self.product,)
-			cur.execute('INSERT OR REPLACE INTO ? VALUES (?,?,?,?,?,?)', symbol)
-				
-		except:
-			print 'Exception in bomPart(%s).insert(%s, %s)' % self.name, project, wspace
+			cur.execute(sql, symbol)
 			
 		finally:
+			#con.commit()
 			cur.close()
 			con.close()
 	
@@ -174,11 +162,9 @@ class bomPart:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
+			sql = 'DELETE FROM %s WHERE name=?' % project
 			symbol = (project, self.name,)
-			cur.execute('DELETE FROM ? WHERE name=?', symbol)
-				
-		except:
-			print 'Exception in bomPart(%s).delete(%s, %s)' % self.name, project, wspace
+			cur.execute(sql, symbol)
 			
 		finally:
 			cur.close()

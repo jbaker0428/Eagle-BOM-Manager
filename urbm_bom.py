@@ -21,12 +21,9 @@ class BOM:
 			
 			symbol = (name,)
 			cur.execute('SELECT * FROM projects WHERE name=?', symbol)
-			row = cur.fetchone()
 			for row in cur.fetchall():
 				bom = BOM(row[0], row[1], row[2])
 				boms.append(bom)
-			
-			print 'Exception in BOM.readFromDB(%s)' % name
 			
 		finally:
 			cur.close()
@@ -45,9 +42,6 @@ class BOM:
 			
 			symbol = (name, desc, infile,)
 			cur.execute('INSERT INTO projects VALUES (?,?,?)', symbol)
-			
-		except:
-			print 'BOM.newProject exception.'
 			
 		finally:
 			cur.close()
@@ -68,18 +62,9 @@ class BOM:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			symbol = (self.name,)
-			cur.execute('''CREATE TABLE IF NOT EXISTS ?
-			(name TEXT PRIMARY KEY, 
-			value TEXT, 
-			device TEXT, 
-			package TEXT, 
-			description TEXT, 
-			product TEXT REFERENCES products(manufacturer_pn))''', symbol)
-			
-		except:
-			print 'BOM(%s).createTable exception, probably because table already created.' % self.name
-			
+			sql = 'CREATE TABLE IF NOT EXISTS %s (name TEXT PRIMARY KEY, value TEXT, device TEXT, package TEXT, description TEXT, product TEXT REFERENCES products(manufacturer_pn) )' % self.name
+			cur.execute(sql)
+		
 		finally:
 			cur.close()
 			con.close()
@@ -89,12 +74,10 @@ class BOM:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
+			sql = 'DROP TABLE %s' % self.name
 			symbol = (self.name,)
-			cur.execute('DROP TABLE ?', symbol)
+			cur.execute(sql)
 			cur.execute('DELETE FROM projects WHERE name=?', symbol)
-			
-		except:
-			print 'BOM(%s).delete exception.' % self.name
 			
 		finally:
 			cur.close()
@@ -109,9 +92,6 @@ class BOM:
 			cur.execute('RENAME ? TO ?', symbol)
 			symbol = (new_name, self.name,)
 			cur.execute('UPDATE projects SET name=? WHERE name=?', symbol)
-			
-		except:
-			print 'BOM(%s).rename(%s) exception.' % self.name, new_name
 			
 		finally:
 			cur.close()
@@ -133,17 +113,15 @@ class BOM:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			symbol = (self.name,)
-			cur.execute('SELECT DISTINCT value FROM ?', symbol)
+			sql = 'SELECT DISTINCT value FROM %s' % self.name
+			cur.execute(sql)
 			for row in cur.fetchall():
 				vals.add(row[0])
 			for v in vals:
-				symbol = (self.name, v,)
-				cur.execute('SELECT name FROM ? WHERE value=?', symbol)
+				sql = 'SELECT name FROM %s WHERE value=?' % self.name
+				symbol = (v,)
+				cur.execute(sql, symbol)
 				self.valCounts[v] = len(cursor.fetchall())
-
-		except:
-			print 'Exception in BOM(%s).setValCounts()' % self.name
 			
 		finally:
 			cur.close()
@@ -157,17 +135,15 @@ class BOM:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			symbol = (self.name,)
-			cur.execute('SELECT DISTINCT product FROM ?', symbol)
+			sql = 'SELECT DISTINCT product FROM %s' % self.name
+			cur.execute(sql)
 			for row in cur.fetchall():
 				prods.add(row[0])
 			for p in prods:
-				symbol = (self.name, p,)
-				cur.execute('SELECT name FROM ? WHERE product=?', symbol)
+				sql = 'SELECT name FROM %s WHERE product=?' % self.name
+				symbol = (p,)
+				cur.execute(sql, symbol)
 				self.prodCounts[p] = len(cursor.fetchall())
-
-		except:
-			print 'Exception in BOM(%s).setprodCounts()' % self.name
 			
 		finally:
 			cur.close()
@@ -212,17 +188,15 @@ class BOM:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			symbol = (self.name,)
-			cur.execute('SELECT name, value, product FROM ?', symbol)
+			sql = 'SELECT name, value, product FROM %s' % self.name
+			cur.execute(sql)
 			for row in cur.fetchall():
 				newParts.append([row[0], row[1], row[2]])
-				
-		except:
-			print 'Exception in BOM(%s).readPartsListFromDB(%s)' % self.name, wspace
 			
 		finally:
 			cur.close()
 			con.close()
+			print 'readPartsListFromDB: newParts = ', newParts
 			return newParts
 		
 	def readFromFile(self, wspace):
@@ -234,16 +208,16 @@ class BOM:
 			for row in reader:
 				print row
 				# Check for optional product column
-				if len(row[5] > 0):
+				if len(row) > 5:
 					part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
 				else:
 					part = bomPart(row[0], row[1], row[2], row[3], row[4])
 				#print "Part: %s %s %s %s" % (part.name, part.value, part.device, part.package)
 				# Check if identical part is already in DB with a product
 				# If so, preserve the product entry
-				if(part.isInDB()):
+				if(part.isInDB(self.name, wspace)):
 					print "Part already in DB"
-					oldPart = bomPart.select_by_name(part.name, self.name, wspace)
+					oldPart = bomPart.select_by_name(part.name, self.name, wspace)[0]
 					print "oldPart: ", oldPart.name, oldPart.value, oldPart.package, oldPart.product
 					if(part.value == oldPart.value and part.device == oldPart.device and part.package == oldPart.package):
 						if oldPart.product != 'none':
@@ -253,45 +227,42 @@ class BOM:
 							print "Part found in DB without product entry, overwriting..."
 							part.update(self.name, wspace)
 				else:
-					print "Part not in DB, writing..."
+					print "Part not in DB, inserting as", part.show()
 					part.insert(self.name, wspace)
 				self.parts.append([part.name, part.value, part.product])
 				
 		print "Parts list: ", self.parts
 	
-	def select_parts_by_name(name, wspace):
+	def select_parts_by_name(self, name, wspace):
 		''' Return the bomPart(s) of given name. '''
 		parts = []
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			symbol = (self.name, name,)
-			cur.execute('SELECT * FROM ? WHERE name=?', symbol)
-			row = cur.fetchone()
+			sql = 'SELECT * FROM %s WHERE name=?' % self.name
+			symbol = (name,)
+			cur.execute(sql, symbol)
 			for row in cur.fetchall():
 				part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
 				parts.append(part)
-			
-			print 'Exception in BOM(%s).select_parts_by_name( %s )' % self.name, name
 			
 		finally:
 			cur.close()
 			con.close()
 			return parts
 	
-	def select_parts_by_value(val, wspace):
+	def select_parts_by_value(self, val, wspace):
 		''' Return the bomPart(s) of given value in a list. '''
 		parts = []
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			symbol = (self.name, val,)
-			cur.execute('SELECT * FROM ? WHERE value=?', symbol)
+			sql = 'SELECT * FROM %s WHERE value=?' % self.name
+			symbol = (val,)
+			cur.execute(sql, symbol)
 			for row in cur.fetchall():
 				part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
 				parts.append(part)
-		except:
-			print 'Exception in BOM(%s).select_parts_by_value( %s )' % self.name, val
 			
 		finally:
 			cur.close()
@@ -299,19 +270,18 @@ class BOM:
 			return parts
 	
 	@staticmethod
-	def select_parts_by_product(prod, wspace):
+	def select_parts_by_product(self, prod, wspace):
 		''' Return the bomPart(s) of given product in a list. '''
 		parts = []
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			symbol = (self.name, prod,)
-			cur.execute('SELECT * FROM ? WHERE product=?', symbol)
+			sql = 'SELECT * FROM %s WHERE product=?' % self.name
+			symbol = (prod,)
+			cur.execute(sql, symbol)
 			for row in cur.fetchall():
 				part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
 				parts.append(part)
-		except:
-			print 'Exception in BOM(%s).select_parts_by_product( %s )' % self.name, prod
 			
 		finally:
 			cur.close()

@@ -35,8 +35,6 @@ class Workspace:
 			cur.execute('SELECT name FROM projects ORDER BY name')
 			for row in cur.fetchall():
 				projects.append(row[0])
-		except:
-			print 'Workspace.createTables exception, probably because projects table already created.'
 			
 		finally:
 			cur.close()
@@ -55,6 +53,7 @@ class Workspace:
 			datasheet TEXT, 
 			description TEXT, 
 			package TEXT)''')
+			cur.execute("INSERT OR REPLACE INTO products VALUES ('NULL','NULL','NULL','NULL','NULL')")
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS vendorproducts
 			(vendor TEXT, 
@@ -68,14 +67,11 @@ class Workspace:
 			series TEXT)''')
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS pricebreaks
-			(id INTEGER PRIMARY KEY
-			pn TEXT REFERENCES vendorproducts(vendor_pn) 
-			qty INTEGER
+			(id INTEGER PRIMARY KEY,
+			pn TEXT REFERENCES vendorproducts(vendor_pn), 
+			qty INTEGER,
 			unit DOUBLE)''')
-			
-		except:
-			print 'Workspace.createTables exception, probably because projects table already created.'
-			
+						
 		finally:
 			cur.close()
 			con.close()
@@ -128,8 +124,9 @@ class URBM(gobject.GObject):
 		
 	def projectOpenCallback(self, widget, data=None):
 		(model, rowIter) = self.projectTreeView.get_selection().get_selected()
-		self.active_bom = BOM.readFromDB(urbmDB, model.get(rowIter,0)[0])
+		self.active_bom = BOM.readFromDB(model.get(rowIter,0)[0], urbmDB)[0]
 		self.activeProjectName = model.get(rowIter,0)[0]
+		self.active_bom.parts = self.active_bom.readPartsListFromDB(urbmDB)
 		inputFile = model.get(rowIter,3)[0]
 		print self.active_bom, type(self.active_bom)
 		print 'Project name: ', self.activeProjectName
@@ -159,7 +156,7 @@ class URBM(gobject.GObject):
 	def bomReadDBCallback(self, widget, data=None):
 		print "Read DB callback"
 		print 'Project name: ', self.activeProjectName
-		self.active_bom = BOM.readFromDB(urbmDB, self.activeProjectName)
+		print 'Parts list = ', self.active_bom.parts
 		if self.bomGroupName.get_active():
 			self.bomStorePopulateByName()
 		elif self.bomGroupValue.get_active():
@@ -408,7 +405,9 @@ class URBM(gobject.GObject):
 			if type(p) is types.NoneType:
 				print 'NoneType caught in projectsList'
 			elif p != 'dummy':
+				#print 'p = ', p
 				bom = BOM.readFromDB(p, urbmDB)[0]
+				print 'Returned BOM: ', bom, type(bom)
 				iter = self.projectStore.append([bom.name, bom.description, urbmDB.name, bom.input])
 		self.projectTreeView.columns_autosize()
 	
@@ -416,7 +415,7 @@ class URBM(gobject.GObject):
 		''' Clear self.bomStore and repopulate it, grouped by name. '''
 		self.bomStore.clear()
 		for p in self.active_bom.parts:
-			temp = self.active_bom.select_parts_by_name(p[0], urbmDB)
+			temp = self.active_bom.select_parts_by_name(p[0], urbmDB)[0]
 			iter = self.bomStore.append([temp.name, temp.value, temp.device, temp.package, temp.description, temp.product, 1])
 		
 		self.bomTreeView.columns_autosize()

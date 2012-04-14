@@ -221,8 +221,6 @@ class Product:
 				prod = Product(row[0], row[1], row[2], row[3], row[4])
 				prod.fetchListings(wspace)
 				prods.append(prod)
-		except:
-			print 'Exception in Product.select_by_pn( %s )' % pn
 			
 		finally:
 			cur.close()
@@ -259,9 +257,6 @@ class Product:
 			cur.execute('''UPDATE products 
 			SET manufacturer=?, manufacturer_pn=?, datasheet=?, description=?, package=? 
 			WHERE manufacturer_pn=?''', symbol)
-				
-		except:
-			print 'Exception in Product(%s).update()' % self.manufacturer_pn
 			
 		finally:
 			cur.close()
@@ -275,9 +270,6 @@ class Product:
 			symbol = (self.manufacturer, self.manufacturer_pn, self.datasheet, self.description, self.package,)
 			cur.execute('INSERT INTO products VALUES (?,?,?,?,?)', symbol)
 				
-		except:
-			print 'Exception in Product(%s).insert()' % self.manufacturer_pn
-			
 		finally:
 			cur.close()
 			con.close()
@@ -289,9 +281,6 @@ class Product:
 			
 			symbol = (self.manufacturer_pn,)
 			cur.execute('DELETE FROM products WHERE manufacturer_pn=?', symbol)
-				
-		except:
-			print 'Exception in Product(%s).delete()' % self.manufacturer_pn
 			
 		finally:
 			cur.close()
@@ -310,9 +299,6 @@ class Product:
 				vprod = vendorProduct(row[0], row[1], {}, row[2], row[3], row[4], row[5], row[6], row[7])
 				vprod.fetchPriceBreaks(wspace)
 				self.vendorProds[vprod.key()] = vprod
-				
-		except:
-			print 'Exception in Product(%s).fetchListings' % self.manufacturer_pn
 			
 		finally:
 			cur.close()
