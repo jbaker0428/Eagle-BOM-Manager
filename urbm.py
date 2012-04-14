@@ -382,7 +382,7 @@ class URBM(gobject.GObject):
 	''' Clear self.dbProductStore and repopulate it. '''
 	def dbStorePopulate(self):
 		self.dbProductStore.clear()
-		prods = Product.select_by_pn('*', urbmDB)
+		prods = Product.select_all(urbmDB)
 		for p in prods:
 			iter = self.dbProductStore.append([p.manufacturer, p.manufacturer_pn, p.description, p.datasheet, p.package])
 		self.dbTreeView.columns_autosize()

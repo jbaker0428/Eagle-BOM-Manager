@@ -200,6 +200,25 @@ class Product:
 			con.close()
 	
 	@staticmethod
+	def select_all(wspace):
+		''' Return the entire product table except the 'NULL' placeholder row. '''
+		prods = []
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			cur.execute('SELECT * FROM products')
+			for row in cur.fetchall():
+				if row[1] != 'NULL':
+					prod = Product(row[0], row[1], row[2], row[3], row[4])
+					prod.fetchListings(wspace)
+					prods.append(prod)
+			
+		finally:
+			cur.close()
+			con.close()
+			return prods
+	
+	@staticmethod
 	def select_by_pn(pn, wspace):
 		''' Return the Product(s) of given part number in a list. '''
 		prods = []
