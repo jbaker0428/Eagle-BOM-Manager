@@ -4,6 +4,29 @@ import sqlite3
 from urbm import Workspace
 
 class bomPart:
+	''' A part in the BOM exported from Eagle. '''
+	
+	@staticmethod
+	def select_by_name(name, project, wspace):
+		''' Return the bomPart of given name. '''
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (project, name,)
+			cur.execute('SELECT * FROM ? WHERE name=?', symbol)
+			row = cur.fetchone()
+			if row != None:
+				part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
+			else:
+				part = None
+		except:
+			print 'Exception in bomPart.select_by_name( %s )' % name
+			
+		finally:
+			cur.close()
+			con.close()
+			return part
+	
 	def __init__(self, name, value, device, package, description='NULL', product='NULL'):
 		self.name = name
 		self.value = value
