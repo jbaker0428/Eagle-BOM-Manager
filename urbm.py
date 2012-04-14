@@ -123,7 +123,7 @@ class URBM(gobject.GObject):
 			self.projectStorePopulate()
 		self.newProjectNameEntry.set_text('')
 		self.newProjectDescriptionEntry.set_text('')
-		#self.newProjectDatabaseFileEntry.set_text('')
+		#self.newProjectWorkspaceEntry.set_text('')
 		self.newProjectInputFileEntry.set_text('')
 		
 	def projectOpenCallback(self, widget, data=None):
@@ -409,7 +409,7 @@ class URBM(gobject.GObject):
 				print 'NoneType caught in projectsList'
 			elif p != 'dummy':
 				bom = BOM.readFromDB(urbmDB, p)
-				iter = self.projectStore.append([bom.name, bom.description, urbmDB.db, bom.input])
+				iter = self.projectStore.append([bom.name, bom.description, urbmDB.name, bom.input])
 		self.projectTreeView.columns_autosize()
 	
 	def bomStorePopulateByName(self):
@@ -597,12 +597,12 @@ class URBM(gobject.GObject):
 		
 		self.newProjectNameHBox = gtk.HBox()
 		self.newProjectDescriptionHBox = gtk.HBox()
-		#newProjectDatabaseFileHBox = gtk.HBox()
+		#newProjectWorkspaceHBox = gtk.HBox()
 		self.newProjectInputFileHBox = gtk.HBox()
 		
 		self.newProjectNameLabel = gtk.Label("Name: ")
 		self.newProjectDescriptionLabel = gtk.Label("Description: ")
-		#self.newProjectDatabaseFileLabel = gtk.Label("Database file: ")
+		#self.newProjectWorkspaceLabel = gtk.Label("Workspace: ")
 		self.newProjectInputFileLabel = gtk.Label("Input file: ")
 		
 		self.newProjectNameEntry = gtk.Entry()
@@ -619,14 +619,14 @@ class URBM(gobject.GObject):
 												gtk.BUTTONS_OK, 'Error: Project name in use. \nPlease select a different name.')
 		
 		# Projects list
-		# Columns: Name, Description, Database, Input File
+		# Columns: Name, Description, Workspace, Input File
 		self.projectStore = gtk.ListStore(str, str, str, str)
 		self.projectNameCell = gtk.CellRendererText()
 		self.projectNameColumn = gtk.TreeViewColumn('Name', self.projectNameCell)
 		self.projectDescriptionCell = gtk.CellRendererText()
 		self.projectDescriptionColumn = gtk.TreeViewColumn('Description', self.projectDescriptionCell)
 		self.projectDBFileCell = gtk.CellRendererText()
-		self.projectDBFileColumn = gtk.TreeViewColumn('Database File', self.projectDBFileCell)
+		self.projectDBFileColumn = gtk.TreeViewColumn('Workspace', self.projectDBFileCell)
 		self.projectInputFileCell = gtk.CellRendererText()
 		self.projectInputFileColumn = gtk.TreeViewColumn('Input File', self.projectInputFileCell)
 		self.projectTreeView = gtk.TreeView() # Associate with self.projectStore later, not yet!
@@ -777,7 +777,7 @@ class URBM(gobject.GObject):
 		
 		self.newProjectNameLabel.set_alignment(0.0, 0.5)
 		self.newProjectDescriptionLabel.set_alignment(0.0, 0.5)
-		#self.newProjectDatabaseFileLabel.set_alignment(0.0, 0.5)
+		#self.newProjectWorkspaceLabel.set_alignment(0.0, 0.5)
 		self.newProjectInputFileLabel.set_alignment(0.0, 0.5)
 		
 		self.projectScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
@@ -1018,8 +1018,8 @@ class URBM(gobject.GObject):
 		self.newProjectDescriptionHBox.pack_start(self.newProjectDescriptionLabel, False, True, 0)
 		self.newProjectDescriptionHBox.pack_end(self.newProjectDescriptionEntry, False, True, 0)
 		
-		#self.newProjectDatabaseFileHBox.pack_start(self.newProjectDatabaseFileLabel, False, True, 0)
-		#self.newProjectDatabaseFileHBox.pack_end(self.newProjectDatabaseFileEntry, False, True, 0)
+		#self.newProjectWorkspaceHBox.pack_start(self.newProjectWorkspaceLabel, False, True, 0)
+		#self.newProjectWorkspaceHBox.pack_end(self.newProjectWorkspaceEntry, False, True, 0)
 		
 		self.newProjectInputFileHBox.pack_start(self.newProjectInputFileLabel, False, True, 0)
 		self.newProjectInputFileHBox.pack_start(self.newProjectInputFileEntry, False, True, 0)
@@ -1028,7 +1028,7 @@ class URBM(gobject.GObject):
 		self.newProjectDialog.vbox.set_spacing(1)
 		self.newProjectDialog.vbox.pack_start(self.newProjectNameHBox, True, True, 0)
 		self.newProjectDialog.vbox.pack_start(self.newProjectDescriptionHBox, True, True, 0)
-		#self.newProjectDialog.vbox.pack_start(self.newProjectDatabaseFileHBox, True, True, 0)
+		#self.newProjectDialog.vbox.pack_start(self.newProjectWorkspaceHBox, True, True, 0)
 		self.newProjectDialog.vbox.pack_start(self.newProjectInputFileHBox, True, True, 0)
 		
 		self.newProjectDialog.vbox.show_all()
