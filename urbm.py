@@ -47,7 +47,7 @@ class Workspace:
 		''' Create the workspace-wide database tables. '''		
 		try:
 			(con, cur) = self.con_cursor()
-			cur.execute('CREATE TABLE IF NOT EXISTS projects(name TEXT PRIMARY KEY)')
+			cur.execute('CREATE TABLE IF NOT EXISTS projects(name TEXT PRIMARY KEY, description TEXT, infile TEXT)')
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS products
 			(manufacturer TEXT, 
@@ -408,7 +408,7 @@ class URBM(gobject.GObject):
 			if type(p) is types.NoneType:
 				print 'NoneType caught in projectsList'
 			elif p != 'dummy':
-				bom = BOM.readFromDB(urbmDB, p)
+				bom = BOM.readFromDB(p, urbmDB)[0]
 				iter = self.projectStore.append([bom.name, bom.description, urbmDB.name, bom.input])
 		self.projectTreeView.columns_autosize()
 	
