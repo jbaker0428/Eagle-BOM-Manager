@@ -393,7 +393,7 @@ class URBM(gobject.GObject):
 	def dbSelectionCallback(self, widget, data=None):
 		# Set class fields for currently selected item
 		(model, rowIter) = self.dbTreeView.get_selection().get_selected()
-		self.dbSelectedProduct = urbmDB.select(model.get(rowIter,0)[0], "products")
+		self.dbSelectedProduct = Product.select_by_pn(model.get(rowIter,0)[0], urbmDB)[0]
 	
 	'''Callback method activated by clicking a DB column header.
 	Sorts the DB TreeView by the values in the clicked column.'''
