@@ -2,7 +2,6 @@ import csv
 import pygtk
 pygtk.require('2.0')
 import gtk
-import y_serial_v060 as y_serial
 import shutil
 import os
 import sqlite3

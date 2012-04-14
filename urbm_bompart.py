@@ -170,9 +170,3 @@ class bomPart:
 			cur.close()
 			con.close()
 			
-	def writeToDB(self, project, wspace):
-		print "bomPart.writeToDB writing part %s to table %s" % (self.name, project)
-		print "Part's product: %s" % self.product
-		project.db.delete(self.name, self.project)
-		project.db.insert(self, self.name + " #prt, #val=" + self.value + " #dev=" + \
-		self.device + " #pkg=" + self.package + " #prod=" + self.product, project)
