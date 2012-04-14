@@ -175,7 +175,7 @@ class URBM(gobject.GObject):
 		# Grab the vendor part number for the selected item from the label text
 		selectedPN = model.get(rowIter,5)[0]
 		print "selectedPN is: %s" % selectedPN
-		if selectedPN != "none": # Look up part in DB
+		if selectedPN != 'NULL': # Look up part in DB
 			# Set class field for currently selected product
 			print "Querying with selectedPN: %s" % selectedPN
 			self.bomSelectedProduct.manufacturer_pn = selectedPN
@@ -323,9 +323,9 @@ class URBM(gobject.GObject):
 		editPartDialog.hide()
 		
 		if response == gtk.RESPONSE_ACCEPT:
-			# If the product text entry field is left blank, set the product to "none"
+			# If the product text entry field is left blank, set the product to 'NULL'
 			if type(self.editPartProductEntry.get_text()) is types.NoneType or len(self.editPartProductEntry.get_text()) == 0:
-				self.productEntryText = "none"
+				self.productEntryText = 'NULL'
 			else:
 				self.productEntryText = self.editPartProductEntry.get_text()
 			
@@ -357,7 +357,7 @@ class URBM(gobject.GObject):
 				self.bomStorePopulateByPN()
 					
 			self.setPartInfoListingCombo(self.bomSelectedProduct)
-			if self.bomSelectedProduct.manufacturer_pn == "none":
+			if self.bomSelectedProduct.manufacturer_pn == 'NULL':
 				self.clearPartInfoLabels()
 			else:
 				self.setPartInfoLabels(self.bomSelectedProduct)
@@ -504,7 +504,7 @@ class URBM(gobject.GObject):
 		print 'Setting Listing combo...'
 		self.partInfoListingCombo.get_model().clear()
 		
-		if type(prod) is not types.NoneType and prod.manufacturer_pn != "none":
+		if type(prod) is not types.NoneType and prod.manufacturer_pn != 'NULL':
 			#for listing in prod.vendorProds.values():
 			for listing in prod.vendorProds.keys():
 				#print 'Listing: ', type(listing), listing

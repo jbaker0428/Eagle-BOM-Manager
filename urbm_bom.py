@@ -159,7 +159,7 @@ class BOM:
 			
 		for x in projProdCounts.items():
 			# Find x[0] (the dict key) in the product DB
-			if x[0] is "none" or x[0] is 'NULL':
+			if x[0] is 'NULL':
 				# TODO : Print a warning on screen?
 				print "Warning: BOM.getCost() skipped a part with no product"
 			else:
