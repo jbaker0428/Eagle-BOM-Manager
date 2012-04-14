@@ -577,7 +577,7 @@ class URBM(gobject.GObject):
 		
 	def __init__(self):
 		# -------- DECLARATIONS --------
-		self.active_bom = BOM('dummy', 'Active BOM Declaration', urbmDB, inputFile)
+		self.active_bom = BOM('dummy', 'Active BOM Declaration', inputFile)
 		self.activeProjectName = 'dummy'
 		
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
