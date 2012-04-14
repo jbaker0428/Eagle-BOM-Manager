@@ -71,6 +71,55 @@ class bomPart:
 			cur.close()
 			con.close()
 			return ret	
+	
+	def update(self, project, wspace):
+		''' Update an existing bomPart record in the DB. '''
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (project, self.name, self.value, self.device, self.package,  
+					self.description, self.product, self.name,)
+			cur.execute('''UPDATE ? 
+			SET name=?, value=?, device=?, package=?, description=?, product=? 
+			WHERE name=?''', symbol)
+				
+		except:
+			print 'Exception in bomPart(%s).update(%s, %s)' % self.name, project, wspace
+			
+		finally:
+			cur.close()
+			con.close()
+	
+	def insert(self, project, wspace):
+		''' Write the bomPart to the DB. '''
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (project, self.name, self.value, self.device, self.package,  
+					self.description, self.product,)
+			cur.execute('INSERT OR REPLACE INTO ? VALUES (?,?,?,?,?,?)', symbol)
+				
+		except:
+			print 'Exception in bomPart(%s).insert(%s, %s)' % self.name, project, wspace
+			
+		finally:
+			cur.close()
+			con.close()
+	
+	def delete(self, project, wspace):
+		''' Delete the bomPart from the DB. '''
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (project, self.name,)
+			cur.execute('DELETE FROM ? WHERE name=?', symbol)
+				
+		except:
+			print 'Exception in bomPart(%s).delete(%s, %s)' % self.name, project, wspace
+			
+		finally:
+			cur.close()
+			con.close()
 			
 	def writeToDB(self, project, wspace):
 		print "bomPart.writeToDB writing part %s to table %s" % (self.name, project)
