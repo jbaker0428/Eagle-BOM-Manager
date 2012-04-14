@@ -68,8 +68,21 @@ class BOM:
 			cur.close()
 			con.close()
 		
-	def delete(self):
-		self.db.droptable(self.name)
+	def delete(self, wspace):
+		''' Delete the BOM table for a project from the given Workspace. '''
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (self.name,)
+			cur.execute('DROP TABLE ?', symbol)
+			cur.execute('DELETE FROM projects WHERE name=?', symbol)
+			
+		except:
+			print 'BOM(%s).delete exception.' % self.name
+			
+		finally:
+			cur.close()
+			con.close()
 	
 	def sortByName(self):
 		self.parts.sort(key=itemgetter(0))
