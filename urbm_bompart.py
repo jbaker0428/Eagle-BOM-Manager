@@ -7,24 +7,25 @@ class bomPart:
 	
 	@staticmethod
 	def select_by_name(name, project, wspace):
-		''' Return the bomPart of given name. '''
+		''' Return the bomPart(s) of given name. '''
+		parts = []
 		try:
 			(con, cur) = wspace.con_cursor()
 			
 			symbol = (project, name,)
 			cur.execute('SELECT * FROM ? WHERE name=?', symbol)
 			row = cur.fetchone()
-			if row != None:
+			for row in cur.fetchall():
 				part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
-			else:
-				part = None
+				parts.append(part)
+				
 		except:
 			print 'Exception in bomPart.select_by_name( %s )' % name
 			
 		finally:
 			cur.close()
 			con.close()
-			return part
+			return parts
 	
 	@staticmethod
 	def select_by_value(val, project, wspace):
