@@ -84,6 +84,23 @@ class BOM:
 			cur.close()
 			con.close()
 	
+	def rename(self, new_name, wspace):
+		''' Rename the project. '''
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (self.name, new_name,)
+			cur.execute('RENAME ? TO ?', symbol)
+			symbol = (new_name, self.name,)
+			cur.execute('UPDATE projects SET name=? WHERE name=?', symbol)
+			
+		except:
+			print 'BOM(%s).rename(%s) exception.' % self.name, new_name
+			
+		finally:
+			cur.close()
+			con.close()
+	
 	def sortByName(self):
 		self.parts.sort(key=itemgetter(0))
 		
