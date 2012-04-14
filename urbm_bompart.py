@@ -41,7 +41,7 @@ class bomPart:
 		return eq
 		
 
-	def findInBOM(self, bomFile):
+	def findInFile(self, bomFile):
 		''' Check if a BOM part of this name is in the given CSV BOM. '''
 		with open(bomFile, 'rb') as f:
 			db = csv.reader(f, delimiter=',', quotechar = '"', quoting=csv.QUOTE_ALL)
