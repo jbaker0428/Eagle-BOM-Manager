@@ -219,6 +219,7 @@ class Product:
 			cur.execute('SELECT * FROM products WHERE manufacturer_pn=?', symbol)
 			for row in cur.fetchall():
 				prod = Product(row[0], row[1], row[2], row[3], row[4])
+				prod.fetchListings(wspace)
 				prods.append(prod)
 		except:
 			print 'Exception in Product.select_by_pn( %s )' % pn
