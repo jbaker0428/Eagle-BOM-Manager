@@ -85,7 +85,7 @@ inputFile = os.path.join(os.getcwd(), "test.csv")	# TODO: Test dummy
 #active_bom = BOM("test1", 'Test BOM 1', urbmDB, os.path.join(os.getcwd(), "test.csv"))
 
 
-class URBM(gobject.GObject):
+class Manager(gobject.GObject):
 	'''Main GUI class'''
 	def delete_event(self, widget, event, data=None):
 		print "delete event occurred"
@@ -1119,5 +1119,5 @@ if __name__ == "__main__":
 	from urbm_product import *
 	from urbm_bompart import bomPart
 	from urbm_bom import BOM
-	URBM()
+	Manager()
 	main()
