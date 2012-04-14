@@ -410,7 +410,7 @@ class URBM(gobject.GObject):
 		''' Clear self.bomStore and repopulate it, grouped by value. '''
 		self.bomStore.clear()
 		self.active_bom.sortByVal()
-		self.active_bom.setValCounts()
+		self.active_bom.setValCounts(wspace)
 		
 		for val in self.active_bom.valCounts.keys():
 			groupName = "\t"	# Clear groupName and prepend a tab
@@ -431,7 +431,7 @@ class URBM(gobject.GObject):
 		''' Clear self.bomStore and repopulate it, grouped by part number. '''	
 		self.bomStore.clear()
 		self.active_bom.sortByProd()
-		self.active_bom.setProdCounts()
+		self.active_bom.setProdCounts(urbmDB)
 		
 		for prod in self.active_bom.prodCounts.keys():
 			groupName = "\t"	# Clear groupName and prepend a tab
