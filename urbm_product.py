@@ -210,24 +210,23 @@ class Product:
 	
 	@staticmethod
 	def select_by_pn(pn, wspace):
-		''' Return the Product of given part number. '''
+		''' Return the Product(s) of given part number in a list. '''
+		prods = []
 		try:
 			(con, cur) = wspace.con_cursor()
 			
 			symbol = (pn,)
 			cur.execute('SELECT * FROM products WHERE manufacturer_pn=?', symbol)
-			row = cur.fetchone()
-			if row != None:
+			for row in cur.fetchall():
 				prod = Product(row[0], row[1], row[2], row[3], row[4])
-			else:
-				prod = None
+				prods.append(prod)
 		except:
 			print 'Exception in Product.select_by_pn( %s )' % pn
 			
 		finally:
 			cur.close()
 			con.close()
-			return prod
+			return prods
 		
 	def __init__(self, mfg, mfg_pn, dsheet='NULL', desc='NULL', pkg='NULL'):
 		self.manufacturer = mfg

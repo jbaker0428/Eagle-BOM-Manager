@@ -170,7 +170,7 @@ class BOM:
 				# TODO : Print a warning on screen?
 				print "Warning: BOM.getCost() skipped a part with no product"
 			else:
-				prod = Product.select_by_pn(x[0], wspace)
+				prod = Product.select_by_pn(x[0], wspace)[0]
 				prod.fetchListings(wspace)
 				listing = product.bestListing(projProdCounts[x[0]])
 				priceBreak = listing.getPriceBreak(x[1])
