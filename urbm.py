@@ -16,6 +16,7 @@ class Workspace:
 	def __init__(self, name='Workspace', db=db0):
 		self.name = name
 		self.db = db
+		self.projects = []
 	
 	def con_cursor(self):
 		''' Connect to the DB, enable foreign keys, set autocommit mode,  
@@ -81,6 +82,7 @@ class Workspace:
 
 urbmDB = Workspace()
 urbmDB.createTables()
+urbmDB.projects = urbmDB.listProjects()
 
 #urbmDB = y_serial.Main(os.path.join(os.getcwd(), "urbm.sqlite"))
 #urbmDB.createtable('products')
