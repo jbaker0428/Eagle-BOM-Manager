@@ -433,13 +433,13 @@ class URBM(gobject.GObject):
 			groupName = "\t"	# Clear groupName and prepend a tab
 			# TODO: Does this split up parts of the same value but different package?
 			# If not, the "part number" column will be bad
-			group = urbmDB.selectdic("#val=" + val, self.active_bom.name)
-			for part in group.values():
-				groupName += part[2].name + ", "
+			group = self.active_bom.select_parts_by_value(val, urbmDB)
+			for part in group:
+				groupName += part.name + ", "
 			
 			# Replace trailing comma with tab
 			groupName = groupName[0:-2]
-			temp = group[group.keys()[0]][2]	# Part object
+			temp = group[0]	# Part object
 			iter = self.bomStore.append([groupName, temp.value, temp.device, temp.package, temp.description, temp.product, self.active_bom.valCounts[val]])
 		
 		self.bomTreeView.columns_autosize()
