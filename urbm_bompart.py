@@ -26,6 +26,27 @@ class bomPart:
 			con.close()
 			return part
 	
+	@staticmethod
+	def select_by_value(val, project, wspace):
+		''' Return the bomPart(s) of given value in a list. '''
+		parts = []
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (project, val,)
+			cur.execute('SELECT * FROM ? WHERE value=?', symbol)
+			for row in cur.fetchall():
+				part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
+				part.fetchListings(wspace)
+				parts.append(part)
+		except:
+			print 'Exception in bomPart.select_by_value( %s )' % val
+			
+		finally:
+			cur.close()
+			con.close()
+			return parts
+	
 	def __init__(self, name, value, device, package, description='NULL', product='NULL'):
 		self.name = name
 		self.value = value
