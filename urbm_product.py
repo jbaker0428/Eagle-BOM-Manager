@@ -108,7 +108,7 @@ class vendorProduct:
 			symbol = (self.vendor, self.vendorPN, self.reelFee, self.inventory, 
 					self.packaging, self.category, self.family, self.series, self.vendorPN,)
 			cur.execute('''UPDATE vendorproducts 
-			SET vendor=?, vendor_pn=?, reelfee=?, inventory=?, packaging=?, 
+			SET vendor=?, vendor_pn=?, reelfee=?, inventory=?, packaging=? 
 			category=?, family=?, series=? 
 			WHERE vendor_pn=?''', symbol)
 				
@@ -257,7 +257,7 @@ class Product:
 			symbol = (self.manufacturer, self.manufacturer_pn, self.datasheet, self.description, 
 					self.package, self.manufacturer_pn,)
 			cur.execute('''UPDATE products 
-			SET manufacturer=?, manufacturer_pn=?, datasheet=?, description=?, package=?, 
+			SET manufacturer=?, manufacturer_pn=?, datasheet=?, description=?, package=? 
 			WHERE manufacturer_pn=?''', symbol)
 				
 		except:
