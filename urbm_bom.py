@@ -157,18 +157,8 @@ class BOM:
 				p[2] = part.product
 		# TODO : If inline addition of parts is added later (as in, not from a
 		# CSV file), a check needs to be added here to make sure part is in self.parts
-		self.writePartsListToDB()
 	
-	# TODO: Should the read/write methods write the actual BOM object?
-	def writePartsListToDB(self):
-		print "BOM.writePartsListToDB to table %s" % self.name
-		self.db.delete("partslist", self.name)
-		self.db.insert(self.parts, "partslist", self.name)
-		
-	def writeToDB(self):
-		self.db.delete("bom", self.name)
-		self.db.insert(self, "bom", self.name)
-		
+	# TODO: Should the read/write methods write the actual BOM object?		
 		
 	def readPartsListFromDB(self, wspace):
 		print "BOM.readPartsListFromDB"
