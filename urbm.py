@@ -16,7 +16,8 @@ class Workspace:
 	''' Each Workspace has its own persistent database file. '''
 	db0 = os.path.join(os.getcwd(), 'urbm.sqlite')
 	
-	def __init__(self, db=db0):
+	def __init__(self, name='Workspace', db=db0):
+		self.name = name
 		self.db = db
 	
 	def con_cursor(self):
