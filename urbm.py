@@ -180,7 +180,7 @@ class URBM(gobject.GObject):
 			print "Querying with selectedPN: %s" % selectedPN
 			self.bomSelectedProduct.manufacturer_pn = selectedPN
 			
-			self.bomSelectedProduct.selectOrScrape()
+			self.bomSelectedProduct.selectOrScrape(urbmDB)
 			#self.bomSelectedProduct.show()
 			self.setPartInfoLabels(self.bomSelectedProduct)
 			self.setPartInfoListingCombo(self.bomSelectedProduct)
@@ -344,7 +344,7 @@ class URBM(gobject.GObject):
 			# We need to check the products table for this Product, creating an entry
 			# for it if necessary, before updating selectedBomPart in the DB.
 			self.bomSelectedProduct.manufacturer_pn = self.productEntryText
-			self.bomSelectedProduct.selectOrScrape()
+			self.bomSelectedProduct.selectOrScrape(urbmDB)
 			
 			self.selectedBomPart.update(self.active_bom.name, urbmDB)
 			self.active_bom.updateParts(self.selectedBomPart)
@@ -364,7 +364,7 @@ class URBM(gobject.GObject):
 	
 	def partInfoScrapeButtonCallback(self, widget):
 		''' Part info frame "Refresh" button callback. '''
-		self.bomSelectedProduct.scrape()
+		self.bomSelectedProduct.scrape(urbmDB)
 	
 	def partInfoListingComboCallback(self, widget, data=None):
 		self.destroyPartPriceLabels()
