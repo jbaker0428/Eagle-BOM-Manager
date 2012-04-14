@@ -529,7 +529,7 @@ class Product:
 	''' Sets the product fields, pulling from the local DB if possible.'''	
 	def selectOrScrape(self, wspace):
 		if(self.isInDB(wspace)):
-			temp = Product.select_by_pn(self.manufacturer_pn, wspace)
+			temp = Product.select_by_pn(self.manufacturer_pn, wspace)[0]
 			self.manufacturer = temp.manufacturer
 			self.manufacturer_pn = temp.manufacturer_pn
 			self.datasheet = temp.datasheet
