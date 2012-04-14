@@ -241,4 +241,44 @@ class BOM:
 				self.parts.append([part.name, part.value, part.product])
 				
 		print "Parts list: ", self.parts
+	
+	def select_parts_by_name(name, wspace):
+		''' Return the bomPart of given name. '''
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (self.name, name,)
+			cur.execute('SELECT * FROM ? WHERE name=?', symbol)
+			row = cur.fetchone()
+			if row != None:
+				part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
+			else:
+				part = None
+		except:
+			print 'Exception in BOM(%s).select_parts_by_name( %s )' % self.name, name
+			
+		finally:
+			cur.close()
+			con.close()
+			return part
+	
+	def select_parts_by_value(val, wspace):
+		''' Return the bomPart(s) of given value in a list. '''
+		parts = []
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (self.name, val,)
+			cur.execute('SELECT * FROM ? WHERE value=?', symbol)
+			for row in cur.fetchall():
+				part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
+				part.fetchListings(wspace)
+				parts.append(part)
+		except:
+			print 'Exception in BOM(%s).select_parts_by_value( %s )' % self.name, val
+			
+		finally:
+			cur.close()
+			con.close()
+			return parts
 		
