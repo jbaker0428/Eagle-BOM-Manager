@@ -550,7 +550,7 @@ class Product:
 			self.description = temp.description
 			self.package = temp.package
 			self.fetchListings(wspace)
-		elif self.manufacturer_pn != "none":
+		elif self.manufacturer_pn != 'none' and self.manufacturer_pn != 'NULL':
 			self.scrape(wspace)
 
 
