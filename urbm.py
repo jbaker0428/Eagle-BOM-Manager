@@ -28,19 +28,19 @@ class Workspace:
 		
 	def listProjects(self):
 		''' Returns a list of BOM project tables in the DB. '''
-		(con, cur) = self.con_cursor()
 		projects = []
-		a = "SELECT name FROM projects"
-		b = "WHERE type='table'"
-		c = "ORDER BY name"
-		sql = ' '.join( [a, b, c] )
-		cur.execute(sql)
-		answer = cur.fetchall()
-		cur.close()
-		con.close()
-		for p in answer:
-			projects.append(p[0])
-		return projects
+		try:
+			(con, cur) = self.con_cursor()
+			cur.execute('SELECT name FROM projects ORDER BY name')
+			for row in cur.fetchall():
+				projects.append(row[0])
+		except:
+			print 'Workspace.createTables exception, probably because projects table already created.'
+			
+		finally:
+			cur.close()
+			con.close()
+			return projects
 	
 	def createTables(self):
 		''' Create the workspace-wide database tables. '''		
