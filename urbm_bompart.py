@@ -163,7 +163,7 @@ class bomPart:
 			(con, cur) = wspace.con_cursor()
 			
 			sql = 'DELETE FROM %s WHERE name=?' % project
-			symbol = (project, self.name,)
+			symbol = (self.name,)
 			cur.execute(sql, symbol)
 			
 		finally:

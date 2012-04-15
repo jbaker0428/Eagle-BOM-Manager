@@ -170,6 +170,11 @@ class vendorProduct:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
+			cur.execute('DELETE FROM pricebreaks WHERE pn=?', (self.vendorPN,))
+			for pb in self.prices.items():
+				t = (self.vendorPN, pb[0], pb[1],)
+				cur.execute('INSERT OR REPLACE INTO pricebreaks VALUES (NULL,?,?,?)', t)
+			
 			symbol = (self.vendor, self.vendorPN, self.manufacturer_pn, self.inventory, self.packaging,
 					self.reelFee, self.category, self.family, self.series, self.vendorPN,)
 			cur.execute('''UPDATE vendorproducts 
@@ -204,6 +209,7 @@ class vendorProduct:
 			(con, cur) = wspace.con_cursor()
 			
 			symbol = (self.vendorPN,)
+			cur.execute('DELETE FROM pricebreaks WHERE pn=?', symbol)
 			cur.execute('DELETE FROM vendorproducts WHERE vendor_pn=?', symbol)
 			
 		finally:
