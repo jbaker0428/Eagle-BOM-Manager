@@ -1,7 +1,7 @@
 A BOM manager designed to interface with Eagle's BOM ULP scripts.
 
 Scrapes product information off of distributor product pages.
-All BOM and product information is stored in a local sqlite3 database compressed using y_serial.  
+All BOM and product information is stored in a local sqlite3 database.  
 
 The latest version of the BOM-AM and BOM-EX ULP scripts are available at:
 http://www.cadsoftusa.com/downloads/ulps
