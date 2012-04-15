@@ -84,13 +84,42 @@ class vendorProduct:
 		''' A simple print method. '''
 		print 'Vendor: ', self.vendor, type(self.vendor)
 		print 'Vendor PN: ', self.vendorPN, type(self.vendorPN)
+		print 'Product MFG PN: ', self.manufacturer_pn, type(self.manufacturer_pn)
 		print 'Prices: ', self.prices.items(), type(self.prices.items())
-		print 'Reel Fee: ', self.reelFee, type(self.reelFee)
 		print 'Inventory: ', self.inventory, type(self.inventory)
 		print 'Packaging: ', self.packaging, type(self.packaging)
+		print 'Reel Fee: ', self.reelFee, type(self.reelFee)
 		print 'Category: ', self.category, type(self.category)
 		print 'Family: ', self.family, type(self.family)
 		print 'Series: ', self.series, type(self.series)
+	
+	def equals(self, vp):
+		''' Compares the vendorProduct to another vendorProduct.'''
+		if type(vp) != type(self):
+			return False
+		eq = True
+		if self.vendor != vp.vendor:
+			eq = False
+		if self.vendorPN != vp.vendorPN:
+			eq = False
+		if self.manufacturer_pn != vp.manufacturer_pn:
+			eq = False
+		for p in self.prices.items():
+			if p not in vp.prices.items():
+				eq = False
+		if self.inventory != vp.inventory:
+			eq = False
+		if self.packaging != vp.packaging:
+			eq = False
+		if self.reelFee != vp.reelFee:
+			eq = False
+		if self.category != vp.category:
+			eq = False
+		if self.family != vp.family:
+			eq = False
+		if self.series != vp.series:
+			eq = False
+		return eq
 	
 	def key(self):
 		''' Return a dictionary key as used by the GUI for this vendorProduct.
@@ -256,6 +285,29 @@ class Product:
 		for listing in self.vendorProds.items():
 			print "\nListing key: ", listing[0]
 			listing[1].show()
+	
+	def equals(self, p):
+		''' Compares the Product to another Product.'''
+		if type(p) != type(self):
+			return False
+		eq = True
+		if self.manufacturer != p.manufacturer:
+			eq = False
+		if self.manufacturer_pn != p.manufacturer_pn:
+			eq = False
+		if self.datasheet != p.datasheet:
+			eq = False
+		if self.description != p.description:
+			eq = False
+		if self.package != p.package:
+			eq = False
+		for k in self.vendorProds.keys():
+			if k not in p.vendorProds.keys():
+				eq = False
+			else:
+				if self.vendorProds[k].equals(p.vendorProds[k]) == False:
+					eq = False
+		return eq
 	
 	def update(self, wspace):
 		''' Update an existing Product record in the DB. '''
