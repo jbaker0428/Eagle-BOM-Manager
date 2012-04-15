@@ -660,7 +660,4 @@ class Product:
 			self.fetchListings(wspace)
 		elif self.manufacturer_pn != 'none' and self.manufacturer_pn != 'NULL':
 			self.scrape(wspace)
-			self.fetchListings(wspace)
 
-
-		
