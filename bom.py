@@ -219,20 +219,53 @@ class BOM:
 				# Check if identical part is already in DB with a product
 				# If so, preserve the product entry
 				if(part.is_in_db(self.name, wspace)):
-					print "Part already in DB"
+					print "Part of same name already in DB"
 					old_part = Part.select_by_name(part.name, self.name, wspace)[0]
-					print "old_part: ", old_part.name, old_part.value, old_part.package, old_part.product
 					if(part.value == old_part.value and part.device == old_part.device and part.package == old_part.package):
-						if old_part.product != 'NULL':
-							print "Part found in DB with existing product ", old_part.product
-							part.product = old_part.product
-						else:
-							print "Part found in DB without product entry, overwriting..."
+						if part.product != 'NULL':
+							if old_part.product != 'NULL':
+								# TODO: prompt? Defaulting to old_part.product for now (aka do nothing)
+								print 'Matching CSV and DB parts with non-NULL product mismatch, keeping DB version...'
+							elif old_part.product == 'NULL':
+								part.update(self.name, wspace)
+						elif part.product == 'NULL':
+							if old_part.product != 'NULL':
+								pass	# Do nothing in this case
+							elif old_part.product == 'NULL':
+								candidate_products = list(part.find_matching_products(wspace))
+								if len(candidate_products) == 0:
+									#print 'No matching products found, nothing to do'
+									pass
+								elif len(candidate_products) == 1:
+									part.product = candidate_products[0].manufacturer_pn
+									print 'Found exactly one matching product, setting product and updating', part.show()
+									part.update(self.name, wspace)
+								else:
+									print 'Found multiple product matches, prompting for selection...'
+									# TODO: Currently going with first result, need to prompt for selection
+									part.product = candidate_products[0].manufacturer_pn
+									part.update(self.name, wspace)
+								
+					else:	# Value/device/package mismatch
+						if part.product != 'NULL':
 							part.update(self.name, wspace)
+						elif part.product == 'NULL':
+							candidate_products = list(part.find_matching_products(wspace))
+							if len(candidate_products) == 0:
+								print 'No matching products found, updating as-is'
+							elif len(candidate_products) == 1:
+								part.product = candidate_products[0].manufacturer_pn
+								print 'Found exactly one matching product, setting product and updating', part.show()
+							else:
+								print 'Found multiple product matches, prompting for selection...'
+								# TODO: Currently going with first result, need to prompt for selection
+								part.product = candidate_products[0].manufacturer_pn
+							part.update(self.name, wspace)
+				
 				else:
 					print 'Part not in DB'
 					if part.product == 'NULL':
-						candidate_products = part.find_matching_products(wspace)
+						candidate_products = list(part.find_matching_products(wspace))
 						if len(candidate_products) == 0:
 							print 'No matching products found, inserting as-is', part.show()
 						elif len(candidate_products) == 1:

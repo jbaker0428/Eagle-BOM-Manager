@@ -114,8 +114,10 @@ class Part:
 		''' Search all projects in a Workspace for Parts with the same value/device/pakage.
 		Checks the search results for non-NULL product columns.
 		Return a set of candidate Product objects for this Part.'''
+		print 'Entering %s.find_matching_products...' % self.name
 		products = set()
 		try:
+			from product import Product
 			(con, cur) = wspace.con_cursor()
 			for proj in wspace.list_projects():
 				sql = """SELECT DISTINCT product FROM %s WHERE value=? INTERSECT
@@ -123,9 +125,11 @@ class Part:
 				SELECT product FROM %s WHERE package=?""" % (proj, proj, proj)
 				t = (self.value, self.device, self.package,)
 				cur.execute(sql, t)
-				for row in cur.fetchall():
+				rows = cur.fetchall()
+				for row in rows:
 					if row[0] != 'NULL':
 						db_prods = Product.select_by_pn(row[0], wspace)
+						print 'Found db_prods: ', db_prods
 						for p in db_prods:
 							products.add(p)
 		finally:
