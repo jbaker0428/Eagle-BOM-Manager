@@ -68,6 +68,44 @@ class vendorProduct:
 			cur.close()
 			con.close()
 	
+	@staticmethod
+	def select_by_vendor_pn(pn, wspace):
+		''' Return the vendorProduct(s) of given vendor part number in a list. '''
+		vprods = []
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (pn,)
+			cur.execute('SELECT * FROM vendorproducts WHERE vendor_pn=?', symbol)
+			for row in cur.fetchall():
+				vprod = vendorProduct(row[0], row[1], row[2], {}, row[3], row[4], row[5], row[6], row[7], row[8])
+				vprod.fetchPriceBreaks(wspace)
+				vprods.append(vprod)
+			
+		finally:
+			cur.close()
+			con.close()
+			return vprods
+	
+	@staticmethod
+	def select_by_manufacturer_pn(pn, wspace):
+		''' Return the vendorProduct(s) of given manufacturer part number in a list. '''
+		vprods = []
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			symbol = (pn,)
+			cur.execute('SELECT * FROM vendorproducts WHERE mfg_pn=?', symbol)
+			for row in cur.fetchall():
+				vprod = vendorProduct(row[0], row[1], row[2], {}, row[3], row[4], row[5], row[6], row[7], row[8])
+				vprod.fetchPriceBreaks(wspace)
+				vprods.append(vprod)
+			
+		finally:
+			cur.close()
+			con.close()
+			return vprods
+	
 	def __init__(self, vend, vendor_pn, mfg_pn, pricesDict, inv, pkg, reel=0, cat='NULL', fam='NULL', ser='NULL'):
 		self.vendor = vend
 		self.vendorPN = vendor_pn
