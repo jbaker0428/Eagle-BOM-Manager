@@ -377,6 +377,7 @@ class Manager(gobject.GObject):
 		self.destroyPartPriceLabels()
 		if type(self.partInfoListingCombo.get_active_text()) is not types.NoneType and self.partInfoListingCombo.get_active_text() != '':
 			self.setPartPriceLabels(self.bomSelectedProduct.vendorProds[self.partInfoListingCombo.get_active_text()])
+			self.partInfoInventoryLabel2.set_text(str(self.bomSelectedProduct.vendorProds[self.partInfoListingCombo.get_active_text()].inventory))
 	
 	''' Clear self.dbProductStore and repopulate it. '''
 	def dbStorePopulate(self):
@@ -480,7 +481,6 @@ class Manager(gobject.GObject):
 		product object.'''	
 		#self.partInfoVendorLabel2.set_text(prod.vendor)
 		#self.partInfoVendorPNLabel2.set_text(prod.vendor_pn)
-		#self.partInfoInventoryLabel2.set_text(str(prod.inventory))
 		self.partInfoManufacturerLabel2.set_text(prod.manufacturer)
 		self.partInfoManufacturerPNLabel2.set_text(prod.manufacturer_pn)
 		self.partInfoDescriptionLabel2.set_text(prod.description)
@@ -495,7 +495,6 @@ class Manager(gobject.GObject):
 		object to a tab character.'''
 		#self.partInfoVendorLabel2.set_text("\t")
 		#self.partInfoVendorPNLabel2.set_text("\t")
-		#self.partInfoInventoryLabel2.set_text("\t")
 		self.partInfoManufacturerLabel2.set_text("\t")
 		self.partInfoManufacturerPNLabel2.set_text("\t")
 		self.partInfoDescriptionLabel2.set_text("\t")
@@ -687,8 +686,6 @@ class Manager(gobject.GObject):
 		#self.partInfoVendorLabel2 = gtk.Label(None)
 		#self.partInfoVendorPNLabel1 = gtk.Label("Vendor Part Number: ")
 		#self.partInfoVendorPNLabel2 = gtk.Label(None)
-		#self.partInfoInventoryLabel1 = gtk.Label("Inventory: ")
-		#self.partInfoInventoryLabel2 = gtk.Label(None)
 		self.partInfoManufacturerLabel1 = gtk.Label("Manufacturer: ")
 		self.partInfoManufacturerLabel2 = gtk.Label(None)
 		self.partInfoManufacturerPNLabel1 = gtk.Label("Manufacturer Part Number: ")
@@ -706,11 +703,6 @@ class Manager(gobject.GObject):
 		self.partInfoPackageLabel1 = gtk.Label("Package/case: ")
 		self.partInfoPackageLabel2 = gtk.Label(None)
 		
-		self.partInfoListingLabel = gtk.Label("Product source: ")
-		self.partInfoListingCombo = gtk.combo_box_new_text()
-		#self.partInfoListingCombo = gtk.combo_box_text_new_with_entry()
-		
-		
 		self.partInfoPricingTable = gtk.Table(8, 3 , False) # Price breaks
 		self.priceBreakLabels = []
 		
@@ -722,6 +714,13 @@ class Manager(gobject.GObject):
 
 		self.partInfoScrapeButton = gtk.Button("Scrape", stock=gtk.STOCK_REFRESH)
 		self.partInfoDatasheetButton = gtk.Button("Datasheet", stock=gtk.STOCK_PROPERTIES)
+		
+		self.partInfoListingLabel = gtk.Label("Product source: ")
+		self.partInfoListingCombo = gtk.combo_box_new_text()
+		
+		self.partInfoInventoryHBox = gtk.HBox(False, 5)
+		self.partInfoInventoryLabel1 = gtk.Label("Inventory: ")
+		self.partInfoInventoryLabel2 = gtk.Label(None)
 		
 		self.pricingFrame = gtk.Frame("Project pricing") # Goes in bottom half of bomVPane
 		self.orderSizeScaleAdj = gtk.Adjustment(1, 1, 10000, 1, 10, 200)
@@ -896,8 +895,8 @@ class Manager(gobject.GObject):
 		#self.partInfoVendorLabel2.set_alignment(0.0, 0.5)
 		#self.partInfoVendorPNLabel1.set_alignment(0.0, 0.5)
 		#self.partInfoVendorPNLabel2.set_alignment(0.0, 0.5)
-		#self.partInfoInventoryLabel1.set_alignment(0.0, 0.5)
-		#self.partInfoInventoryLabel2.set_alignment(0.0, 0.5)
+		self.partInfoInventoryLabel1.set_alignment(0.0, 0.5)
+		self.partInfoInventoryLabel2.set_alignment(0.0, 0.5)
 		self.partInfoManufacturerLabel1.set_alignment(0.0, 0.5)
 		self.partInfoManufacturerLabel2.set_alignment(0.0, 0.5)
 		self.partInfoManufacturerPNLabel1.set_alignment(0.0, 0.5)
@@ -1098,6 +1097,9 @@ class Manager(gobject.GObject):
 		self.partInfoButtonBox.pack_start(self.partInfoDatasheetButton, True, True, 5)
 		self.partInfoRowBox.pack_start(self.partInfoListingLabel, False, False, 0)
 		self.partInfoRowBox.pack_start(self.partInfoListingCombo, False, False, 0)
+		self.partInfoInventoryHBox.pack_start(self.partInfoInventoryLabel1, False, False, 0)
+		self.partInfoInventoryHBox.pack_start(self.partInfoInventoryLabel2, False, False, 0)
+		self.partInfoRowBox.pack_start(self.partInfoInventoryHBox, False, False, 0)
 		self.partInfoRowBox.pack_start(self.partInfoPricingTable, True, True, 5)
 		
 		
