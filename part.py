@@ -110,6 +110,29 @@ class Part:
 				rownum = rownum + 1
 			return -1
 	
+	def find_matching_products(self, wspace):
+		''' Search all projects in a Workspace for Parts with the same value/device/pakage.
+		Checks the search results for non-NULL product columns.
+		Return a set of candidate Product objects for this Part.'''
+		products = set()
+		try:
+			(con, cur) = wspace.con_cursor()
+			for proj in wspace.list_projects():
+				sql = """SELECT DISTINCT product FROM %s WHERE value=? INTERSECT
+				SELECT product FROM %s WHERE device=? INTERSECT
+				SELECT product FROM %s WHERE package=?""" % (proj, proj, proj)
+				t = (self.value, self.device, self.package,)
+				cur.execute(sql, t)
+				for row in cur.fetchall():
+					if row[0] != 'NULL':
+						db_prods = Product.select_by_pn(row[0], wspace)
+						for p in db_prods:
+							products.add(p)
+		finally:
+			cur.close()
+			con.close()
+			return products
+	
 	def is_in_db(self, project, wspace):
 		''' Check if a BOM part of this name is in the project's database. '''
 		result = Part.select_by_name(self.name, project, wspace)

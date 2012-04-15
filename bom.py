@@ -223,14 +223,26 @@ class BOM:
 					old_part = Part.select_by_name(part.name, self.name, wspace)[0]
 					print "old_part: ", old_part.name, old_part.value, old_part.package, old_part.product
 					if(part.value == old_part.value and part.device == old_part.device and part.package == old_part.package):
-						if old_part.product != 'none':
+						if old_part.product != 'NULL':
 							print "Part found in DB with existing product ", old_part.product
 							part.product = old_part.product
 						else:
 							print "Part found in DB without product entry, overwriting..."
 							part.update(self.name, wspace)
 				else:
-					print "Part not in DB, inserting as", part.show()
+					print 'Part not in DB'
+					if part.product == 'NULL':
+						candidate_products = part.find_matching_products(wspace)
+						if len(candidate_products) == 0:
+							print 'No matching products found, inserting as-is', part.show()
+						elif len(candidate_products) == 1:
+							part.product = candidate_products[0].manufacturer_pn
+							print 'Found exactly one matching product, setting product and inserting', part.show()
+						else:
+							print 'Found multiple product matches, prompting for selection...'
+							# TODO: Currently going with first result, need to prompt for selection
+							part.product = candidate_products[0].manufacturer_pn
+					
 					part.insert(self.name, wspace)
 				self.parts.append([part.name, part.value, part.product])
 				
