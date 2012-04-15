@@ -149,27 +149,30 @@ class BOM:
 			cur.close()
 			con.close()
 	
-	def get_cost(self, wspace, runSize=1):
-		''' Get the total project BOM cost for a given production run size. '''
-		self.set_prod_counts()
+	def get_cost(self, wspace, run_size=1):
+		''' Get the total project BOM cost and unit price for a given production run size.
+		Returns a pair (unit_price, total_cost).'''
+		self.set_prod_counts(wspace)
 		project_prod_counts = self.prod_counts.copy()
-		cost = 0
+		unit_price = 0
+		total_cost = 0
 		for x in project_prod_counts.keys():
-			project_prod_counts[x] = self.prod_counts[x] * runSize
+			project_prod_counts[x] = self.prod_counts[x] * run_size
 			
 		for x in project_prod_counts.items():
 			# Find x[0] (the dict key) in the product DB
-			if x[0] is 'NULL':
+			# x is [manufacturer_pn, qty]
+			if x[0] == 'NULL':
 				# TODO : Print a warning on screen?
 				print "Warning: BOM.get_cost() skipped a part with no product"
 			else:
 				prod = Product.select_by_pn(x[0], wspace)[0]
-				prod.fetch_listings(wspace)
-				listing = product.best_listing(project_prod_counts[x[0]])
+				listing = prod.best_listing(project_prod_counts[x[0]])
 				price_break = listing.get_price_break(x[1])
-				cost += (price_break[1] * project_prod_counts[x[0]]) + listing.reel_fee
+				unit_price += (price_break[1] * self.prod_counts[x[0]]) + listing.reel_fee
+				total_cost += (price_break[1] * project_prod_counts[x[0]]) + listing.reel_fee
 				
-		return cost
+		return (unit_price, total_cost)
 	
 	def update_parts(self, part):
 		''' Take in a Part, find it in self.parts, update product.name entry'''

@@ -93,7 +93,7 @@ class Listing:
 		self.series = ser	# "C" (TDK series C)
 	
 	def show(self):
-		''' A simple print method. '''
+		''' A verbose print method. '''
 		print 'Vendor: ', self.vendor, type(self.vendor)
 		print 'Vendor PN: ', self.vendor_pn, type(self.vendor_pn)
 		print 'Product MFG PN: ', self.manufacturer_pn, type(self.manufacturer_pn)
@@ -104,6 +104,11 @@ class Listing:
 		print 'Category: ', self.category, type(self.category)
 		print 'Family: ', self.family, type(self.family)
 		print 'Series: ', self.series, type(self.series)
+	
+	def show_brief(self):
+		''' A less verbose print method for easy debugging. '''
+		print self.key()
+		print 'Prices: ', self.prices.items()
 	
 	def equals(self, vp):
 		''' Compares the Listing to another Listing.'''
@@ -211,11 +216,14 @@ class Listing:
 		''' Returns the (price break, unit price) list pair for the given purchase quantity.
 		If qty is below the lowest break, the lowest is returned.
 		TODO : Raise some kind of error/warning if not ordering enough PCBs to make the lowest break.'''
-		breaks = self.prices.keys()
-		breaks.sort()
+		breaks = sorted(self.prices.keys())
+		#breaks.sort()
 		if breaks[0] > qty:
 			print "Warning: Purchase quantity is below minimum!"
-			return [breaks[0], self.prices[breaks[0]]]
+			if ENFORCE_MIN_QTY:
+				return None
+			else:
+				return [breaks[0], self.prices[breaks[0]]]
 			# TODO : GUI warning
 		for i in range(len(breaks)):
 			if breaks[i] == qty or breaks[i] == max(breaks):
@@ -373,15 +381,21 @@ class Product:
 		If the "enforce minimum quantities" option is checked in the program config,
 		only returns listings where the order quantity meets/exceeds the minimum
 		order quantity for the listing.'''
-		lowest_price = int('inf')
+		print 'Entering %s.best_listing(%s)' % (self.manufacturer_pn, str(qty))
+		best = None
+		lowest_price = float("inf")
 		for listing in self.listings.values():
+			listing.show_brief()
 			price_break = listing.get_price_break(qty)
-			if price_break[0] > qty and ENFORCE_MIN_QTY:
+			print 'price_break from listing.get_price_break( %s ) = ' % str(qty)
+			print price_break
+			if price_break == None or (price_break[0] > qty and ENFORCE_MIN_QTY):
 				pass
 			else:
 				if (price_break[1]*qty) + listing.reel_fee < lowest_price:
 					lowest_price = (price_break[1]*qty) + listing.reel_fee
 					best = listing
+					print 'Set best listing: ', best.show_brief()
 		return best
 	
 	def scrape_dk(self, wspace):

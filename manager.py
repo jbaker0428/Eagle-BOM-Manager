@@ -138,6 +138,8 @@ class Manager(gobject.GObject):
 			self.bom_store_populate_by_product()
 			
 		self.bom_tree_view.columns_autosize()
+		# TODO: Uncomment this when spin is working
+		#self.order_size_spin_callback(self.order_size_spin)
 		self.window.show_all()
 		
 	'''Callback for the "Read CSV" button on the BOM tab.'''
@@ -365,6 +367,14 @@ class Manager(gobject.GObject):
 			self.set_part_price_labels(self.bom_selected_product.listings[self.part_info_listing_combo.get_active_text()])
 			self.part_info_inventory_content_label.set_text(str(self.bom_selected_product.listings[self.part_info_listing_combo.get_active_text()].inventory))
 	
+	def order_size_spin_callback(self, widget):
+		''' Update the per-unit and total order prices when the order size
+		spin button is changed. '''
+		qty = self.order_size_spin.get_value_as_int()
+		(unit_price, total_cost) = self.active_bom.get_cost(wspace, qty)
+		self.order_unit_price_content_label.set_text('$'+str(unit_price))
+		self.order_total_cost_content_label.set_text('$'+str(total_cost))
+	
 	''' Clear self.db_product_store and repopulate it. '''
 	def db_store_populate(self):
 		self.db_product_store.clear()
@@ -496,7 +506,7 @@ class Manager(gobject.GObject):
 		# TODO: Set default active to user-selected listing
 		# If the user has not chosen one, that defaults to prod.best_listing
 		self.part_info_listing_combo.set_active(0)
-		self.part_info_row_box.show_all()
+		self.part_info_vbox.show_all()
 	
 	def destroy_part_price_labels(self):
 		for r in self.price_break_labels:
@@ -654,7 +664,7 @@ class Manager(gobject.GObject):
 		self.selected_bom_part = Part("init", "init", "init", "init", self.active_bom)
 		
 		self.part_info_frame = gtk.Frame("Part information") # Goes in top half of bom_vpane
-		self.part_info_row_box = gtk.VBox(False, 5) # Fill with HBoxes 
+		self.part_info_vbox = gtk.VBox(False, 5) # Fill with HBoxes 
 		
 		self.part_info_product_table = gtk.Table(5, 2, False) # Product info
 		self.part_info_manufacturer_label = gtk.Label("Manufacturer: ")
@@ -688,9 +698,19 @@ class Manager(gobject.GObject):
 		self.part_info_inventory_content_label = gtk.Label(None)
 		
 		self.pricing_frame = gtk.Frame("Project pricing") # Goes in bottom half of bom_vpane
-		self.order_size_scale_adjustment = gtk.Adjustment(1, 1, 10000, 1, 10, 200)
-		self.order_size_scale = gtk.HScale(self.order_size_scale_adjustment)
-		self.order_size_text = gtk.Entry(10000)
+		self.pricing_vbox = gtk.VBox(False, 5)
+		self.order_size_pin_label = gtk.Label("Number of kits: ")
+		#self.order_size_hbox = gtk.HBox(False, 5)
+		self.order_size_adjustment = gtk.Adjustment(1, 1, 99999, 1, 10, 0.0)
+		self.order_size_spin = gtk.SpinButton(self.order_size_adjustment, 0.5, 0)
+		#self.order_size_scale = gtk.HScale(self.order_size_adjustment)
+		#self.order_size_entry = gtk.Entry(10000)
+		self.order_unit_price_hbox = gtk.HBox(False, 5)
+		self.order_unit_price_label= gtk.Label("Per-kit BOM cost: ")
+		self.order_unit_price_content_label= gtk.Label("\t")
+		self.order_total_price_hbox = gtk.HBox(False, 5)
+		self.order_total_cost_label= gtk.Label("Total cost: ")
+		self.order_total_cost_content_label= gtk.Label("\t")
 		
 		# --- Product DB tab ---
 		self.db_vbox = gtk.VBox(False, 0) # Third tab in notebook
@@ -739,7 +759,7 @@ class Manager(gobject.GObject):
 		self.notebook.append_page(self.db_vbox, self.db_tab_label)
 		self.notebook.set_show_tabs(True)
 		
-		# Project selection tab
+		# ---- Project selection tab ----
 		self.project_new_button.connect("clicked", self.project_new_callback)
 		self.new_project_input_file_button.connect("clicked", self.new_project_input_file_callback)
 		
@@ -777,7 +797,7 @@ class Manager(gobject.GObject):
 		self.project_store_populate()
 		self.project_tree_view.set_model(self.project_store)
 		
-		# BOM tab
+		# ---- BOM tab ----
 		
 		self.bom_name_column.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
 		self.bom_value_column.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
@@ -856,6 +876,7 @@ class Manager(gobject.GObject):
 		self.bom_group_value.connect("toggled", self.bom_group_callback, "value")
 		self.bom_group_product.connect("toggled", self.bom_group_callback, "product")
 		
+		# --- Part Info frame ---
 		self.part_info_inventory_label.set_alignment(0.0, 0.5)
 		self.part_info_inventory_content_label.set_alignment(0.0, 0.5)
 		self.part_info_manufacturer_label.set_alignment(0.0, 0.5)
@@ -871,6 +892,20 @@ class Manager(gobject.GObject):
 		self.part_info_scrape_button.connect("clicked", self.part_info_scrape_button_callback)
 		self.part_info_listing_label.set_alignment(0.0, 0.5)
 		self.part_info_listing_combo.connect("changed", self.part_info_listing_combo_callback)
+		
+		# --- Pricing frame ---
+		self.order_size_pin_label.set_alignment(0.0, 0.5)
+		self.order_unit_price_label.set_alignment(0.0, 0.5)
+		self.order_unit_price_content_label.set_alignment(0.0, 0.5)
+		self.order_total_cost_label.set_alignment(0.0, 0.5)
+		self.order_total_cost_content_label.set_alignment(0.0, 0.5)
+		self.order_size_spin.set_numeric(True)
+		self.order_size_spin.set_update_policy(gtk.UPDATE_IF_VALID)
+		self.order_size_spin.connect("value-changed", self.order_size_spin_callback)
+		#self.order_size_scale.set_draw_value(False)
+		#self.order_size_scale.set_digits(0)
+		
+		# ---- Product DB tab ----
 		
 		self.db_scroll_win.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
 		self.db_read_database_button.connect("clicked", self.db_read_database_callback, "read")
@@ -1021,8 +1056,8 @@ class Manager(gobject.GObject):
 		self.bom_radio_hbox.pack_start(self.bom_group_product)
 		
 		# Part info frame elements
-		self.part_info_frame.add(self.part_info_row_box)
-		self.part_info_row_box.pack_start(self.part_info_product_table, True, True, 5)
+		self.part_info_frame.add(self.part_info_vbox)
+		self.part_info_vbox.pack_start(self.part_info_product_table, True, True, 5)
 		#self.part_info_product_table.attach(self.partInfoVendorLabel1, 0, 1, 0, 1)
 		#self.part_info_product_table.attach(self.partInfovendor_pnLabel1, 0, 1, 1, 2)
 		#self.part_info_product_table.attach(self.part_info_inventory_label, 0, 1, 2, 3)
@@ -1047,17 +1082,31 @@ class Manager(gobject.GObject):
 		#self.part_info_product_table.attach(self.partInfoSeriesLabel2, 1, 2, 9, 10)
 		self.part_info_product_table.attach(self.part_info_package_content_label, 1, 2, 4, 5)
 		
-		self.part_info_row_box.pack_start(self.part_info_button_hbox, True, True, 5)
+		self.part_info_vbox.pack_start(self.part_info_button_hbox, True, True, 5)
 		self.part_info_button_hbox.pack_start(self.part_info_scrape_button, True, True, 5)
 		self.part_info_button_hbox.pack_start(self.part_info_datasheet_button, True, True, 5)
-		self.part_info_row_box.pack_start(self.part_info_listing_label, False, False, 0)
-		self.part_info_row_box.pack_start(self.part_info_listing_combo, False, False, 0)
+		self.part_info_vbox.pack_start(self.part_info_listing_label, False, False, 0)
+		self.part_info_vbox.pack_start(self.part_info_listing_combo, False, False, 0)
 		self.part_info_inventory_hbox.pack_start(self.part_info_inventory_label, False, False, 0)
 		self.part_info_inventory_hbox.pack_start(self.part_info_inventory_content_label, False, False, 0)
-		self.part_info_row_box.pack_start(self.part_info_inventory_hbox, False, False, 0)
-		self.part_info_row_box.pack_start(self.part_info_pricing_table, True, True, 5)
+		self.part_info_vbox.pack_start(self.part_info_inventory_hbox, False, False, 0)
+		self.part_info_vbox.pack_start(self.part_info_pricing_table, True, True, 5)
 		
+		# Pricing frame elements
+		self.pricing_frame.add(self.pricing_vbox)
+		self.pricing_vbox.pack_start(self.order_size_pin_label, False, False, 0)
+		#self.pricing_vbox.pack_start(self.order_size_hbox, False, False, 0)
+		#self.order_size_hbox.pack_start(self.order_size_scale, False, False, 0)
+		#self.order_size_hbox.pack_start(self.order_size_entry, False, False, 0)
+		self.pricing_vbox.pack_start(self.order_size_spin, False, False, 0)
+		self.pricing_vbox.pack_start(self.order_unit_price_hbox, False, False, 0)
+		self.order_unit_price_hbox.pack_start(self.order_unit_price_label, False, False, 0)
+		self.order_unit_price_hbox.pack_start(self.order_unit_price_content_label, False, False, 0)
+		self.pricing_vbox.pack_start(self.order_total_price_hbox, False, False, 0)
+		self.order_total_price_hbox.pack_start(self.order_total_cost_label, False, False, 0)
+		self.order_total_price_hbox.pack_start(self.order_total_cost_content_label, False, False, 0)
 		
+		# Product database tab elements
 		self.db_vbox.pack_start(self.db_toolbar, False)
 		self.db_toolbar.insert(self.db_read_database_button, 0)
 		self.db_vbox.pack_start(self.db_frame)
