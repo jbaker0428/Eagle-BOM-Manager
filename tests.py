@@ -55,7 +55,7 @@ class DatabaseTestCase(unittest.TestCase):
 		
 		# Product.select_by_pn fetches listings for the product, and fetchListings fetches the price dicts
 		retProducts = Product.select_by_pn(self.testProduct.manufacturer_pn, self.wspace)
-		
+		assert self.testProduct.isInDB(self.wspace)
 		# Should only return one result:
 		assert len(retProducts) == 1
 		
@@ -69,13 +69,14 @@ class DatabaseTestCase(unittest.TestCase):
 		retParts = bomPart.select_by_name(self.testPart.name, self.testBOM.name, self.wspace)
 		assert len(retParts) == 1
 		assert self.testPart.equals(retParts[0])
-		
+		assert self.testPart.isInDB(self.testBOM.name, self.wspace)
 		retParts = self.testBOM.select_parts_by_name(self.testPart.name, self.wspace)
 		assert len(retParts) == 1
 		assert self.testPart.equals(retParts[0])
 		
 		self.testPart.delete(self.testBOM.name, self.wspace)
 		assert len(self.testBOM.select_parts_by_name(self.testPart.name, self.wspace)) == 0
+		assert self.testPart.isInDB(self.testBOM.name, self.wspace) == False
 		
 		assert len (vendorProduct.select_by_manufacturer_pn(self.testProduct.manufacturer_pn, self.wspace)) == 3
 		self.testListingCT.delete(self.wspace)
@@ -91,6 +92,7 @@ class DatabaseTestCase(unittest.TestCase):
 		assert len(Product.select_by_pn(self.testProduct.manufacturer_pn, self.wspace)) == 1
 		self.testProduct.delete(self.wspace)
 		assert len(Product.select_by_pn(self.testProduct.manufacturer_pn, self.wspace)) == 0
+		assert self.testProduct.isInDB(self.wspace) == False
 		
 		self.testBOM.delete(self.wspace)
 		self.wspace.projects = self.wspace.listProjects()

@@ -622,32 +622,13 @@ class Product:
 				
 
 	def isInDB(self, wspace):
-		try:
-			(con, cur) = wspace.con_cursor()
-			
-			symbol = (self.manufacturer_pn,)
-			cur.execute('SELECT * FROM products WHERE manufacturer_pn=?', symbol)
-			#rows = cur.fetchall
-			#if len(rows) == 0:
-			#	return False
-			#else:
-			#	return True
-			row = cur.fetchone()
-			#if row == tuple:
-			#	return True
-			#else:
-			#	return False
-			print 'Row: ', row
-			#print 'Rows: ', rows
-			
-		finally:
-			cur.close()
-			con.close()
-			if row is None:
-				return False
-			else:
-				return True
-		
+		''' Check if this Product is in the database. '''
+		result = Product.select_by_pn(self.manufacturer_pn, wspace)
+		if len(result) == 0:
+			return False
+		else:
+			return True
+
 	''' Sets the product fields, pulling from the local DB if possible.'''	
 	def selectOrScrape(self, wspace):
 		if(self.isInDB(wspace)):

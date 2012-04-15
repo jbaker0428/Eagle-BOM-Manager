@@ -112,21 +112,11 @@ class bomPart:
 	
 	def isInDB(self, project, wspace):
 		''' Check if a BOM part of this name is in the project's database. '''
-		try:
-			(con, cur) = wspace.con_cursor()
-			
-			sql = 'SELECT * FROM %s WHERE name=?' % project
-			symbol = (self.name,)
-			cur.execute(sql, symbol)
-			row = cur.fetchone()
-			if row == tuple:
-				return True
-			else:
-				return False
-			
-		finally:
-			cur.close()
-			con.close()
+		result = bomPart.select_by_name(self.name, project, wspace)
+		if len(result) == 0:
+			return False
+		else:
+			return True
 	
 	def update(self, project, wspace):
 		''' Update an existing bomPart record in the DB. '''
