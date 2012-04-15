@@ -4,7 +4,7 @@ import shutil
 import os
 import urlparse
 import sqlite3
-from urbm import Workspace
+from manager import Workspace
 
 def getFileName(url,openUrl):
 	if 'Content-Disposition' in openUrl.info():

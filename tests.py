@@ -1,12 +1,12 @@
 import os
 import unittest
-from urbm import Workspace
+from manager import Workspace
 
 class DatabaseTestCase(unittest.TestCase):
 	def setUp(self):
 		unittest.TestCase.setUp(self)
-		from urbm_product import *
-		from urbm_bompart import bomPart
+		from product import *
+		from part import bomPart
 		
 		self.wspace = Workspace('DB Tests', os.path.join(os.getcwd(), 'dbtests.sqlite'))
 		
@@ -24,9 +24,9 @@ class DatabaseTestCase(unittest.TestCase):
 		
 	def testdb(self):
 		self.wspace.createTables()
-		from urbm_product import Product, vendorProduct
-		from urbm_bompart import bomPart
-		from urbm_bom import BOM
+		from product import Product, vendorProduct
+		from part import bomPart
+		from bom import BOM
 		tables = []
 		(con, cur) = self.wspace.con_cursor()
 		cur.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")

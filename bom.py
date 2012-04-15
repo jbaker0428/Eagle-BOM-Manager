@@ -4,9 +4,9 @@ import os
 import urlparse
 from operator import itemgetter
 import sqlite3
-from urbm import Workspace
-from urbm_bompart import bomPart
-from urbm_product import Product
+from manager import Workspace
+from part import bomPart
+from product import Product
 
 			
 class BOM:

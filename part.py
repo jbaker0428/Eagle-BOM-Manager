@@ -1,6 +1,6 @@
 import types
 import sqlite3
-from urbm import Workspace
+from manager import Workspace
 
 class bomPart:
 	''' A part in the BOM exported from Eagle. '''

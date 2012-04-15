@@ -10,7 +10,7 @@ import gobject
 
 class Workspace:
 	''' Each Workspace has its own persistent database file. '''
-	db0 = os.path.join(os.getcwd(), 'urbm.sqlite')
+	db0 = os.path.join(os.getcwd(), 'workspace.sqlite')
 	
 	def __init__(self, name='Workspace', db=db0):
 		self.name = name
@@ -75,14 +75,14 @@ class Workspace:
 			cur.close()
 			con.close()
 
-urbmDB = Workspace()
-urbmDB.createTables()
-urbmDB.projects = urbmDB.listProjects()
+wspace = Workspace()
+wspace.createTables()
+wspace.projects = wspace.listProjects()
 
 #activeProjectName = 'test1'
 inputFile = os.path.join(os.getcwd(), "test.csv")	# TODO: Test dummy
 
-#active_bom = BOM("test1", 'Test BOM 1', urbmDB, os.path.join(os.getcwd(), "test.csv"))
+#active_bom = BOM("test1", 'Test BOM 1', wspace, os.path.join(os.getcwd(), "test.csv"))
 
 
 class Manager(gobject.GObject):
@@ -106,7 +106,7 @@ class Manager(gobject.GObject):
 		response = self.newProjectDialog.run()
 		self.newProjectDialog.hide()
 		newName = self.newProjectNameEntry.get_text()
-		curProjects = urbmDB.listProjects()
+		curProjects = wspace.listProjects()
 		if newName in curProjects:
 			print 'Error: Name in use!'
 			self.projectNameTakenDialog.run()
@@ -114,7 +114,7 @@ class Manager(gobject.GObject):
 		elif response == gtk.RESPONSE_ACCEPT: 
 			# Create project
 			print 'Creating new project'
-			new = BOM.newProject(newName, self.newProjectDescriptionEntry.get_text(), self.newProjectInputFileEntry.get_text(), urbmDB)
+			new = BOM.newProject(newName, self.newProjectDescriptionEntry.get_text(), self.newProjectInputFileEntry.get_text(), wspace)
 			self.projectStorePopulate()
 		self.newProjectNameEntry.set_text('')
 		self.newProjectDescriptionEntry.set_text('')
@@ -123,9 +123,9 @@ class Manager(gobject.GObject):
 		
 	def projectOpenCallback(self, widget, data=None):
 		(model, rowIter) = self.projectTreeView.get_selection().get_selected()
-		self.active_bom = BOM.readFromDB(model.get(rowIter,0)[0], urbmDB)[0]
+		self.active_bom = BOM.readFromDB(model.get(rowIter,0)[0], wspace)[0]
 		self.activeProjectName = model.get(rowIter,0)[0]
-		self.active_bom.parts = self.active_bom.readPartsListFromDB(urbmDB)
+		self.active_bom.parts = self.active_bom.readPartsListFromDB(wspace)
 		inputFile = model.get(rowIter,3)[0]
 		print self.active_bom, type(self.active_bom)
 		#print 'Project name: ', self.activeProjectName
@@ -142,7 +142,7 @@ class Manager(gobject.GObject):
 		
 	'''Callback for the "Read CSV" button on the BOM tab.'''
 	def readInputCallback(self, widget, data=None):
-		self.active_bom.readFromFile(urbmDB)
+		self.active_bom.readFromFile(wspace)
 		if self.bomGroupName.get_active():
 			self.bomStorePopulateByName()
 		elif self.bomGroupValue.get_active():
@@ -170,7 +170,7 @@ class Manager(gobject.GObject):
 		(model, rowIter) = self.bomTreeView.get_selection().get_selected()
 		#print 'rowIter is: ', rowIter, '\n'
 		#print 'model.get(rowIter,0)[0] is: ', model.get(rowIter,0)[0]
-		self.selectedBomPart = self.active_bom.select_parts_by_name(model.get(rowIter,0)[0], urbmDB)[0]
+		self.selectedBomPart = self.active_bom.select_parts_by_name(model.get(rowIter,0)[0], wspace)[0]
 		# Grab the vendor part number for the selected item from the label text
 		selectedPN = model.get(rowIter,5)[0]
 		print "selectedPN is: %s" % selectedPN
@@ -179,8 +179,8 @@ class Manager(gobject.GObject):
 			print "Querying with selectedPN: %s" % selectedPN
 			self.bomSelectedProduct.manufacturer_pn = selectedPN
 			
-			self.bomSelectedProduct.selectOrScrape(urbmDB)
-			self.bomSelectedProduct.fetchListings(urbmDB)
+			self.bomSelectedProduct.selectOrScrape(wspace)
+			self.bomSelectedProduct.fetchListings(wspace)
 			#self.bomSelectedProduct.show()
 			self.setPartInfoLabels(self.bomSelectedProduct)
 			self.setPartInfoListingCombo(self.bomSelectedProduct)
@@ -344,9 +344,9 @@ class Manager(gobject.GObject):
 			# We need to check the products table for this Product, creating an entry
 			# for it if necessary, before updating selectedBomPart in the DB.
 			self.bomSelectedProduct.manufacturer_pn = self.productEntryText
-			self.bomSelectedProduct.selectOrScrape(urbmDB)
+			self.bomSelectedProduct.selectOrScrape(wspace)
 			
-			self.selectedBomPart.update(self.active_bom.name, urbmDB)
+			self.selectedBomPart.update(self.active_bom.name, wspace)
 			self.active_bom.updateParts(self.selectedBomPart)
 			
 			if self.bomGroupName.get_active():
@@ -364,7 +364,7 @@ class Manager(gobject.GObject):
 	
 	def partInfoScrapeButtonCallback(self, widget):
 		''' Part info frame "Refresh" button callback. '''
-		self.bomSelectedProduct.scrape(urbmDB)
+		self.bomSelectedProduct.scrape(wspace)
 		if self.bomGroupName.get_active():
 			self.bomStorePopulateByName()
 		elif self.bomGroupValue.get_active():
@@ -381,7 +381,7 @@ class Manager(gobject.GObject):
 	''' Clear self.dbProductStore and repopulate it. '''
 	def dbStorePopulate(self):
 		self.dbProductStore.clear()
-		prods = Product.select_all(urbmDB)
+		prods = Product.select_all(wspace)
 		for p in prods:
 			iter = self.dbProductStore.append([p.manufacturer, p.manufacturer_pn, p.description, p.datasheet, p.package])
 		self.dbTreeView.columns_autosize()
@@ -395,7 +395,7 @@ class Manager(gobject.GObject):
 	def dbSelectionCallback(self, widget, data=None):
 		# Set class fields for currently selected item
 		(model, rowIter) = self.dbTreeView.get_selection().get_selected()
-		self.dbSelectedProduct = Product.select_by_pn(model.get(rowIter,1)[0], urbmDB)[0]
+		self.dbSelectedProduct = Product.select_by_pn(model.get(rowIter,1)[0], wspace)[0]
 	
 	'''Callback method activated by clicking a DB column header.
 	Sorts the DB TreeView by the values in the clicked column.'''
@@ -406,23 +406,23 @@ class Manager(gobject.GObject):
 	def projectStorePopulate(self):
 		self.projectStore.clear()
 		# Columns: Name, Description, Database, Input File
-		projectsList = urbmDB.listProjects()
+		projectsList = wspace.listProjects()
 		#print 'projectsList: ', projectsList
 		for p in projectsList:
 			if type(p) is types.NoneType:
 				print 'NoneType caught in projectsList'
 			elif p != 'dummy':
 				#print 'p = ', p
-				bom = BOM.readFromDB(p, urbmDB)[0]
+				bom = BOM.readFromDB(p, wspace)[0]
 				print 'Returned BOM: ', bom, type(bom)
-				iter = self.projectStore.append([bom.name, bom.description, urbmDB.name, bom.input])
+				iter = self.projectStore.append([bom.name, bom.description, wspace.name, bom.input])
 		self.projectTreeView.columns_autosize()
 	
 	def bomStorePopulateByName(self):
 		''' Clear self.bomStore and repopulate it, grouped by name. '''
 		self.bomStore.clear()
 		for p in self.active_bom.parts:
-			temp = self.active_bom.select_parts_by_name(p[0], urbmDB)[0]
+			temp = self.active_bom.select_parts_by_name(p[0], wspace)[0]
 			iter = self.bomStore.append([temp.name, temp.value, temp.device, temp.package, temp.description, temp.product, 1])
 		
 		self.bomTreeView.columns_autosize()
@@ -437,7 +437,7 @@ class Manager(gobject.GObject):
 			groupName = "\t"	# Clear groupName and prepend a tab
 			# TODO: Does this split up parts of the same value but different package?
 			# If not, the "part number" column will be bad
-			group = self.active_bom.select_parts_by_value(val, urbmDB)
+			group = self.active_bom.select_parts_by_value(val, wspace)
 			for part in group:
 				groupName += part.name + ", "
 			
@@ -452,7 +452,7 @@ class Manager(gobject.GObject):
 		''' Clear self.bomStore and repopulate it, grouped by part number. '''	
 		self.bomStore.clear()
 		self.active_bom.sortByProd()
-		self.active_bom.setProdCounts(urbmDB)
+		self.active_bom.setProdCounts(wspace)
 		
 		for prod in self.active_bom.prodCounts.keys():
 			groupName = "\t"	# Clear groupName and prepend a tab
@@ -460,9 +460,9 @@ class Manager(gobject.GObject):
 			# Catch empty product string
 			if prod == ' ' or len(prod) == 0 or prod == 'none' or prod == 'NULL': 
 				print "Caught empty product"
-				group = self.active_bom.select_parts_by_product('NULL', urbmDB)
+				group = self.active_bom.select_parts_by_product('NULL', wspace)
 			else:
-				group = self.active_bom.select_parts_by_product(prod, urbmDB)
+				group = self.active_bom.select_parts_by_product(prod, wspace)
 			print "Group: \n", group
 			for part in group:	# TODO: Ensure this data is what we expect
 				groupName += part.name + ", "
@@ -676,7 +676,7 @@ class Manager(gobject.GObject):
 		self.bomGroupValue = gtk.RadioButton(self.bomGroupName, "Value")
 		self.bomGroupPN = gtk.RadioButton(self.bomGroupName, "Part Number")
 		
-		self.bomSelectedProduct = Product("init", "init", urbmDB)
+		self.bomSelectedProduct = Product("init", "init", wspace)
 		self.selectedBomPart = bomPart("init", "init", "init", "init", self.active_bom)
 		
 		self.partInfoFrame = gtk.Frame("Part information") # Goes in top half of bomVPane
@@ -764,7 +764,7 @@ class Manager(gobject.GObject):
 		self.dbTreeView = gtk.TreeView()
 		
 		# -------- CONFIGURATION --------
-		self.window.set_title("Unified Robotics BOM Manager") 
+		self.window.set_title("Eagle BOM Manager") 
 		# TODO: Add project name to window title on file open
 		self.window.connect("delete_event", self.delete_event)
 		self.window.connect("destroy", self.destroy)
@@ -1116,8 +1116,8 @@ def main():
 	gtk.main()
 	
 if __name__ == "__main__":
-	from urbm_product import *
-	from urbm_bompart import bomPart
-	from urbm_bom import BOM
+	from product import *
+	from part import bomPart
+	from bom import BOM
 	Manager()
 	main()
