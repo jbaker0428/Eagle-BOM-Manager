@@ -2,12 +2,12 @@ import types
 import sqlite3
 from manager import Workspace
 
-class bomPart:
+class Part:
 	''' A part in the BOM exported from Eagle. '''
 	
 	@staticmethod
 	def select_by_name(name, project, wspace):
-		''' Return the bomPart(s) of given name. '''
+		''' Return the Part(s) of given name. '''
 		parts = []
 		try:
 			(con, cur) = wspace.con_cursor()
@@ -16,7 +16,7 @@ class bomPart:
 			symbol = (name,)
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
-				part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
+				part = Part(row[0], row[1], row[2], row[3], row[4], row[5])
 				parts.append(part)
 			
 		finally:
@@ -26,7 +26,7 @@ class bomPart:
 	
 	@staticmethod
 	def select_by_value(val, project, wspace):
-		''' Return the bomPart(s) of given value in a list. '''
+		''' Return the Part(s) of given value in a list. '''
 		parts = []
 		try:
 			(con, cur) = wspace.con_cursor()
@@ -35,7 +35,7 @@ class bomPart:
 			symbol = (val,)
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
-				part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
+				part = Part(row[0], row[1], row[2], row[3], row[4], row[5])
 				parts.append(part)
 			
 		finally:
@@ -45,7 +45,7 @@ class bomPart:
 		
 	@staticmethod
 	def select_by_product(prod, project, wspace):
-		''' Return the bomPart(s) of given product in a list. '''
+		''' Return the Part(s) of given product in a list. '''
 		parts = []
 		try:
 			(con, cur) = wspace.con_cursor()
@@ -54,7 +54,7 @@ class bomPart:
 			symbol = (prod,)
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
-				part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
+				part = Part(row[0], row[1], row[2], row[3], row[4], row[5])
 				parts.append(part)
 			
 		finally:
@@ -80,7 +80,7 @@ class bomPart:
 		print 'Product: ', self.product, type(self.product)
 		
 	def equals(self, p):
-		''' Compares the bomPart to another bomPart.'''
+		''' Compares the Part to another Part.'''
 		if type(p) != type(self):
 			return False
 		eq = True
@@ -99,9 +99,9 @@ class bomPart:
 		return eq
 		
 
-	def findInFile(self, bomFile):
+	def findInFile(self, bom_file):
 		''' Check if a BOM part of this name is in the given CSV BOM. '''
-		with open(bomFile, 'rb') as f:
+		with open(bom_file, 'rb') as f:
 			db = csv.reader(f, delimiter=',', quotechar = '"', quoting=csv.QUOTE_ALL)
 			rownum = 0
 			for row in db:
@@ -110,16 +110,16 @@ class bomPart:
 				rownum = rownum + 1
 			return -1
 	
-	def isInDB(self, project, wspace):
+	def is_in_db(self, project, wspace):
 		''' Check if a BOM part of this name is in the project's database. '''
-		result = bomPart.select_by_name(self.name, project, wspace)
+		result = Part.select_by_name(self.name, project, wspace)
 		if len(result) == 0:
 			return False
 		else:
 			return True
 	
 	def update(self, project, wspace):
-		''' Update an existing bomPart record in the DB. '''
+		''' Update an existing Part record in the DB. '''
 		try:
 			(con, cur) = wspace.con_cursor()
 				
@@ -133,7 +133,7 @@ class bomPart:
 			con.close()
 	
 	def insert(self, project, wspace):
-		''' Write the bomPart to the DB. '''
+		''' Write the Part to the DB. '''
 		try:
 			(con, cur) = wspace.con_cursor()
 			
@@ -143,12 +143,11 @@ class bomPart:
 			cur.execute(sql, symbol)
 			
 		finally:
-			#con.commit()
 			cur.close()
 			con.close()
 	
 	def delete(self, project, wspace):
-		''' Delete the bomPart from the DB. '''
+		''' Delete the Part from the DB. '''
 		try:
 			(con, cur) = wspace.con_cursor()
 			

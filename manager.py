@@ -26,7 +26,7 @@ class Workspace:
 		cur = con.cursor()
 		return (con, cur)
 		
-	def listProjects(self):
+	def list_projects(self):
 		''' Returns a list of BOM project tables in the DB. '''
 		projects = []
 		try:
@@ -40,7 +40,7 @@ class Workspace:
 			con.close()
 			return projects
 	
-	def createTables(self):
+	def create_tables(self):
 		''' Create the workspace-wide database tables. '''		
 		try:
 			(con, cur) = self.con_cursor()
@@ -54,10 +54,10 @@ class Workspace:
 			package TEXT)''')
 			cur.execute("INSERT OR REPLACE INTO products VALUES ('NULL','NULL','NULL','NULL','NULL')")
 			
-			cur.execute('''CREATE TABLE IF NOT EXISTS vendorproducts
+			cur.execute('''CREATE TABLE IF NOT EXISTS listings
 			(vendor TEXT, 
 			vendor_pn TEXT PRIMARY KEY, 
-			mfg_pn TEXT REFERENCES products(manufacturer_pn), 
+			manufacturer_pn TEXT REFERENCES products(manufacturer_pn), 
 			inventory INTEGER, 
 			packaging TEXT,
 			reelfee FLOAT, 
@@ -67,7 +67,7 @@ class Workspace:
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS pricebreaks
 			(id INTEGER PRIMARY KEY,
-			pn TEXT REFERENCES vendorproducts(vendor_pn), 
+			pn TEXT REFERENCES listings(vendor_pn), 
 			qty INTEGER,
 			unit DOUBLE)''')
 						
@@ -76,11 +76,11 @@ class Workspace:
 			con.close()
 
 wspace = Workspace()
-wspace.createTables()
-wspace.projects = wspace.listProjects()
+wspace.create_tables()
+wspace.projects = wspace.list_projects()
 
-#activeProjectName = 'test1'
-inputFile = os.path.join(os.getcwd(), "test.csv")	# TODO: Test dummy
+#active_project_name = 'test1'
+input_file = os.path.join(os.getcwd(), "test.csv")	# TODO: Test dummy
 
 #active_bom = BOM("test1", 'Test BOM 1', wspace, os.path.join(os.getcwd(), "test.csv"))
 
@@ -96,124 +96,123 @@ class Manager(gobject.GObject):
 
 	# -------- CALLBACK METHODS --------
 	''' Callback for the input file Open dialog in the New Project dialog. '''
-	def newProjectInputFileCallback(self, widget, data=None):
-		self.inputFileDialog.run()
-		self.inputFileDialog.hide()
-		self.newProjectInputFileEntry.set_text(self.inputFileDialog.get_filename())
+	def new_project_input_file_callback(self, widget, data=None):
+		self.input_file_dialog.run()
+		self.input_file_dialog.hide()
+		self.new_project_input_file_entry.set_text(self.input_file_dialog.get_filename())
 	
 	'''Callback for the New Project button. '''
-	def projectNewCallback(self, widget, data=None):
-		response = self.newProjectDialog.run()
-		self.newProjectDialog.hide()
-		newName = self.newProjectNameEntry.get_text()
-		curProjects = wspace.listProjects()
-		if newName in curProjects:
+	def project_new_callback(self, widget, data=None):
+		response = self.new_project_dialog.run()
+		self.new_project_dialog.hide()
+		new_name = self.new_project_name_entry.get_text()
+		curProjects = wspace.list_projects()
+		if new_name in curProjects:
 			print 'Error: Name in use!'
-			self.projectNameTakenDialog.run()
-			self.projectNameTakenDialog.hide()
+			self.project_name_taken_dialog.run()
+			self.project_name_taken_dialog.hide()
 		elif response == gtk.RESPONSE_ACCEPT: 
 			# Create project
 			print 'Creating new project'
-			new = BOM.newProject(newName, self.newProjectDescriptionEntry.get_text(), self.newProjectInputFileEntry.get_text(), wspace)
-			self.projectStorePopulate()
-		self.newProjectNameEntry.set_text('')
-		self.newProjectDescriptionEntry.set_text('')
-		#self.newProjectWorkspaceEntry.set_text('')
-		self.newProjectInputFileEntry.set_text('')
+			new = BOM.new_project(new_name, self.new_project_description_entry.get_text(), self.new_project_input_file_entry.get_text(), wspace)
+			self.project_store_populate()
+		self.new_project_name_entry.set_text('')
+		self.new_project_description_entry.set_text('')
+		#self.new_project_workspace_entry.set_text('')
+		self.new_project_input_file_entry.set_text('')
 		
-	def projectOpenCallback(self, widget, data=None):
-		(model, rowIter) = self.projectTreeView.get_selection().get_selected()
-		self.active_bom = BOM.readFromDB(model.get(rowIter,0)[0], wspace)[0]
-		self.activeProjectName = model.get(rowIter,0)[0]
-		self.active_bom.parts = self.active_bom.readPartsListFromDB(wspace)
-		inputFile = model.get(rowIter,3)[0]
+	def project_open_callback(self, widget, data=None):
+		(model, row_iter) = self.project_tree_view.get_selection().get_selected()
+		self.active_bom = BOM.read_from_db(model.get(row_iter,0)[0], wspace)[0]
+		self.active_project_name = model.get(row_iter,0)[0]
+		self.active_bom.parts = self.active_bom.read_parts_list_from_db(wspace)
+		input_file = model.get(row_iter,3)[0]
 		print self.active_bom, type(self.active_bom)
-		#print 'Project name: ', self.activeProjectName
-		#print 'Project CSV: ', inputFile
-		if self.bomGroupName.get_active():
-			self.bomStorePopulateByName()
-		elif self.bomGroupValue.get_active():
-			self.bomStorePopulateByVal()
-		elif self.bomGroupPN.get_active():
-			self.bomStorePopulateByPN()
+		#print 'Project name: ', self.active_project_name
+		#print 'Project CSV: ', input_file
+		if self.bom_group_name.get_active():
+			self.bom_store_populate_by_name()
+		elif self.bom_group_value.get_active():
+			self.bom_store_populate_by_value()
+		elif self.bom_group_product.get_active():
+			self.bom_store_populate_by_product()
 			
-		self.bomTreeView.columns_autosize()
+		self.bom_tree_view.columns_autosize()
 		self.window.show_all()
 		
 	'''Callback for the "Read CSV" button on the BOM tab.'''
-	def readInputCallback(self, widget, data=None):
-		self.active_bom.readFromFile(wspace)
-		if self.bomGroupName.get_active():
-			self.bomStorePopulateByName()
-		elif self.bomGroupValue.get_active():
-			self.bomStorePopulateByValue()
-		elif self.bomGroupPN.get_active():
-			self.bomStorePopulateByPN()
+	def read_input_callback(self, widget, data=None):
+		self.active_bom.read_from_file(wspace)
+		if self.bom_group_name.get_active():
+			self.bom_store_populate_by_name()
+		elif self.bom_group_value.get_active():
+			self.bom_store_populate_by_value()
+		elif self.bom_group_product.get_active():
+			self.bom_store_populate_by_product()
 		self.window.show_all()
 	
 	'''Callback for the "Read DB" button on the BOM tab.'''
-	def bomReadDBCallback(self, widget, data=None):
-		print "Read DB callback"
-		print 'Project name: ', self.activeProjectName
-		print 'Parts list = ', self.active_bom.parts
-		if self.bomGroupName.get_active():
-			self.bomStorePopulateByName()
-		elif self.bomGroupValue.get_active():
-			self.bomStorePopulateByVal()
-		elif self.bomGroupPN.get_active():
-			self.bomStorePopulateByPN()
+	def bom_read_db_callback(self, widget, data=None):
+		#print "BOM Read DB callback"
+		#print 'Parts list = ', self.active_bom.parts
+		if self.bom_group_name.get_active():
+			self.bom_store_populate_by_name()
+		elif self.bom_group_value.get_active():
+			self.bom_store_populate_by_value()
+		elif self.bom_group_product.get_active():
+			self.bom_store_populate_by_product()
 		self.window.show_all()
 	
 	'''Callback method triggered when a BOM line item is selected.'''
-	def bomSelectionCallback(self, widget, data=None):
+	def bom_selection_callback(self, widget, data=None):
 		# Set class fields for currently selected item
-		(model, rowIter) = self.bomTreeView.get_selection().get_selected()
-		#print 'rowIter is: ', rowIter, '\n'
-		#print 'model.get(rowIter,0)[0] is: ', model.get(rowIter,0)[0]
-		self.selectedBomPart = self.active_bom.select_parts_by_name(model.get(rowIter,0)[0], wspace)[0]
+		(model, row_iter) = self.bom_tree_view.get_selection().get_selected()
+		#print 'row_iter is: ', row_iter, '\n'
+		#print 'model.get(row_iter,0)[0] is: ', model.get(row_iter,0)[0]
+		self.selected_bom_part = self.active_bom.select_parts_by_name(model.get(row_iter,0)[0], wspace)[0]
 		# Grab the vendor part number for the selected item from the label text
-		selectedPN = model.get(rowIter,5)[0]
-		print "selectedPN is: %s" % selectedPN
-		if selectedPN != 'NULL': # Look up part in DB
+		selected_product = model.get(row_iter,5)[0]
+		print "selected_product is: %s" % selected_product
+		if selected_product != 'NULL': # Look up part in DB
 			# Set class field for currently selected product
-			print "Querying with selectedPN: %s" % selectedPN
-			self.bomSelectedProduct.manufacturer_pn = selectedPN
+			print "Querying with selected_product: %s" % selected_product
+			self.bom_selected_product.manufacturer_pn = selected_product
 			
-			self.bomSelectedProduct.selectOrScrape(wspace)
-			self.bomSelectedProduct.fetchListings(wspace)
-			#self.bomSelectedProduct.show()
-			self.setPartInfoLabels(self.bomSelectedProduct)
-			self.setPartInfoListingCombo(self.bomSelectedProduct)
-			self.destroyPartPriceLabels()
-			#print 'self.bomSelectedProduct.vendorProds: \n', self.bomSelectedProduct.vendorProds
-			if type(self.partInfoListingCombo.get_active_text()) is not types.NoneType and self.partInfoListingCombo.get_active_text() != '':
-				self.setPartPriceLabels(self.bomSelectedProduct.vendorProds[self.partInfoListingCombo.get_active_text()])
+			self.bom_selected_product.select_or_scrape(wspace)
+			self.bom_selected_product.fetch_listings(wspace)
+			#self.bom_selected_product.show()
+			self.set_part_info_labels(self.bom_selected_product)
+			self.set_part_info_listing_combo(self.bom_selected_product)
+			self.destroy_part_price_labels()
+			#print 'self.bom_selected_product.listings: \n', self.bom_selected_product.listings
+			if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
+				self.set_part_price_labels(self.bom_selected_product.listings[self.part_info_listing_combo.get_active_text()])
 		else:
-			self.setPartInfoListingCombo()
-			self.destroyPartPriceLabels()
-			self.clearPartInfoLabels()
+			self.set_part_info_listing_combo()
+			self.destroy_part_price_labels()
+			self.clear_part_info_labels()
 	
 	'''Callback method activated by the BOM grouping radio buttons.
 	Redraws the BOM TreeView with the approporiate goruping for the selected radio.'''
-	def bomGroupCallback(self, widget, data=None):
+	def bom_group_callback(self, widget, data=None):
 		#print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
 		
 		# Figure out which button is now selected
 		if widget.get_active():
 			if 'name' in data:
-				self.bomStorePopulateByName()
+				self.bom_store_populate_by_name()
 				
 			elif 'value' in data:
-				self.bomStorePopulateByVal()
+				self.bom_store_populate_by_value()
 					
 			elif 'product' in data:
-				self.bomStorePopulateByPN()
+				self.bom_store_populate_by_product()
 					
 			self.window.show_all()
 	
 	'''Callback method activated by clicking a BOM column header.
 	Sorts the BOM TreeView by the values in the clicked column.'''
-	def bomSortCallback(self, widget):
+	def bom_sort_callback(self, widget):
 		print widget.get_sort_order()
 		widget.set_sort_column_id(0)
 		# TODO: On sorting by a different column, the indicator does not go away
@@ -221,242 +220,229 @@ class Manager(gobject.GObject):
 	
 	'''Callback method for the "Edit Part" button in the BOM tab.
 	Opens a dialog window with form fields for each BOM Part object field.'''
-	def bomEditPartCallback(self, widget, data=None):
+	def bom_edit_part_callback(self, widget, data=None):
 		# Open a text input prompt window
-		editPartDialog = gtk.Dialog("Edit part", self.window, 
+		edit_part_dialog = gtk.Dialog("Edit part", self.window, 
 						gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
 						(gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT, 
 						gtk.STOCK_OK, gtk.RESPONSE_ACCEPT))
 		
 		# -------- DECLARATIONS --------
 		# Field labels
-		editPartNameLabel = gtk.Label("Name: ")
-		editPartValueLabel = gtk.Label("Value: ")
-		editPartDeviceLabel = gtk.Label("Device: ")
-		editPartPackageLabel = gtk.Label("Package: ")
-		editPartDescriptionLabel = gtk.Label("Description: ")
-		editPartManufacturerLabel = gtk.Label("Manufacturer: ")
-		editPartManufacturerPNLabel = gtk.Label("Manufacturer Part Number: ")
+		edit_part_name_label = gtk.Label("Name: ")
+		edit_part_value_label = gtk.Label("Value: ")
+		edit_part_device_label = gtk.Label("Device: ")
+		edit_part_package_label = gtk.Label("Package: ")
+		edit_part_description_label = gtk.Label("Description: ")
+		edit_part_manufacturer_label = gtk.Label("Manufacturer: ")
+		edit_part_manufacturer_pn_label = gtk.Label("Manufacturer Part Number: ")
 		
 		# Field entry elements
-		self.editPartNameEntry = gtk.Entry()
-		self.editPartValueEntry = gtk.Entry()
-		self.editPartDeviceEntry = gtk.Entry()
-		self.editPartPackageEntry = gtk.Entry()
-		self.editPartDescriptionEntry = gtk.Entry()
-		self.editPartProductEntry = gtk.Entry()
-		
-		#editPartVendorCombo = gtk.combo_box_new_text()
-		#editPartVendorCombo.append_text(Product.VENDOR_DK)
-		#editPartVendorCombo.append_text(Product.VENDOR_FAR)
-		#editPartVendorCombo.append_text(Product.VENDOR_FUE)
-		#editPartVendorCombo.append_text(Product.VENDOR_JAM)
-		#editPartVendorCombo.append_text(Product.VENDOR_ME)
-		#editPartVendorCombo.append_text(Product.VENDOR_NEW)
-		#editPartVendorCombo.append_text(Product.VENDOR_SFE)
+		self.edit_part_name_entry = gtk.Entry()
+		self.edit_part_value_entry = gtk.Entry()
+		self.edit_part_device_entry = gtk.Entry()
+		self.edit_part_package_entry = gtk.Entry()
+		self.edit_part_description_entry = gtk.Entry()
+		self.edit_part_product_entry = gtk.Entry()
 		
 		# Return values
-		self.productEntryText = ""
+		self.product_entry_text = ""
 		
 		# HBoxes
-		editPartDialogNameHBox = gtk.HBox()
-		editPartDialogValueHBox = gtk.HBox()
-		editPartDialogDeviceHBox = gtk.HBox()
-		editPartDialogPackageHBox = gtk.HBox()
-		editPartDialogDescriptionHBox = gtk.HBox()
-		editPartDialogManufacturerHBox = gtk.HBox()
-		editPartDialogManufacturerPNHBox = gtk.HBox()
+		edit_part_dialog_name_hbox = gtk.HBox()
+		edit_part_dialog_value_hbox = gtk.HBox()
+		edit_part_dialog_device_hbox = gtk.HBox()
+		edit_part_dialog_package_hbox = gtk.HBox()
+		edit_part_dialog_description_hbox = gtk.HBox()
+		edit_part_dialog_manufacturer_hbox = gtk.HBox()
+		edit_part_dialog_manufacturer_pn_hbox = gtk.HBox()
 		
 		# -------- CONFIGURATION --------
 		# Label alignment
-		editPartNameLabel.set_alignment(0.0, 0.5)
-		editPartValueLabel.set_alignment(0.0, 0.5)
-		editPartDeviceLabel.set_alignment(0.0, 0.5)
-		editPartPackageLabel.set_alignment(0.0, 0.5)
-		editPartDescriptionLabel.set_alignment(0.0, 0.5)
-		editPartManufacturerLabel.set_alignment(0.0, 0.5)
-		editPartManufacturerPNLabel.set_alignment(0.0, 0.5)
+		edit_part_name_label.set_alignment(0.0, 0.5)
+		edit_part_value_label.set_alignment(0.0, 0.5)
+		edit_part_device_label.set_alignment(0.0, 0.5)
+		edit_part_package_label.set_alignment(0.0, 0.5)
+		edit_part_description_label.set_alignment(0.0, 0.5)
+		edit_part_manufacturer_label.set_alignment(0.0, 0.5)
+		edit_part_manufacturer_pn_label.set_alignment(0.0, 0.5)
 		
 		# Set default text of entry fields to current part values
-		self.editPartNameEntry.set_text(self.selectedBomPart.name)
-		self.editPartValueEntry.set_text(self.selectedBomPart.value)
-		self.editPartDeviceEntry.set_text(self.selectedBomPart.device)
-		self.editPartPackageEntry.set_text(self.selectedBomPart.package)
-		self.editPartDescriptionEntry.set_text(self.selectedBomPart.description)
-		self.editPartProductEntry.set_text(self.selectedBomPart.product)
+		self.edit_part_name_entry.set_text(self.selected_bom_part.name)
+		self.edit_part_value_entry.set_text(self.selected_bom_part.value)
+		self.edit_part_device_entry.set_text(self.selected_bom_part.device)
+		self.edit_part_package_entry.set_text(self.selected_bom_part.package)
+		self.edit_part_description_entry.set_text(self.selected_bom_part.description)
+		self.edit_part_product_entry.set_text(self.selected_bom_part.product)
 		
 		# Pack labels/entry fields into HBoxes
-		editPartDialogNameHBox.pack_start(editPartNameLabel, False, True, 0)
-		editPartDialogNameHBox.pack_end(self.editPartNameEntry, False, True, 0)
+		edit_part_dialog_name_hbox.pack_start(edit_part_name_label, False, True, 0)
+		edit_part_dialog_name_hbox.pack_end(self.edit_part_name_entry, False, True, 0)
 		
-		editPartDialogValueHBox.pack_start(editPartValueLabel, False, True, 0)
-		editPartDialogValueHBox.pack_end(self.editPartValueEntry, False, True, 0)
+		edit_part_dialog_value_hbox.pack_start(edit_part_value_label, False, True, 0)
+		edit_part_dialog_value_hbox.pack_end(self.edit_part_value_entry, False, True, 0)
 		
-		editPartDialogDeviceHBox.pack_start(editPartDeviceLabel, False, True, 0)
-		editPartDialogDeviceHBox.pack_end(self.editPartDeviceEntry, False, True, 0)
+		edit_part_dialog_device_hbox.pack_start(edit_part_device_label, False, True, 0)
+		edit_part_dialog_device_hbox.pack_end(self.edit_part_device_entry, False, True, 0)
 		
-		editPartDialogPackageHBox.pack_start(editPartPackageLabel, False, True, 0)
-		editPartDialogPackageHBox.pack_end(self.editPartPackageEntry, False, True, 0)
+		edit_part_dialog_package_hbox.pack_start(edit_part_package_label, False, True, 0)
+		edit_part_dialog_package_hbox.pack_end(self.edit_part_package_entry, False, True, 0)
 		
-		editPartDialogDescriptionHBox.pack_start(editPartDescriptionLabel, False, True, 0)
-		editPartDialogDescriptionHBox.pack_end(self.editPartDescriptionEntry, False, True, 0)
+		edit_part_dialog_description_hbox.pack_start(edit_part_description_label, False, True, 0)
+		edit_part_dialog_description_hbox.pack_end(self.edit_part_description_entry, False, True, 0)
 		
-		#editPartDialogManufacturerHBox.pack_start(editPartManufacturerLabel, True, True, 0)
-		#editPartDialogManufacturerHBox.pack_end(editPartVendorCombo, True, True, 0)
-		
-		editPartDialogManufacturerPNHBox.pack_start(editPartManufacturerPNLabel, True, True, 0)
-		editPartDialogManufacturerPNHBox.pack_end(self.editPartProductEntry, gtk.RESPONSE_ACCEPT)
+		edit_part_dialog_manufacturer_pn_hbox.pack_start(edit_part_manufacturer_pn_label, True, True, 0)
+		edit_part_dialog_manufacturer_pn_hbox.pack_end(self.edit_part_product_entry, gtk.RESPONSE_ACCEPT)
 		
 		# Pack HBoxes into vbox
-		editPartDialog.vbox.set_spacing(1)
-		editPartDialog.vbox.pack_start(editPartDialogNameHBox, True, True, 0)
-		editPartDialog.vbox.pack_start(editPartDialogValueHBox, True, True, 0)
-		editPartDialog.vbox.pack_start(editPartDialogDeviceHBox, True, True, 0)
-		editPartDialog.vbox.pack_start(editPartDialogPackageHBox, True, True, 0)
-		editPartDialog.vbox.pack_start(editPartDialogDescriptionHBox, True, True, 0)
-		#editPartDialog.vbox.pack_start(editPartDialogManufacturerHBox, True, True, 0)
-		editPartDialog.vbox.pack_start(editPartDialogManufacturerPNHBox, True, True, 0)
+		edit_part_dialog.vbox.set_spacing(1)
+		edit_part_dialog.vbox.pack_start(edit_part_dialog_name_hbox, True, True, 0)
+		edit_part_dialog.vbox.pack_start(edit_part_dialog_value_hbox, True, True, 0)
+		edit_part_dialog.vbox.pack_start(edit_part_dialog_device_hbox, True, True, 0)
+		edit_part_dialog.vbox.pack_start(edit_part_dialog_package_hbox, True, True, 0)
+		edit_part_dialog.vbox.pack_start(edit_part_dialog_description_hbox, True, True, 0)
+		edit_part_dialog.vbox.pack_start(edit_part_dialog_manufacturer_pn_hbox, True, True, 0)
 		
 		# Show everything
-		editPartDialog.vbox.show_all()
-		response = editPartDialog.run()
-		editPartDialog.hide()
+		edit_part_dialog.vbox.show_all()
+		response = edit_part_dialog.run()
+		edit_part_dialog.hide()
 		
 		if response == gtk.RESPONSE_ACCEPT:
 			# If the product text entry field is left blank, set the product to 'NULL'
-			if type(self.editPartProductEntry.get_text()) is types.NoneType or len(self.editPartProductEntry.get_text()) == 0:
-				self.productEntryText = 'NULL'
+			if type(self.edit_part_product_entry.get_text()) is types.NoneType or len(self.edit_part_product_entry.get_text()) == 0:
+				self.product_entry_text = 'NULL'
 			else:
-				self.productEntryText = self.editPartProductEntry.get_text()
+				self.product_entry_text = self.edit_part_product_entry.get_text()
 			
-			# Set selectedBomPart
+			# Set selected_bom_part
 			# TODO: If grouping by value or PN, what to do? Grey out the name field?
 			# It should write the rest to ALL of the parts in the row
-			self.selectedBomPart.name = self.editPartNameEntry.get_text()
-			self.selectedBomPart.value = self.editPartValueEntry.get_text()
-			self.selectedBomPart.device = self.editPartDeviceEntry.get_text()
-			self.selectedBomPart.package = self.editPartPackageEntry.get_text()
-			self.selectedBomPart.description = self.editPartDescriptionEntry.get_text()
-			print "Setting selectedBomPart.product to: %s" % self.editPartProductEntry.get_text()
-			self.selectedBomPart.product = self.productEntryText
-			print "selectedBomPart's product field: %s" % self.selectedBomPart.product
+			self.selected_bom_part.name = self.edit_part_name_entry.get_text()
+			self.selected_bom_part.value = self.edit_part_value_entry.get_text()
+			self.selected_bom_part.device = self.edit_part_device_entry.get_text()
+			self.selected_bom_part.package = self.edit_part_package_entry.get_text()
+			self.selected_bom_part.description = self.edit_part_description_entry.get_text()
+			print "Setting selected_bom_part.product to: %s" % self.edit_part_product_entry.get_text()
+			self.selected_bom_part.product = self.product_entry_text
+			print "selected_bom_part's product field: %s" % self.selected_bom_part.product
 			
 			# We need to check the products table for this Product, creating an entry
-			# for it if necessary, before updating selectedBomPart in the DB.
-			self.bomSelectedProduct.manufacturer_pn = self.productEntryText
-			self.bomSelectedProduct.selectOrScrape(wspace)
+			# for it if necessary, before updating selected_bom_part in the DB.
+			self.bom_selected_product.manufacturer_pn = self.product_entry_text
+			self.bom_selected_product.select_or_scrape(wspace)
 			
-			self.selectedBomPart.update(self.active_bom.name, wspace)
-			self.active_bom.updateParts(self.selectedBomPart)
+			self.selected_bom_part.update(self.active_bom.name, wspace)
+			self.active_bom.update_parts(self.selected_bom_part)
 			
-			if self.bomGroupName.get_active():
-				self.bomStorePopulateByName()
-			elif self.bomGroupValue.get_active():
-				self.bomStorePopulateByVal()
-			elif self.bomGroupPN.get_active():
-				self.bomStorePopulateByPN()
+			if self.bom_group_name.get_active():
+				self.bom_store_populate_by_name()
+			elif self.bom_group_value.get_active():
+				self.bom_store_populate_by_value()
+			elif self.bom_group_product.get_active():
+				self.bom_store_populate_by_product()
 					
-			self.setPartInfoListingCombo(self.bomSelectedProduct)
-			if self.bomSelectedProduct.manufacturer_pn == 'NULL':
-				self.clearPartInfoLabels()
+			self.set_part_info_listing_combo(self.bom_selected_product)
+			if self.bom_selected_product.manufacturer_pn == 'NULL':
+				self.clear_part_info_labels()
 			else:
-				self.setPartInfoLabels(self.bomSelectedProduct)
+				self.set_part_info_labels(self.bom_selected_product)
 	
-	def partInfoScrapeButtonCallback(self, widget):
+	def part_info_scrape_button_callback(self, widget):
 		''' Part info frame "Refresh" button callback. '''
-		self.bomSelectedProduct.scrape(wspace)
-		if self.bomGroupName.get_active():
-			self.bomStorePopulateByName()
-		elif self.bomGroupValue.get_active():
-			self.bomStorePopulateByVal()
-		elif self.bomGroupPN.get_active():
-			self.bomStorePopulateByPN()
+		self.bom_selected_product.scrape(wspace)
+		if self.bom_group_name.get_active():
+			self.bom_store_populate_by_name()
+		elif self.bom_group_value.get_active():
+			self.bom_store_populate_by_value()
+		elif self.bom_group_product.get_active():
+			self.bom_store_populate_by_product()
 		self.window.show_all()
 	
-	def partInfoListingComboCallback(self, widget, data=None):
-		self.destroyPartPriceLabels()
-		if type(self.partInfoListingCombo.get_active_text()) is not types.NoneType and self.partInfoListingCombo.get_active_text() != '':
-			self.setPartPriceLabels(self.bomSelectedProduct.vendorProds[self.partInfoListingCombo.get_active_text()])
-			self.partInfoInventoryLabel2.set_text(str(self.bomSelectedProduct.vendorProds[self.partInfoListingCombo.get_active_text()].inventory))
+	def part_info_listing_combo_callback(self, widget, data=None):
+		self.destroy_part_price_labels()
+		if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
+			self.set_part_price_labels(self.bom_selected_product.listings[self.part_info_listing_combo.get_active_text()])
+			self.part_info_inventory_content_label.set_text(str(self.bom_selected_product.listings[self.part_info_listing_combo.get_active_text()].inventory))
 	
-	''' Clear self.dbProductStore and repopulate it. '''
-	def dbStorePopulate(self):
-		self.dbProductStore.clear()
+	''' Clear self.db_product_store and repopulate it. '''
+	def db_store_populate(self):
+		self.db_product_store.clear()
 		prods = Product.select_all(wspace)
 		for p in prods:
-			iter = self.dbProductStore.append([p.manufacturer, p.manufacturer_pn, p.description, p.datasheet, p.package])
-		self.dbTreeView.columns_autosize()
+			iter = self.db_product_store.append([p.manufacturer, p.manufacturer_pn, p.description, p.datasheet, p.package])
+		self.db_tree_view.columns_autosize()
 	
 	'''Callback for the "Read DB" button on the product DB tab.'''
-	def dbReadDBCallback(self, widget, data=None):
+	def db_read_database_callback(self, widget, data=None):
 		print "Read DB callback"
-		self.dbStorePopulate()
+		self.db_store_populate()
 	
 	'''Callback method triggered when a product DB item is selected.'''
-	def dbSelectionCallback(self, widget, data=None):
+	def db_selection_callback(self, widget, data=None):
 		# Set class fields for currently selected item
-		(model, rowIter) = self.dbTreeView.get_selection().get_selected()
-		self.dbSelectedProduct = Product.select_by_pn(model.get(rowIter,1)[0], wspace)[0]
+		(model, row_iter) = self.db_tree_view.get_selection().get_selected()
+		self.db_selected_product = Product.select_by_pn(model.get(row_iter,1)[0], wspace)[0]
 	
 	'''Callback method activated by clicking a DB column header.
 	Sorts the DB TreeView by the values in the clicked column.'''
-	def dbSortCallback(self, widget):
+	def db_sort_callback(self, widget):
 		widget.set_sort_column_id(0)
 	 
 	# -------- HELPER METHODS --------
-	def projectStorePopulate(self):
-		self.projectStore.clear()
+	def project_store_populate(self):
+		self.project_store.clear()
 		# Columns: Name, Description, Database, Input File
-		projectsList = wspace.listProjects()
-		#print 'projectsList: ', projectsList
-		for p in projectsList:
+		projects_list = wspace.list_projects()
+		#print 'projects_list: ', projects_list
+		for p in projects_list:
 			if type(p) is types.NoneType:
-				print 'NoneType caught in projectsList'
+				print 'NoneType caught in projects_list'
 			elif p != 'dummy':
 				#print 'p = ', p
-				bom = BOM.readFromDB(p, wspace)[0]
+				bom = BOM.read_from_db(p, wspace)[0]
 				print 'Returned BOM: ', bom, type(bom)
-				iter = self.projectStore.append([bom.name, bom.description, wspace.name, bom.input])
-		self.projectTreeView.columns_autosize()
+				iter = self.project_store.append([bom.name, bom.description, wspace.name, bom.input])
+		self.project_tree_view.columns_autosize()
 	
-	def bomStorePopulateByName(self):
-		''' Clear self.bomStore and repopulate it, grouped by name. '''
-		self.bomStore.clear()
+	def bom_store_populate_by_name(self):
+		''' Clear self.bom_store and repopulate it, grouped by name. '''
+		self.bom_store.clear()
 		for p in self.active_bom.parts:
 			temp = self.active_bom.select_parts_by_name(p[0], wspace)[0]
-			iter = self.bomStore.append([temp.name, temp.value, temp.device, temp.package, temp.description, temp.product, 1])
+			iter = self.bom_store.append([temp.name, temp.value, temp.device, temp.package, temp.description, temp.product, 1])
 		
-		self.bomTreeView.columns_autosize()
+		self.bom_tree_view.columns_autosize()
 	
-	def bomStorePopulateByVal(self):
-		''' Clear self.bomStore and repopulate it, grouped by value. '''
-		self.bomStore.clear()
-		self.active_bom.sortByVal()
-		self.active_bom.setValCounts(wspace)
+	def bom_store_populate_by_value(self):
+		''' Clear self.bom_store and repopulate it, grouped by value. '''
+		self.bom_store.clear()
+		self.active_bom.sort_by_val()
+		self.active_bom.set_val_counts(wspace)
 		
-		for val in self.active_bom.valCounts.keys():
-			groupName = "\t"	# Clear groupName and prepend a tab
+		for val in self.active_bom.val_counts.keys():
+			group_name = "\t"	# Clear group_name and prepend a tab
 			# TODO: Does this split up parts of the same value but different package?
 			# If not, the "part number" column will be bad
 			group = self.active_bom.select_parts_by_value(val, wspace)
 			for part in group:
-				groupName += part.name + ", "
+				group_name += part.name + ", "
 			
 			# Replace trailing comma with tab
-			groupName = groupName[0:-2]
+			group_name = group_name[0:-2]
 			temp = group[0]	# Part object
-			iter = self.bomStore.append([groupName, temp.value, temp.device, temp.package, temp.description, temp.product, self.active_bom.valCounts[val]])
+			iter = self.bom_store.append([group_name, temp.value, temp.device, temp.package, temp.description, temp.product, self.active_bom.val_counts[val]])
 		
-		self.bomTreeView.columns_autosize()
+		self.bom_tree_view.columns_autosize()
 	
-	def bomStorePopulateByPN(self):
-		''' Clear self.bomStore and repopulate it, grouped by part number. '''	
-		self.bomStore.clear()
-		self.active_bom.sortByProd()
-		self.active_bom.setProdCounts(wspace)
+	def bom_store_populate_by_product(self):
+		''' Clear self.bom_store and repopulate it, grouped by part number. '''	
+		self.bom_store.clear()
+		self.active_bom.sort_by_prod()
+		self.active_bom.set_prod_counts(wspace)
 		
-		for prod in self.active_bom.prodCounts.keys():
-			groupName = "\t"	# Clear groupName and prepend a tab
+		for prod in self.active_bom.prod_counts.keys():
+			group_name = "\t"	# Clear group_name and prepend a tab
 			print "Querying with prod =", prod, " of length ", len(prod)
 			# Catch empty product string
 			if prod == ' ' or len(prod) == 0 or prod == 'none' or prod == 'NULL': 
@@ -466,301 +452,280 @@ class Manager(gobject.GObject):
 				group = self.active_bom.select_parts_by_product(prod, wspace)
 			print "Group: \n", group
 			for part in group:	# TODO: Ensure this data is what we expect
-				groupName += part.name + ", "
+				group_name += part.name + ", "
 			
 			# Replace trailing comma with tab
-			groupName = groupName[0:-2]
+			group_name = group_name[0:-2]
 			
 			temp = group[0]	# Part object
-			iter = self.bomStore.append([groupName, temp.value, temp.device, temp.package, temp.description, temp.product, self.active_bom.prodCounts[prod]])
+			iter = self.bom_store.append([group_name, temp.value, temp.device, temp.package, temp.description, temp.product, self.active_bom.prod_counts[prod]])
 		
-		self.bomTreeView.columns_autosize()
+		self.bom_tree_view.columns_autosize()
 	
-	def setPartInfoLabels(self, prod):
+	def set_part_info_labels(self, prod):
 		'''Set the Part Information pane fields based on the fields of a given 
 		product object.'''	
-		#self.partInfoVendorLabel2.set_text(prod.vendor)
-		#self.partInfoVendorPNLabel2.set_text(prod.vendor_pn)
-		self.partInfoManufacturerLabel2.set_text(prod.manufacturer)
-		self.partInfoManufacturerPNLabel2.set_text(prod.manufacturer_pn)
-		self.partInfoDescriptionLabel2.set_text(prod.description)
-		self.partInfoDatasheetLabel2.set_text(prod.datasheet)
-		#self.partInfoCategoryLabel2.set_text(prod.category)
-		#self.partInfoFamilyLabel2.set_text(prod.family)
-		#self.partInfoSeriesLabel2.set_text(prod.series)
-		self.partInfoPackageLabel2.set_text(prod.package)
+		self.part_info_manufacturer_content_label.set_text(prod.manufacturer)
+		self.part_info_manufacturer_pn_content_label.set_text(prod.manufacturer_pn)
+		self.part_info_description_content_label.set_text(prod.description)
+		self.part_info_datasheet_content_label.set_text(prod.datasheet)
+		self.part_info_package_content_label.set_text(prod.package)
 
-	def clearPartInfoLabels(self):
+	def clear_part_info_labels(self):
 		'''Clears the Part Information pane fields, setting the text of each Label
 		object to a tab character.'''
-		#self.partInfoVendorLabel2.set_text("\t")
-		#self.partInfoVendorPNLabel2.set_text("\t")
-		self.partInfoManufacturerLabel2.set_text("\t")
-		self.partInfoManufacturerPNLabel2.set_text("\t")
-		self.partInfoDescriptionLabel2.set_text("\t")
-		self.partInfoDatasheetLabel2.set_text("\t")
-		#self.partInfoCategoryLabel2.set_text("\t")
-		#self.partInfoFamilyLabel2.set_text("\t")
-		#self.partInfoSeriesLabel2.set_text("\t")
-		self.partInfoPackageLabel2.set_text("\t")
+		self.part_info_manufacturer_content_label.set_text("\t")
+		self.part_info_manufacturer_pn_content_label.set_text("\t")
+		self.part_info_description_content_label.set_text("\t")
+		self.part_info_datasheet_content_label.set_text("\t")
+		self.part_info_package_content_label.set_text("\t")
 	
-	def setPartInfoListingCombo(self, prod=None):
-		''' Populates self.partInfoListingCombo with vendorProduct listings
+	def set_part_info_listing_combo(self, prod=None):
+		''' Populates self.part_info_listing_combo with listings
 		for the selected Product. '''
 		print 'Setting Listing combo...'
-		self.partInfoListingCombo.get_model().clear()
+		self.part_info_listing_combo.get_model().clear()
 		
 		if type(prod) is not types.NoneType and prod.manufacturer_pn != 'NULL':
-			#for listing in prod.vendorProds.values():
-			for listing in prod.vendorProds.keys():
+			for listing in prod.listings.keys():
 				#print 'Listing: ', type(listing), listing
 				title = listing
 				#print 'Appending combo title: ', title
-				self.partInfoListingCombo.append_text(title)
+				self.part_info_listing_combo.append_text(title)
 		
 		# TODO: Set default active to user-selected listing
-		# If the user has not chosen one, that defaults to prod.bestListing
-		self.partInfoListingCombo.set_active(0)
-		self.partInfoRowBox.show_all()
+		# If the user has not chosen one, that defaults to prod.best_listing
+		self.part_info_listing_combo.set_active(0)
+		self.part_info_row_box.show_all()
 	
-	def destroyPartPriceLabels(self):
-		for r in self.priceBreakLabels:
+	def destroy_part_price_labels(self):
+		for r in self.price_break_labels:
 			r.destroy()
 			
-		for r in self.unitPriceLabels:
+		for r in self.unit_price_labels:
 			r.destroy()
 			
-		for r in self.extPriceLabels:
+		for r in self.ext_price_labels:
 			r.destroy()
 			
-		del self.priceBreakLabels[:]
-		del self.unitPriceLabels[:]
-		del self.extPriceLabels[:]
+		del self.price_break_labels[:]
+		del self.unit_price_labels[:]
+		del self.ext_price_labels[:]
 		
-	def setPartPriceLabels(self, vprod):
-		''' Given a vendorProduct listing, sets the pricing table labels. '''
-		n = len(vprod.prices)
+	def set_part_price_labels(self, listing):
+		''' Given a listing, sets the pricing table labels. '''
+		n = len(listing.prices)
 		#print "n =", n
-		priceKeys = sorted(vprod.prices.keys())
-		#print "vprod.prices = \n", vprod.prices
-		#print "sorted(vprod.prices.keys()) = \n", priceKeys
-		self.partInfoPricingTable.resize(n+1, 3)
-		self.destroyPartPriceLabels()
+		price_keys = sorted(listing.prices.keys())
+		#print "listing.prices = \n", listing.prices
+		#print "sorted(listing.prices.keys()) = \n", price_keys
+		self.part_info_pricing_table.resize(n+1, 3)
+		self.destroy_part_price_labels()
 		
-		self.priceBreakLabels.append(gtk.Label("Price Break"))
-		self.unitPriceLabels.append(gtk.Label("Unit Price"))
-		self.extPriceLabels.append(gtk.Label("Extended Price"))
+		self.price_break_labels.append(gtk.Label("Price Break"))
+		self.unit_price_labels.append(gtk.Label("Unit Price"))
+		self.ext_price_labels.append(gtk.Label("Extended Price"))
 		
-		self.partInfoPricingTable.attach(self.priceBreakLabels[0],  0, 1, 0, 1)
-		self.partInfoPricingTable.attach(self.unitPriceLabels[0],  1, 2, 0, 1)
-		self.partInfoPricingTable.attach(self.extPriceLabels[0],  2, 3, 0, 1)
+		self.part_info_pricing_table.attach(self.price_break_labels[0],  0, 1, 0, 1)
+		self.part_info_pricing_table.attach(self.unit_price_labels[0],  1, 2, 0, 1)
+		self.part_info_pricing_table.attach(self.ext_price_labels[0],  2, 3, 0, 1)
 		
-		rowNum = 1
+		row_num = 1
 		for i in range(n):
-			#priceKeys[i] is a key of vprod.prices()
-			self.priceBreakLabels.append(gtk.Label(str(priceKeys[i]) + '   '))
-			self.priceBreakLabels[rowNum].set_alignment(0.5, 0.5)
-			self.unitPriceLabels.append(gtk.Label(str(vprod.prices[priceKeys[i]]) + '   '))
-			self.unitPriceLabels[rowNum].set_alignment(1.0, 0.5)
-			self.extPriceLabels.append(gtk.Label(str( priceKeys[i] *  vprod.prices[priceKeys[i]]) + '   '))
-			self.extPriceLabels[rowNum].set_alignment(1.0, 0.5)
+			#price_keys[i] is a key of listing.prices()
+			self.price_break_labels.append(gtk.Label(str(price_keys[i]) + '   '))
+			self.price_break_labels[row_num].set_alignment(0.5, 0.5)
+			self.unit_price_labels.append(gtk.Label(str(listing.prices[price_keys[i]]) + '   '))
+			self.unit_price_labels[row_num].set_alignment(1.0, 0.5)
+			self.ext_price_labels.append(gtk.Label(str( price_keys[i] *  listing.prices[price_keys[i]]) + '   '))
+			self.ext_price_labels[row_num].set_alignment(1.0, 0.5)
 			
-			self.partInfoPricingTable.attach(self.priceBreakLabels[rowNum],  0, 1, rowNum, rowNum+1)
-			self.partInfoPricingTable.attach(self.unitPriceLabels[rowNum],  1, 2, rowNum, rowNum+1)
-			self.partInfoPricingTable.attach(self.extPriceLabels[rowNum],  2, 3, rowNum, rowNum+1)
-			rowNum += 1
+			self.part_info_pricing_table.attach(self.price_break_labels[row_num],  0, 1, row_num, row_num+1)
+			self.part_info_pricing_table.attach(self.unit_price_labels[row_num],  1, 2, row_num, row_num+1)
+			self.part_info_pricing_table.attach(self.ext_price_labels[row_num],  2, 3, row_num, row_num+1)
+			row_num += 1
 			
-		self.partInfoFrame.show_all()
+		self.part_info_frame.show_all()
 		
 	def __init__(self):
 		# -------- DECLARATIONS --------
-		self.active_bom = BOM('dummy', 'Active BOM Declaration', inputFile)
-		self.activeProjectName = 'dummy'
+		self.active_bom = BOM('dummy', 'Active BOM Declaration', input_file)
+		self.active_project_name = 'dummy'
 		
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-		self.mainBox = gtk.VBox(False, 0)
-		self.menuBar = gtk.MenuBar()
+		self.main_box = gtk.VBox(False, 0)
+		self.menu_bar = gtk.MenuBar()
 		self.notebook = gtk.Notebook()
-		self.projectTabLabel = gtk.Label("Projects")
-		self.bomTabLabel = gtk.Label("BOM Editor")
-		self.dbTabLabel = gtk.Label("Product Database")
+		self.project_tab_label = gtk.Label("Projects")
+		self.bom_tab_label = gtk.Label("BOM Editor")
+		self.db_tab_label = gtk.Label("Product Database")
 		
 		# --- Projects tab ---
-		self.projectBox = gtk.VBox(False, 0) # First tab in notebook
-		self.projectToolbar = gtk.Toolbar()
-		self.projectNewButton = gtk.ToolButton(None, "New Project")
-		self.projectOpenButton = gtk.ToolButton(None, "Open Project")
-		self.projectEditButton = gtk.ToolButton(None, "Edit Project")
-		self.projectDeleteButton = gtk.ToolButton(None, "Delete Project")
-		self.projectFrame = gtk.Frame("Projects") 
-		self.projectScrollWin = gtk.ScrolledWindow()
+		self.project_box = gtk.VBox(False, 0) # First tab in notebook
+		self.project_toolbar = gtk.Toolbar()
+		self.project_new_button = gtk.ToolButton(None, "New Project")
+		self.project_open_button = gtk.ToolButton(None, "Open Project")
+		self.project_edit_button = gtk.ToolButton(None, "Edit Project")
+		self.project_delete_button = gtk.ToolButton(None, "Delete Project")
+		self.project_frame = gtk.Frame("Projects") 
+		self.project_scroll_win = gtk.ScrolledWindow()
 		
 		# New Project menu
-		self.newProjectDialog = gtk.Dialog('New Project', self.window, 
+		self.new_project_dialog = gtk.Dialog('New Project', self.window, 
 										gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT, 
 										(gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT, gtk.STOCK_OK, gtk.RESPONSE_ACCEPT))
 		
-		self.newProjectNameHBox = gtk.HBox()
-		self.newProjectDescriptionHBox = gtk.HBox()
-		#newProjectWorkspaceHBox = gtk.HBox()
-		self.newProjectInputFileHBox = gtk.HBox()
+		self.new_project_name_hbox = gtk.HBox()
+		self.new_project_description_hbox = gtk.HBox()
+		#self.new_project_workspace_hbox = gtk.HBox()
+		self.new_project_input_file_hbox = gtk.HBox()
 		
-		self.newProjectNameLabel = gtk.Label("Name: ")
-		self.newProjectDescriptionLabel = gtk.Label("Description: ")
-		#self.newProjectWorkspaceLabel = gtk.Label("Workspace: ")
-		self.newProjectInputFileLabel = gtk.Label("Input file: ")
+		self.new_project_name_label = gtk.Label("Name: ")
+		self.new_project_description_label = gtk.Label("Description: ")
+		#self.new_project_workspace_label = gtk.Label("Workspace: ")
+		self.new_project_input_file_label = gtk.Label("Input file: ")
 		
-		self.newProjectNameEntry = gtk.Entry()
-		self.newProjectDescriptionEntry = gtk.Entry()
+		self.new_project_name_entry = gtk.Entry()
+		self.new_project_description_entry = gtk.Entry()
 		# TODO: Add a database file Entry/FileDialog when adding multiple DB file support
-		self.newProjectInputFileButton = gtk.Button('Browse', gtk.STOCK_OPEN)
-		self.newProjectInputFileEntry = gtk.Entry()
-		self.inputFileDialog = gtk.FileChooserDialog('Select Input File', 
-													self.newProjectDialog, gtk.FILE_CHOOSER_ACTION_OPEN, 
+		self.new_project_input_file_button = gtk.Button('Browse', gtk.STOCK_OPEN)
+		self.new_project_input_file_entry = gtk.Entry()
+		self.input_file_dialog = gtk.FileChooserDialog('Select Input File', 
+													self.new_project_dialog, gtk.FILE_CHOOSER_ACTION_OPEN, 
 													(gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT, gtk.STOCK_OK, gtk.RESPONSE_ACCEPT))
 		
-		self.projectNameTakenDialog = gtk.MessageDialog(self.newProjectDialog, 
+		self.project_name_taken_dialog = gtk.MessageDialog(self.new_project_dialog, 
 												gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_ERROR, 
 												gtk.BUTTONS_OK, 'Error: Project name in use. \nPlease select a different name.')
 		
 		# Projects list
 		# Columns: Name, Description, Workspace, Input File
-		self.projectStore = gtk.ListStore(str, str, str, str)
-		self.projectNameCell = gtk.CellRendererText()
-		self.projectNameColumn = gtk.TreeViewColumn('Name', self.projectNameCell)
-		self.projectDescriptionCell = gtk.CellRendererText()
-		self.projectDescriptionColumn = gtk.TreeViewColumn('Description', self.projectDescriptionCell)
-		self.projectDBFileCell = gtk.CellRendererText()
-		self.projectDBFileColumn = gtk.TreeViewColumn('Workspace', self.projectDBFileCell)
-		self.projectInputFileCell = gtk.CellRendererText()
-		self.projectInputFileColumn = gtk.TreeViewColumn('Input File', self.projectInputFileCell)
-		self.projectTreeView = gtk.TreeView() # Associate with self.projectStore later, not yet!
+		self.project_store = gtk.ListStore(str, str, str, str)
+		self.project_name_cell = gtk.CellRendererText()
+		self.project_name_column = gtk.TreeViewColumn('Name', self.project_name_cell)
+		self.project_description_cell = gtk.CellRendererText()
+		self.project_description_column = gtk.TreeViewColumn('Description', self.project_description_cell)
+		self.project_workspace_cell = gtk.CellRendererText()
+		self.project_workspace_column = gtk.TreeViewColumn('Workspace', self.project_workspace_cell)
+		self.project_input_file_cell = gtk.CellRendererText()
+		self.project_input_file_column = gtk.TreeViewColumn('Input File', self.project_input_file_cell)
+		self.project_tree_view = gtk.TreeView() # Associate with self.project_store later, not yet!
 		
 		# --- BOM tab ---
-		self.bomTabBox = gtk.VBox(False, 0) # Second tab in notebook
-		self.bomToolbar = gtk.Toolbar()
-		self.bomReadInputButton = gtk.ToolButton(None, "Read CSV")
-		self.bomReadDBButton = gtk.ToolButton(None, "Read DB")
-		self.bomEditPartButton = gtk.ToolButton(None, "Edit Part")
-		self.bomHPane = gtk.HPaned()	
-		self.bomVPane = gtk.VPaned()	# Goes in right side of bomHPane
+		self.bom_tab_vbox = gtk.VBox(False, 0) # Second tab in notebook
+		self.bom_toolbar = gtk.Toolbar()
+		self.bom_read_input_button = gtk.ToolButton(None, "Read CSV")
+		self.bom_read_db_button = gtk.ToolButton(None, "Read DB")
+		self.bom_edit_part_button = gtk.ToolButton(None, "Edit Part")
+		self.bom_hpane = gtk.HPaned()	
+		self.bom_vpane = gtk.VPaned()	# Goes in right side of bom_hpane
 		
-		self.bomFrame = gtk.Frame("BOM") # Goes in left side of bomHPane
-		self.bomScrollBox = gtk.VBox(False, 0) # Holds bomScrollWin and bomRadioBox
-		self.bomScrollWin = gtk.ScrolledWindow() # Holds bomTable
+		self.bom_frame = gtk.Frame("BOM") # Goes in left side of bom_hpane
+		self.bom_scroll_box = gtk.VBox(False, 0) # Holds bom_scroll_win and bom_radio_hbox
+		self.bom_scroll_win = gtk.ScrolledWindow() # Holds bomTable
 		
 		# Columns: Name, Value, Device, Package, Description, MFG PN, Quantity
-		self.bomStore = gtk.ListStore(str, str, str, str, str, str, int)
+		self.bom_store = gtk.ListStore(str, str, str, str, str, str, int)
 									
-		self.bomNameCell = gtk.CellRendererText()
-		self.bomNameColumn = gtk.TreeViewColumn('Name', self.bomNameCell)
-		self.bomValueCell = gtk.CellRendererText()
-		self.bomValueColumn = gtk.TreeViewColumn('Value', self.bomValueCell)
-		self.bomDeviceCell = gtk.CellRendererText()
-		self.bomDeviceColumn = gtk.TreeViewColumn('Device', self.bomDeviceCell)
-		self.bomPackageCell = gtk.CellRendererText()
-		self.bomPackageColumn = gtk.TreeViewColumn('Package', self.bomPackageCell)
-		self.bomDescriptionCell = gtk.CellRendererText()
-		self.bomDescriptionColumn = gtk.TreeViewColumn('Description', self.bomDescriptionCell)
-		self.bomPNCell = gtk.CellRendererText()
-		self.bomPNColumn = gtk.TreeViewColumn('Manufacturer Part Number', self.bomPNCell)
-		self.bomQuantityCell = gtk.CellRendererText()
-		self.bomQuantityColumn = gtk.TreeViewColumn('Quantity', self.bomQuantityCell)
+		self.bom_name_cell = gtk.CellRendererText()
+		self.bom_name_column = gtk.TreeViewColumn('Name', self.bom_name_cell)
+		self.bom_value_cell = gtk.CellRendererText()
+		self.bom_value_column = gtk.TreeViewColumn('Value', self.bom_value_cell)
+		self.bom_device_cell = gtk.CellRendererText()
+		self.bom_device_column = gtk.TreeViewColumn('Device', self.bom_device_cell)
+		self.bom_package_cell = gtk.CellRendererText()
+		self.bom_package_column = gtk.TreeViewColumn('Package', self.bom_package_cell)
+		self.bom_description_cell = gtk.CellRendererText()
+		self.bom_description_column = gtk.TreeViewColumn('Description', self.bom_description_cell)
+		self.bom_product_cell = gtk.CellRendererText()
+		self.bom_product_column = gtk.TreeViewColumn('Manufacturer Part Number', self.bom_product_cell)
+		self.bom_quantity_cell = gtk.CellRendererText()
+		self.bom_quantity_column = gtk.TreeViewColumn('Quantity', self.bom_quantity_cell)
 		
-		self.bomTreeView = gtk.TreeView()
+		self.bom_tree_view = gtk.TreeView()
 		
-		self.bomRadioBox = gtk.HBox(False, 0)
-		self.bomRadioLabel = gtk.Label("Group by:")
-		self.bomGroupName = gtk.RadioButton(None, "Name")
-		self.bomGroupValue = gtk.RadioButton(self.bomGroupName, "Value")
-		self.bomGroupPN = gtk.RadioButton(self.bomGroupName, "Part Number")
+		self.bom_radio_hbox = gtk.HBox(False, 0)
+		self.bom_radio_label = gtk.Label("Group by:")
+		self.bom_group_name = gtk.RadioButton(None, "Name")
+		self.bom_group_value = gtk.RadioButton(self.bom_group_name, "Value")
+		self.bom_group_product = gtk.RadioButton(self.bom_group_name, "Part Number")
 		
-		self.bomSelectedProduct = Product("init", "init", wspace)
-		self.selectedBomPart = bomPart("init", "init", "init", "init", self.active_bom)
+		self.bom_selected_product = Product("init", "init", wspace)
+		self.selected_bom_part = Part("init", "init", "init", "init", self.active_bom)
 		
-		self.partInfoFrame = gtk.Frame("Part information") # Goes in top half of bomVPane
-		self.partInfoRowBox = gtk.VBox(False, 5) # Fill with HBoxes 
+		self.part_info_frame = gtk.Frame("Part information") # Goes in top half of bom_vpane
+		self.part_info_row_box = gtk.VBox(False, 5) # Fill with HBoxes 
 		
-		self.partInfoInfoTable = gtk.Table(5, 2, False) # Vendor, PNs, inventory, etc
-		#self.partInfoVendorLabel1 = gtk.Label("Vendor: ")
-		#self.partInfoVendorLabel2 = gtk.Label(None)
-		#self.partInfoVendorPNLabel1 = gtk.Label("Vendor Part Number: ")
-		#self.partInfoVendorPNLabel2 = gtk.Label(None)
-		self.partInfoManufacturerLabel1 = gtk.Label("Manufacturer: ")
-		self.partInfoManufacturerLabel2 = gtk.Label(None)
-		self.partInfoManufacturerPNLabel1 = gtk.Label("Manufacturer Part Number: ")
-		self.partInfoManufacturerPNLabel2 = gtk.Label(None)
-		self.partInfoDescriptionLabel1 = gtk.Label("Description: ")
-		self.partInfoDescriptionLabel2 = gtk.Label(None)
-		self.partInfoDatasheetLabel1 = gtk.Label("Datasheet filename: ")
-		self.partInfoDatasheetLabel2 = gtk.Label(None)
-		#self.partInfoCategoryLabel1 = gtk.Label("Category: ")
-		#self.partInfoCategoryLabel2 = gtk.Label(None)
-		#self.partInfoFamilyLabel1 = gtk.Label("Family: ")
-		#self.partInfoFamilyLabel2 = gtk.Label(None)
-		#self.partInfoSeriesLabel1 = gtk.Label("Series: ")
-		#self.partInfoSeriesLabel2 = gtk.Label(None)
-		self.partInfoPackageLabel1 = gtk.Label("Package/case: ")
-		self.partInfoPackageLabel2 = gtk.Label(None)
+		self.part_info_product_table = gtk.Table(5, 2, False) # Product info
+		self.part_info_manufacturer_label = gtk.Label("Manufacturer: ")
+		self.part_info_manufacturer_content_label = gtk.Label(None)
+		self.part_info_manufacturer_pn_label = gtk.Label("Manufacturer Part Number: ")
+		self.part_info_manufacturer_pn_content_label = gtk.Label(None)
+		self.part_info_description_label = gtk.Label("Description: ")
+		self.part_info_description_content_label = gtk.Label(None)
+		self.part_info_datasheet_label = gtk.Label("Datasheet filename: ")
+		self.part_info_datasheet_content_label = gtk.Label(None)
+		self.part_info_package_label = gtk.Label("Package/case: ")
+		self.part_info_package_content_label = gtk.Label(None)
 		
-		self.partInfoPricingTable = gtk.Table(8, 3 , False) # Price breaks
-		self.priceBreakLabels = []
+		self.part_info_pricing_table = gtk.Table(8, 3 , False) # Price breaks
+		self.price_break_labels = []
 		
-		self.unitPriceLabels = []
+		self.unit_price_labels = []
 		
-		self.extPriceLabels = []
+		self.ext_price_labels = []
 		
-		self.partInfoButtonBox = gtk.HBox(False, 5)
+		self.part_info_button_hbox = gtk.HBox(False, 5)
 
-		self.partInfoScrapeButton = gtk.Button("Scrape", stock=gtk.STOCK_REFRESH)
-		self.partInfoDatasheetButton = gtk.Button("Datasheet", stock=gtk.STOCK_PROPERTIES)
+		self.part_info_scrape_button = gtk.Button("Scrape")
+		self.part_info_datasheet_button = gtk.Button("Datasheet")
 		
-		self.partInfoListingLabel = gtk.Label("Product source: ")
-		self.partInfoListingCombo = gtk.combo_box_new_text()
+		self.part_info_listing_label = gtk.Label("Product source: ")
+		self.part_info_listing_combo = gtk.combo_box_new_text()
 		
-		self.partInfoInventoryHBox = gtk.HBox(False, 5)
-		self.partInfoInventoryLabel1 = gtk.Label("Inventory: ")
-		self.partInfoInventoryLabel2 = gtk.Label(None)
+		self.part_info_inventory_hbox = gtk.HBox(False, 5)
+		self.part_info_inventory_label = gtk.Label("Inventory: ")
+		self.part_info_inventory_content_label = gtk.Label(None)
 		
-		self.pricingFrame = gtk.Frame("Project pricing") # Goes in bottom half of bomVPane
-		self.orderSizeScaleAdj = gtk.Adjustment(1, 1, 10000, 1, 10, 200)
-		self.orderSizeScale = gtk.HScale(self.orderSizeScaleAdj)
-		self.orderSizeText = gtk.Entry(10000)
+		self.pricing_frame = gtk.Frame("Project pricing") # Goes in bottom half of bom_vpane
+		self.order_size_scale_adjustment = gtk.Adjustment(1, 1, 10000, 1, 10, 200)
+		self.order_size_scale = gtk.HScale(self.order_size_scale_adjustment)
+		self.order_size_text = gtk.Entry(10000)
 		
 		# --- Product DB tab ---
-		self.dbBox = gtk.VBox(False, 0) # Third tab in notebook
-		self.dbToolbar = gtk.Toolbar()
-		self.dbReadDBButton = gtk.ToolButton(None, "Read DB")
-		self.dbFrame = gtk.Frame("Product database") 
-		self.dbScrollWin = gtk.ScrolledWindow()
+		self.db_vbox = gtk.VBox(False, 0) # Third tab in notebook
+		self.db_toolbar = gtk.Toolbar()
+		self.db_read_database_button = gtk.ToolButton(None, "Read DB")
+		self.db_frame = gtk.Frame("Product database") 
+		self.db_scroll_win = gtk.ScrolledWindow()
 		
-		#self.dbProductStore = gtk.ListStore(str, str, int, str, str, str, str, str, str, str, str)
-		self.dbProductStore = gtk.ListStore(str, str, str, str, str)
+		#self.db_product_store = gtk.ListStore(str, str, int, str, str, str, str, str, str, str, str)
+		self.db_product_store = gtk.ListStore(str, str, str, str, str)
 									
 		#self.dbVendorCell = gtk.CellRendererText()
 		#self.dbVendorColumn = gtk.TreeViewColumn('Vendor', self.dbVendorCell)
-		#self.dbVendorPNCell = gtk.CellRendererText()
-		#self.dbVendorPNColumn = gtk.TreeViewColumn('Vendor PN', self.dbVendorPNCell)
+		#self.dbvendor_pnCell = gtk.CellRendererText()
+		#self.dbvendor_pnColumn = gtk.TreeViewColumn('Vendor PN', self.dbvendor_pnCell)
 		#self.dbInventoryCell = gtk.CellRendererText()
 		#self.dbInventoryColumn = gtk.TreeViewColumn('Inventory', self.dbInventoryCell)
-		self.dbManufacturerCell = gtk.CellRendererText()
-		self.dbManufacturerColumn = gtk.TreeViewColumn('Manufacturer', self.dbManufacturerCell)
-		self.dbManufacturerPNCell = gtk.CellRendererText()
-		self.dbManufacturerPNColumn = gtk.TreeViewColumn('Manufacturer PN', self.dbManufacturerPNCell)
-		self.dbDescriptionCell = gtk.CellRendererText()
-		self.dbDescriptionColumn = gtk.TreeViewColumn('Description', self.dbDescriptionCell)
-		self.dbDatasheetCell = gtk.CellRendererText()
-		self.dbDatasheetColumn = gtk.TreeViewColumn('Datasheet filename', self.dbDatasheetCell)
+		self.db_manufacturer_cell = gtk.CellRendererText()
+		self.db_manufacturer_column = gtk.TreeViewColumn('Manufacturer', self.db_manufacturer_cell)
+		self.db_manufacturer_pn_cell = gtk.CellRendererText()
+		self.db_manufacturer_pn_column = gtk.TreeViewColumn('Manufacturer PN', self.db_manufacturer_pn_cell)
+		self.db_description_cell = gtk.CellRendererText()
+		self.db_description_column = gtk.TreeViewColumn('Description', self.db_description_cell)
+		self.db_datasheet_cell = gtk.CellRendererText()
+		self.db_datasheet_column = gtk.TreeViewColumn('Datasheet filename', self.db_datasheet_cell)
 		#self.dbCategoryCell = gtk.CellRendererText()
 		#self.dbCategoryColumn = gtk.TreeViewColumn('Category', self.dbCategoryCell)
 		#self.dbFamilyCell = gtk.CellRendererText()
 		#self.dbFamilyColumn = gtk.TreeViewColumn('Family', self.dbFamilyCell)
 		#self.dbSeriesCell = gtk.CellRendererText()
 		#self.dbSeriesColumn = gtk.TreeViewColumn('Series', self.dbSeriesCell)
-		self.dbPackageCell = gtk.CellRendererText()
-		self.dbPackageColumn = gtk.TreeViewColumn('Package/case', self.dbPackageCell)
+		self.db_package_cell = gtk.CellRendererText()
+		self.db_package_column = gtk.TreeViewColumn('Package/case', self.db_package_cell)
 		
-		self.dbTreeView = gtk.TreeView()
+		self.db_tree_view = gtk.TreeView()
 		
 		# -------- CONFIGURATION --------
 		self.window.set_title("Eagle BOM Manager") 
@@ -769,349 +734,339 @@ class Manager(gobject.GObject):
 		self.window.connect("destroy", self.destroy)
 		
 		self.notebook.set_tab_pos(gtk.POS_TOP)
-		self.notebook.append_page(self.projectBox, self.projectTabLabel)
-		self.notebook.append_page(self.bomTabBox, self.bomTabLabel)
-		self.notebook.append_page(self.dbBox, self.dbTabLabel)
+		self.notebook.append_page(self.project_box, self.project_tab_label)
+		self.notebook.append_page(self.bom_tab_vbox, self.bom_tab_label)
+		self.notebook.append_page(self.db_vbox, self.db_tab_label)
 		self.notebook.set_show_tabs(True)
 		
 		# Project selection tab
-		self.projectNewButton.connect("clicked", self.projectNewCallback)
-		self.newProjectInputFileButton.connect("clicked", self.newProjectInputFileCallback)
+		self.project_new_button.connect("clicked", self.project_new_callback)
+		self.new_project_input_file_button.connect("clicked", self.new_project_input_file_callback)
 		
-		self.projectOpenButton.connect("clicked", self.projectOpenCallback)
+		self.project_open_button.connect("clicked", self.project_open_callback)
 		
-		self.newProjectNameLabel.set_alignment(0.0, 0.5)
-		self.newProjectDescriptionLabel.set_alignment(0.0, 0.5)
-		#self.newProjectWorkspaceLabel.set_alignment(0.0, 0.5)
-		self.newProjectInputFileLabel.set_alignment(0.0, 0.5)
+		self.new_project_name_label.set_alignment(0.0, 0.5)
+		self.new_project_description_label.set_alignment(0.0, 0.5)
+		#self.new_projectWorkspaceLabel.set_alignment(0.0, 0.5)
+		self.new_project_input_file_label.set_alignment(0.0, 0.5)
 		
-		self.projectScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
-		#self.projectTreeView.set_fixed_height_mode(True)
-		self.projectTreeView.set_reorderable(True)
-		self.projectTreeView.set_headers_clickable(True)
+		self.project_scroll_win.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
+		#self.project_tree_view.set_fixed_height_mode(True)
+		self.project_tree_view.set_reorderable(True)
+		self.project_tree_view.set_headers_clickable(True)
 		
-		self.projectNameColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-		self.projectDescriptionColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-		self.projectDBFileColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-		self.projectInputFileColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.project_name_column.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.project_description_column.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.project_workspace_column.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.project_input_file_column.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
 		
-		self.projectNameColumn.set_resizable(True)
-		self.projectDescriptionColumn.set_resizable(True)
-		self.projectDBFileColumn.set_resizable(True)
-		self.projectInputFileColumn.set_resizable(True)
+		self.project_name_column.set_resizable(True)
+		self.project_description_column.set_resizable(True)
+		self.project_workspace_column.set_resizable(True)
+		self.project_input_file_column.set_resizable(True)
 		
-		self.projectNameColumn.set_attributes(self.projectNameCell, text=0)
-		self.projectDescriptionColumn.set_attributes(self.projectDescriptionCell, text=1)
-		self.projectDBFileColumn.set_attributes(self.projectDBFileCell, text=2)
-		self.projectInputFileColumn.set_attributes(self.projectInputFileCell, text=3)
+		self.project_name_column.set_attributes(self.project_name_cell, text=0)
+		self.project_description_column.set_attributes(self.project_description_cell, text=1)
+		self.project_workspace_column.set_attributes(self.project_workspace_cell, text=2)
+		self.project_input_file_column.set_attributes(self.project_input_file_cell, text=3)
 		
-		self.projectTreeView.append_column(self.projectNameColumn)
-		self.projectTreeView.append_column(self.projectDescriptionColumn)
-		self.projectTreeView.append_column(self.projectDBFileColumn)
-		self.projectTreeView.append_column(self.projectInputFileColumn)
-		self.projectStorePopulate()
-		self.projectTreeView.set_model(self.projectStore)
+		self.project_tree_view.append_column(self.project_name_column)
+		self.project_tree_view.append_column(self.project_description_column)
+		self.project_tree_view.append_column(self.project_workspace_column)
+		self.project_tree_view.append_column(self.project_input_file_column)
+		self.project_store_populate()
+		self.project_tree_view.set_model(self.project_store)
 		
 		# BOM tab
 		
-		self.bomNameColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-		self.bomValueColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-		self.bomDeviceColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-		self.bomPackageColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-		self.bomDescriptionColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-		self.bomPNColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-		self.bomQuantityColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.bom_name_column.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.bom_value_column.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.bom_device_column.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.bom_package_column.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.bom_description_column.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.bom_product_column.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.bom_quantity_column.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
 		
-		self.bomNameColumn.set_resizable(True)
-		self.bomValueColumn.set_resizable(True)
-		self.bomDeviceColumn.set_resizable(True)
-		self.bomPackageColumn.set_resizable(True)
-		self.bomDescriptionColumn.set_resizable(True)
-		self.bomPNColumn.set_resizable(True)
-		self.bomQuantityColumn.set_resizable(True)
+		self.bom_name_column.set_resizable(True)
+		self.bom_value_column.set_resizable(True)
+		self.bom_device_column.set_resizable(True)
+		self.bom_package_column.set_resizable(True)
+		self.bom_description_column.set_resizable(True)
+		self.bom_product_column.set_resizable(True)
+		self.bom_quantity_column.set_resizable(True)
 		
-		self.bomNameColumn.set_clickable(True)
-		self.bomValueColumn.set_clickable(True)
-		self.bomDeviceColumn.set_clickable(True)
-		self.bomPackageColumn.set_clickable(True)
-		self.bomDescriptionColumn.set_clickable(True)
-		self.bomPNColumn.set_clickable(True)
-		self.bomQuantityColumn.set_clickable(True)
+		self.bom_name_column.set_clickable(True)
+		self.bom_value_column.set_clickable(True)
+		self.bom_device_column.set_clickable(True)
+		self.bom_package_column.set_clickable(True)
+		self.bom_description_column.set_clickable(True)
+		self.bom_product_column.set_clickable(True)
+		self.bom_quantity_column.set_clickable(True)
 		
-		#self.bomNameColumn.set_sort_indicator(True)
-		#self.bomValueColumn.set_sort_indicator(True)
-		#self.bomDeviceColumn.set_sort_indicator(True)
-		#self.bomPackageColumn.set_sort_indicator(True)
-		#self.bomDescriptionColumn.set_sort_indicator(True)
-		#self.bomPNColumn.set_sort_indicator(True)
-		#self.bomQuantityColumn.set_sort_indicator(True)
+		#self.bom_name_column.set_sort_indicator(True)
+		#self.bom_value_column.set_sort_indicator(True)
+		#self.bom_device_column.set_sort_indicator(True)
+		#self.bom_package_column.set_sort_indicator(True)
+		#self.bom_description_column.set_sort_indicator(True)
+		#self.bom_product_column.set_sort_indicator(True)
+		#self.bom_quantity_column.set_sort_indicator(True)
 		
-		self.bomNameColumn.set_attributes(self.bomNameCell, text=0)
-		self.bomValueColumn.set_attributes(self.bomValueCell, text=1)
-		self.bomDeviceColumn.set_attributes(self.bomDeviceCell, text=2)
-		self.bomPackageColumn.set_attributes(self.bomPackageCell, text=3)
-		self.bomDescriptionColumn.set_attributes(self.bomDescriptionCell, text=4)
-		self.bomPNColumn.set_attributes(self.bomPNCell, text=5)
-		self.bomQuantityColumn.set_attributes(self.bomQuantityCell, text=6)
+		self.bom_name_column.set_attributes(self.bom_name_cell, text=0)
+		self.bom_value_column.set_attributes(self.bom_value_cell, text=1)
+		self.bom_device_column.set_attributes(self.bom_device_cell, text=2)
+		self.bom_package_column.set_attributes(self.bom_package_cell, text=3)
+		self.bom_description_column.set_attributes(self.bom_description_cell, text=4)
+		self.bom_product_column.set_attributes(self.bom_product_cell, text=5)
+		self.bom_quantity_column.set_attributes(self.bom_quantity_cell, text=6)
 		
-		self.bomNameColumn.connect("clicked", self.bomSortCallback)
-		self.bomValueColumn.connect("clicked", self.bomSortCallback)
-		self.bomDeviceColumn.connect("clicked", self.bomSortCallback)
-		self.bomPackageColumn.connect("clicked", self.bomSortCallback)
-		self.bomDescriptionColumn.connect("clicked", self.bomSortCallback)
-		self.bomPNColumn.connect("clicked", self.bomSortCallback)
-		self.bomQuantityColumn.connect("clicked", self.bomSortCallback)
+		self.bom_name_column.connect("clicked", self.bom_sort_callback)
+		self.bom_value_column.connect("clicked", self.bom_sort_callback)
+		self.bom_device_column.connect("clicked", self.bom_sort_callback)
+		self.bom_package_column.connect("clicked", self.bom_sort_callback)
+		self.bom_description_column.connect("clicked", self.bom_sort_callback)
+		self.bom_product_column.connect("clicked", self.bom_sort_callback)
+		self.bom_quantity_column.connect("clicked", self.bom_sort_callback)
 		
-		self.bomTreeView.set_reorderable(True)
-		self.bomTreeView.set_enable_search(True)
-		self.bomTreeView.set_headers_clickable(True)
-		self.bomTreeView.set_headers_visible(True)
+		self.bom_tree_view.set_reorderable(True)
+		self.bom_tree_view.set_enable_search(True)
+		self.bom_tree_view.set_headers_clickable(True)
+		self.bom_tree_view.set_headers_visible(True)
 		
-		self.bomTreeView.append_column(self.bomNameColumn)
-		self.bomTreeView.append_column(self.bomValueColumn)
-		self.bomTreeView.append_column(self.bomDeviceColumn)
-		self.bomTreeView.append_column(self.bomPackageColumn)
-		self.bomTreeView.append_column(self.bomDescriptionColumn)
-		self.bomTreeView.append_column(self.bomPNColumn)
-		self.bomTreeView.append_column(self.bomQuantityColumn)
-		#self.projectStorePopulate()
+		self.bom_tree_view.append_column(self.bom_name_column)
+		self.bom_tree_view.append_column(self.bom_value_column)
+		self.bom_tree_view.append_column(self.bom_device_column)
+		self.bom_tree_view.append_column(self.bom_package_column)
+		self.bom_tree_view.append_column(self.bom_description_column)
+		self.bom_tree_view.append_column(self.bom_product_column)
+		self.bom_tree_view.append_column(self.bom_quantity_column)
+		#self.project_store_populate()
 		
-		self.bomTreeView.connect("cursor-changed", self.bomSelectionCallback)
-		self.bomTreeView.set_model(self.bomStore)
+		self.bom_tree_view.connect("cursor-changed", self.bom_selection_callback)
+		self.bom_tree_view.set_model(self.bom_store)
 		
-		self.bomReadInputButton.connect("clicked", self.readInputCallback, "read")
-		self.bomReadDBButton.connect("clicked", self.bomReadDBCallback, "read")
-		self.bomEditPartButton.connect("clicked", self.bomEditPartCallback, "setPN")
+		self.bom_read_input_button.connect("clicked", self.read_input_callback, "read")
+		self.bom_read_db_button.connect("clicked", self.bom_read_db_callback, "read")
+		self.bom_edit_part_button.connect("clicked", self.bom_edit_part_callback, "setPN")
 		
-		self.bomScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
+		self.bom_scroll_win.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
 		
-		# TODO: Fiddle with bomTable sizing to make it force the window larger to fit
+		# TODO: Fiddle with bom_table sizing to make it force the window larger to fit
 		
-		self.bomGroupName.connect("toggled", self.bomGroupCallback, "name")
-		self.bomGroupValue.connect("toggled", self.bomGroupCallback, "value")
-		self.bomGroupPN.connect("toggled", self.bomGroupCallback, "product")
+		self.bom_group_name.connect("toggled", self.bom_group_callback, "name")
+		self.bom_group_value.connect("toggled", self.bom_group_callback, "value")
+		self.bom_group_product.connect("toggled", self.bom_group_callback, "product")
 		
-		#self.partInfoVendorLabel1.set_alignment(0.0, 0.5)
-		#self.partInfoVendorLabel2.set_alignment(0.0, 0.5)
-		#self.partInfoVendorPNLabel1.set_alignment(0.0, 0.5)
-		#self.partInfoVendorPNLabel2.set_alignment(0.0, 0.5)
-		self.partInfoInventoryLabel1.set_alignment(0.0, 0.5)
-		self.partInfoInventoryLabel2.set_alignment(0.0, 0.5)
-		self.partInfoManufacturerLabel1.set_alignment(0.0, 0.5)
-		self.partInfoManufacturerLabel2.set_alignment(0.0, 0.5)
-		self.partInfoManufacturerPNLabel1.set_alignment(0.0, 0.5)
-		self.partInfoManufacturerPNLabel2.set_alignment(0.0, 0.5)
-		self.partInfoDescriptionLabel1.set_alignment(0.0, 0.5)
-		self.partInfoDescriptionLabel2.set_alignment(0.0, 0.5)
-		self.partInfoDatasheetLabel1.set_alignment(0.0, 0.5)
-		self.partInfoDatasheetLabel2.set_alignment(0.0, 0.5)
-		#self.partInfoCategoryLabel1.set_alignment(0.0, 0.5)
-		#self.partInfoCategoryLabel2.set_alignment(0.0, 0.5)
-		#self.partInfoFamilyLabel1.set_alignment(0.0, 0.5)
-		#self.partInfoFamilyLabel2.set_alignment(0.0, 0.5)
-		#self.partInfoSeriesLabel1.set_alignment(0.0, 0.5)
-		#self.partInfoSeriesLabel2.set_alignment(0.0, 0.5)
-		self.partInfoPackageLabel1.set_alignment(0.0, 0.5)
-		self.partInfoPackageLabel2.set_alignment(0.0, 0.5)
-		self.partInfoScrapeButton.connect("clicked", self.partInfoScrapeButtonCallback)
-		self.partInfoListingLabel.set_alignment(0.0, 0.5)
-		self.partInfoListingCombo.connect("changed", self.partInfoListingComboCallback)
+		self.part_info_inventory_label.set_alignment(0.0, 0.5)
+		self.part_info_inventory_content_label.set_alignment(0.0, 0.5)
+		self.part_info_manufacturer_label.set_alignment(0.0, 0.5)
+		self.part_info_manufacturer_content_label.set_alignment(0.0, 0.5)
+		self.part_info_manufacturer_pn_label.set_alignment(0.0, 0.5)
+		self.part_info_manufacturer_pn_content_label.set_alignment(0.0, 0.5)
+		self.part_info_description_label.set_alignment(0.0, 0.5)
+		self.part_info_description_content_label.set_alignment(0.0, 0.5)
+		self.part_info_datasheet_label.set_alignment(0.0, 0.5)
+		self.part_info_datasheet_content_label.set_alignment(0.0, 0.5)
+		self.part_info_package_label.set_alignment(0.0, 0.5)
+		self.part_info_package_content_label.set_alignment(0.0, 0.5)
+		self.part_info_scrape_button.connect("clicked", self.part_info_scrape_button_callback)
+		self.part_info_listing_label.set_alignment(0.0, 0.5)
+		self.part_info_listing_combo.connect("changed", self.part_info_listing_combo_callback)
 		
-		self.dbScrollWin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
-		self.dbReadDBButton.connect("clicked", self.dbReadDBCallback, "read")
+		self.db_scroll_win.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
+		self.db_read_database_button.connect("clicked", self.db_read_database_callback, "read")
 		
 		#self.dbVendorColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-		#self.dbVendorPNColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		#self.dbvendor_pnColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
 		#self.dbInventoryColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-		self.dbManufacturerColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-		self.dbManufacturerPNColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-		self.dbDescriptionColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-		self.dbDatasheetColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.db_manufacturer_column.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.db_manufacturer_pn_column.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.db_description_column.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.db_datasheet_column.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
 		#self.dbCategoryColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
 		#self.dbFamilyColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
 		#self.dbSeriesColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
-		self.dbPackageColumn.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
+		self.db_package_column.set_sizing(gtk.TREE_VIEW_COLUMN_GROW_ONLY)
 		
 		#self.dbVendorColumn.set_resizable(True)
-		#self.dbVendorPNColumn.set_resizable(True)
+		#self.dbvendor_pnColumn.set_resizable(True)
 		#self.dbInventoryColumn.set_resizable(True)
-		self.dbManufacturerColumn.set_resizable(True)
-		self.dbManufacturerPNColumn.set_resizable(True)
-		self.dbDescriptionColumn.set_resizable(True)
-		self.dbDatasheetColumn.set_resizable(True)
+		self.db_manufacturer_column.set_resizable(True)
+		self.db_manufacturer_pn_column.set_resizable(True)
+		self.db_description_column.set_resizable(True)
+		self.db_datasheet_column.set_resizable(True)
 		#self.dbCategoryColumn.set_resizable(True)
 		#self.dbFamilyColumn.set_resizable(True)
 		#self.dbSeriesColumn.set_resizable(True)
-		self.dbPackageColumn.set_resizable(True)
+		self.db_package_column.set_resizable(True)
 		
 		#self.dbVendorColumn.set_clickable(True)
-		#self.dbVendorPNColumn.set_clickable(True)
+		#self.dbvendor_pnColumn.set_clickable(True)
 		#self.dbInventoryColumn.set_clickable(True)
-		self.dbManufacturerColumn.set_clickable(True)
-		self.dbManufacturerPNColumn.set_clickable(True)
-		self.dbDescriptionColumn.set_clickable(True)
-		self.dbDatasheetColumn.set_clickable(True)
+		self.db_manufacturer_column.set_clickable(True)
+		self.db_manufacturer_pn_column.set_clickable(True)
+		self.db_description_column.set_clickable(True)
+		self.db_datasheet_column.set_clickable(True)
 		#self.dbCategoryColumn.set_clickable(True)
 		#self.dbFamilyColumn.set_clickable(True)
 		#self.dbSeriesColumn.set_clickable(True)
-		self.dbPackageColumn.set_clickable(True)
+		self.db_package_column.set_clickable(True)
 		
 		#self.dbVendorColumn.set_attributes(self.dbVendorCell, text=0)
-		#self.dbVendorPNColumn.set_attributes(self.dbVendorPNCell, text=1)
+		#self.dbvendor_pnColumn.set_attributes(self.dbvendor_pnCell, text=1)
 		#self.dbInventoryColumn.set_attributes(self.dbInventoryCell, text=2)
-		self.dbManufacturerColumn.set_attributes(self.dbManufacturerCell, text=0)
-		self.dbManufacturerPNColumn.set_attributes(self.dbManufacturerPNCell, text=1)
-		self.dbDescriptionColumn.set_attributes(self.dbDescriptionCell, text=2)
-		self.dbDatasheetColumn.set_attributes(self.dbDatasheetCell, text=3)
+		self.db_manufacturer_column.set_attributes(self.db_manufacturer_cell, text=0)
+		self.db_manufacturer_pn_column.set_attributes(self.db_manufacturer_pn_cell, text=1)
+		self.db_description_column.set_attributes(self.db_description_cell, text=2)
+		self.db_datasheet_column.set_attributes(self.db_datasheet_cell, text=3)
 		#self.dbCategoryColumn.set_attributes(self.dbCategoryCell, text=7)
 		#self.dbFamilyColumn.set_attributes(self.dbFamilyCell, text=8)
 		#self.dbSeriesColumn.set_attributes(self.dbSeriesCell, text=9)
-		self.dbPackageColumn.set_attributes(self.dbPackageCell, text=4)
+		self.db_package_column.set_attributes(self.db_package_cell, text=4)
 		
-		#self.dbVendorColumn.connect("clicked", self.dbSortCallback)
-		#self.dbVendorPNColumn.connect("clicked", self.dbSortCallback)
-		#self.dbInventoryColumn.connect("clicked", self.dbSortCallback)
-		self.dbManufacturerColumn.connect("clicked", self.dbSortCallback)
-		self.dbManufacturerPNColumn.connect("clicked", self.dbSortCallback)
-		self.dbDescriptionColumn.connect("clicked", self.dbSortCallback)
-		self.dbDatasheetColumn.connect("clicked", self.dbSortCallback)
-		#self.dbCategoryColumn.connect("clicked", self.dbSortCallback)
-		#self.dbFamilyColumn.connect("clicked", self.dbSortCallback)
-		#self.dbSeriesColumn.connect("clicked", self.dbSortCallback)
-		self.dbPackageColumn.connect("clicked", self.dbSortCallback)
+		#self.dbVendorColumn.connect("clicked", self.db_sort_callback)
+		#self.dbvendor_pnColumn.connect("clicked", self.db_sort_callback)
+		#self.dbInventoryColumn.connect("clicked", self.db_sort_callback)
+		self.db_manufacturer_column.connect("clicked", self.db_sort_callback)
+		self.db_manufacturer_pn_column.connect("clicked", self.db_sort_callback)
+		self.db_description_column.connect("clicked", self.db_sort_callback)
+		self.db_datasheet_column.connect("clicked", self.db_sort_callback)
+		#self.dbCategoryColumn.connect("clicked", self.db_sort_callback)
+		#self.dbFamilyColumn.connect("clicked", self.db_sort_callback)
+		#self.dbSeriesColumn.connect("clicked", self.db_sort_callback)
+		self.db_package_column.connect("clicked", self.db_sort_callback)
 		
-		self.dbTreeView.set_reorderable(True)
-		self.dbTreeView.set_enable_search(True)
-		self.dbTreeView.set_headers_clickable(True)
-		self.dbTreeView.set_headers_visible(True)
+		self.db_tree_view.set_reorderable(True)
+		self.db_tree_view.set_enable_search(True)
+		self.db_tree_view.set_headers_clickable(True)
+		self.db_tree_view.set_headers_visible(True)
 		
-		#self.dbTreeView.append_column(self.dbVendorColumn)
-		#self.dbTreeView.append_column(self.dbVendorPNColumn)
-		#self.dbTreeView.append_column(self.dbInventoryColumn)
-		self.dbTreeView.append_column(self.dbManufacturerColumn)
-		self.dbTreeView.append_column(self.dbManufacturerPNColumn)
-		self.dbTreeView.append_column(self.dbDescriptionColumn)
-		self.dbTreeView.append_column(self.dbDatasheetColumn)
-		#self.dbTreeView.append_column(self.dbCategoryColumn)
-		#self.dbTreeView.append_column(self.dbFamilyColumn)
-		#self.dbTreeView.append_column(self.dbSeriesColumn)
-		self.dbTreeView.append_column(self.dbPackageColumn)
-		self.dbStorePopulate()
+		#self.db_tree_view.append_column(self.dbVendorColumn)
+		#self.db_tree_view.append_column(self.dbvendor_pnColumn)
+		#self.db_tree_view.append_column(self.dbInventoryColumn)
+		self.db_tree_view.append_column(self.db_manufacturer_column)
+		self.db_tree_view.append_column(self.db_manufacturer_pn_column)
+		self.db_tree_view.append_column(self.db_description_column)
+		self.db_tree_view.append_column(self.db_datasheet_column)
+		#self.db_tree_view.append_column(self.dbCategoryColumn)
+		#self.db_tree_view.append_column(self.dbFamilyColumn)
+		#self.db_tree_view.append_column(self.dbSeriesColumn)
+		self.db_tree_view.append_column(self.db_package_column)
+		self.db_store_populate()
 		
-		self.dbTreeView.connect("cursor-changed", self.dbSelectionCallback)
-		self.dbTreeView.set_model(self.dbProductStore)
+		self.db_tree_view.connect("cursor-changed", self.db_selection_callback)
+		self.db_tree_view.set_model(self.db_product_store)
 		
 		# -------- PACKING AND ADDING --------
-		self.mainBox.pack_start(self.menuBar, False)
-		self.mainBox.pack_start(self.notebook)
-		self.window.add(self.mainBox)
+		self.main_box.pack_start(self.menu_bar, False)
+		self.main_box.pack_start(self.notebook)
+		self.window.add(self.main_box)
 		
 		# Project selection tab
-		self.projectBox.pack_start(self.projectToolbar, False)
-		self.projectToolbar.insert(self.projectNewButton, 0)
-		self.projectToolbar.insert(self.projectOpenButton, 1)
-		self.projectToolbar.insert(self.projectEditButton, 2)
-		self.projectToolbar.insert(self.projectDeleteButton, 3)
+		self.project_box.pack_start(self.project_toolbar, False)
+		self.project_toolbar.insert(self.project_new_button, 0)
+		self.project_toolbar.insert(self.project_open_button, 1)
+		self.project_toolbar.insert(self.project_edit_button, 2)
+		self.project_toolbar.insert(self.project_delete_button, 3)
 		
-		self.projectBox.pack_start(self.projectFrame)
-		self.projectFrame.add(self.projectScrollWin)
-		self.projectScrollWin.add(self.projectTreeView)
+		self.project_box.pack_start(self.project_frame)
+		self.project_frame.add(self.project_scroll_win)
+		self.project_scroll_win.add(self.project_tree_view)
 		
-		self.newProjectNameHBox.pack_start(self.newProjectNameLabel, False, True, 0)
-		self.newProjectNameHBox.pack_end(self.newProjectNameEntry, False, True, 0)
+		self.new_project_name_hbox.pack_start(self.new_project_name_label, False, True, 0)
+		self.new_project_name_hbox.pack_end(self.new_project_name_entry, False, True, 0)
 		
-		self.newProjectDescriptionHBox.pack_start(self.newProjectDescriptionLabel, False, True, 0)
-		self.newProjectDescriptionHBox.pack_end(self.newProjectDescriptionEntry, False, True, 0)
+		self.new_project_description_hbox.pack_start(self.new_project_description_label, False, True, 0)
+		self.new_project_description_hbox.pack_end(self.new_project_description_entry, False, True, 0)
 		
-		#self.newProjectWorkspaceHBox.pack_start(self.newProjectWorkspaceLabel, False, True, 0)
-		#self.newProjectWorkspaceHBox.pack_end(self.newProjectWorkspaceEntry, False, True, 0)
+		#self.new_project_workspace_hbox.pack_start(self.new_project_workspace_label, False, True, 0)
+		#self.new_project_workspace_hbox.pack_end(self.new_project_workspace_entry, False, True, 0)
 		
-		self.newProjectInputFileHBox.pack_start(self.newProjectInputFileLabel, False, True, 0)
-		self.newProjectInputFileHBox.pack_start(self.newProjectInputFileEntry, False, True, 0)
-		self.newProjectInputFileHBox.pack_end(self.newProjectInputFileButton, False, True, 0)
+		self.new_project_input_file_hbox.pack_start(self.new_project_input_file_label, False, True, 0)
+		self.new_project_input_file_hbox.pack_start(self.new_project_input_file_entry, False, True, 0)
+		self.new_project_input_file_hbox.pack_end(self.new_project_input_file_button, False, True, 0)
 		
-		self.newProjectDialog.vbox.set_spacing(1)
-		self.newProjectDialog.vbox.pack_start(self.newProjectNameHBox, True, True, 0)
-		self.newProjectDialog.vbox.pack_start(self.newProjectDescriptionHBox, True, True, 0)
-		#self.newProjectDialog.vbox.pack_start(self.newProjectWorkspaceHBox, True, True, 0)
-		self.newProjectDialog.vbox.pack_start(self.newProjectInputFileHBox, True, True, 0)
+		self.new_project_dialog.vbox.set_spacing(1)
+		self.new_project_dialog.vbox.pack_start(self.new_project_name_hbox, True, True, 0)
+		self.new_project_dialog.vbox.pack_start(self.new_project_description_hbox, True, True, 0)
+		#self.new_project_dialog.vbox.pack_start(self.new_project_workspace_hbox, True, True, 0)
+		self.new_project_dialog.vbox.pack_start(self.new_project_input_file_hbox, True, True, 0)
 		
-		self.newProjectDialog.vbox.show_all()
+		self.new_project_dialog.vbox.show_all()
 		
 		# BOM tab elements
 		
-		self.bomTabBox.pack_start(self.bomToolbar, False)
-		self.bomToolbar.insert(self.bomReadInputButton, 0)
-		self.bomToolbar.insert(self.bomReadDBButton, 1)
-		self.bomToolbar.insert(self.bomEditPartButton, 2)
+		self.bom_tab_vbox.pack_start(self.bom_toolbar, False)
+		self.bom_toolbar.insert(self.bom_read_input_button, 0)
+		self.bom_toolbar.insert(self.bom_read_db_button, 1)
+		self.bom_toolbar.insert(self.bom_edit_part_button, 2)
 		
 		# TODO : Add toolbar elements
 		
-		self.bomTabBox.pack_start(self.bomHPane)
-		self.bomHPane.pack1(self.bomFrame, True, True)
-		self.bomHPane.add2(self.bomVPane)
-		self.bomVPane.add1(self.partInfoFrame)
-		self.bomVPane.add2(self.pricingFrame)
+		self.bom_tab_vbox.pack_start(self.bom_hpane)
+		self.bom_hpane.pack1(self.bom_frame, True, True)
+		self.bom_hpane.add2(self.bom_vpane)
+		self.bom_vpane.add1(self.part_info_frame)
+		self.bom_vpane.add2(self.pricing_frame)
 		
 		# BOM Frame elements
-		self.bomFrame.add(self.bomScrollBox)
+		self.bom_frame.add(self.bom_scroll_box)
 		
-		self.bomScrollBox.pack_start(self.bomScrollWin, True, True, 0)
-		self.bomScrollWin.add(self.bomTreeView)
-		self.bomScrollBox.pack_end(self.bomRadioBox, False, False, 0)
+		self.bom_scroll_box.pack_start(self.bom_scroll_win, True, True, 0)
+		self.bom_scroll_win.add(self.bom_tree_view)
+		self.bom_scroll_box.pack_end(self.bom_radio_hbox, False, False, 0)
 
-		self.bomRadioBox.pack_start(self.bomRadioLabel)
-		self.bomRadioBox.pack_start(self.bomGroupName)
-		self.bomRadioBox.pack_start(self.bomGroupValue)
-		self.bomRadioBox.pack_start(self.bomGroupPN)
+		self.bom_radio_hbox.pack_start(self.bom_radio_label)
+		self.bom_radio_hbox.pack_start(self.bom_group_name)
+		self.bom_radio_hbox.pack_start(self.bom_group_value)
+		self.bom_radio_hbox.pack_start(self.bom_group_product)
 		
 		# Part info frame elements
-		self.partInfoFrame.add(self.partInfoRowBox)
-		self.partInfoRowBox.pack_start(self.partInfoInfoTable, True, True, 5)
-		#self.partInfoInfoTable.attach(self.partInfoVendorLabel1, 0, 1, 0, 1)
-		#self.partInfoInfoTable.attach(self.partInfoVendorPNLabel1, 0, 1, 1, 2)
-		#self.partInfoInfoTable.attach(self.partInfoInventoryLabel1, 0, 1, 2, 3)
-		self.partInfoInfoTable.attach(self.partInfoManufacturerLabel1, 0, 1, 0, 1)
-		self.partInfoInfoTable.attach(self.partInfoManufacturerPNLabel1, 0, 1, 1, 2)
-		self.partInfoInfoTable.attach(self.partInfoDescriptionLabel1, 0, 1, 2, 3)
-		self.partInfoInfoTable.attach(self.partInfoDatasheetLabel1, 0, 1, 3, 4)
-		#self.partInfoInfoTable.attach(self.partInfoCategoryLabel1, 0, 1, 7, 8)
-		#self.partInfoInfoTable.attach(self.partInfoFamilyLabel1, 0, 1, 8, 9)
-		#self.partInfoInfoTable.attach(self.partInfoSeriesLabel1, 0, 1, 9, 10)
-		self.partInfoInfoTable.attach(self.partInfoPackageLabel1, 0, 1, 4, 5)
+		self.part_info_frame.add(self.part_info_row_box)
+		self.part_info_row_box.pack_start(self.part_info_product_table, True, True, 5)
+		#self.part_info_product_table.attach(self.partInfoVendorLabel1, 0, 1, 0, 1)
+		#self.part_info_product_table.attach(self.partInfovendor_pnLabel1, 0, 1, 1, 2)
+		#self.part_info_product_table.attach(self.part_info_inventory_label, 0, 1, 2, 3)
+		self.part_info_product_table.attach(self.part_info_manufacturer_label, 0, 1, 0, 1)
+		self.part_info_product_table.attach(self.part_info_manufacturer_pn_label, 0, 1, 1, 2)
+		self.part_info_product_table.attach(self.part_info_description_label, 0, 1, 2, 3)
+		self.part_info_product_table.attach(self.part_info_datasheet_label, 0, 1, 3, 4)
+		#self.part_info_product_table.attach(self.partInfoCategoryLabel1, 0, 1, 7, 8)
+		#self.part_info_product_table.attach(self.partInfoFamilyLabel1, 0, 1, 8, 9)
+		#self.part_info_product_table.attach(self.partInfoSeriesLabel1, 0, 1, 9, 10)
+		self.part_info_product_table.attach(self.part_info_package_label, 0, 1, 4, 5)
 		
-		#self.partInfoInfoTable.attach(self.partInfoVendorLabel2, 1, 2, 0, 1)
-		#self.partInfoInfoTable.attach(self.partInfoVendorPNLabel2, 1, 2, 1, 2)
-		#self.partInfoInfoTable.attach(self.partInfoInventoryLabel2, 1, 2, 2, 3)
-		self.partInfoInfoTable.attach(self.partInfoManufacturerLabel2, 1, 2, 0, 1)
-		self.partInfoInfoTable.attach(self.partInfoManufacturerPNLabel2, 1, 2, 1, 2)
-		self.partInfoInfoTable.attach(self.partInfoDescriptionLabel2, 1, 2, 2, 3)
-		self.partInfoInfoTable.attach(self.partInfoDatasheetLabel2, 1, 2, 3, 4)
-		#self.partInfoInfoTable.attach(self.partInfoCategoryLabel2, 1, 2, 7, 8)
-		#self.partInfoInfoTable.attach(self.partInfoFamilyLabel2, 1, 2, 8, 9)
-		#self.partInfoInfoTable.attach(self.partInfoSeriesLabel2, 1, 2, 9, 10)
-		self.partInfoInfoTable.attach(self.partInfoPackageLabel2, 1, 2, 4, 5)
+		#self.part_info_product_table.attach(self.partInfoVendorLabel2, 1, 2, 0, 1)
+		#self.part_info_product_table.attach(self.partInfovendor_pnLabel2, 1, 2, 1, 2)
+		#self.part_info_product_table.attach(self.part_info_inventory_content_label, 1, 2, 2, 3)
+		self.part_info_product_table.attach(self.part_info_manufacturer_content_label, 1, 2, 0, 1)
+		self.part_info_product_table.attach(self.part_info_manufacturer_pn_content_label, 1, 2, 1, 2)
+		self.part_info_product_table.attach(self.part_info_description_content_label, 1, 2, 2, 3)
+		self.part_info_product_table.attach(self.part_info_datasheet_content_label, 1, 2, 3, 4)
+		#self.part_info_product_table.attach(self.partInfoCategoryLabel2, 1, 2, 7, 8)
+		#self.part_info_product_table.attach(self.partInfoFamilyLabel2, 1, 2, 8, 9)
+		#self.part_info_product_table.attach(self.partInfoSeriesLabel2, 1, 2, 9, 10)
+		self.part_info_product_table.attach(self.part_info_package_content_label, 1, 2, 4, 5)
 		
-		self.partInfoRowBox.pack_start(self.partInfoButtonBox, True, True, 5)
-		self.partInfoButtonBox.pack_start(self.partInfoScrapeButton, True, True, 5)
-		self.partInfoButtonBox.pack_start(self.partInfoDatasheetButton, True, True, 5)
-		self.partInfoRowBox.pack_start(self.partInfoListingLabel, False, False, 0)
-		self.partInfoRowBox.pack_start(self.partInfoListingCombo, False, False, 0)
-		self.partInfoInventoryHBox.pack_start(self.partInfoInventoryLabel1, False, False, 0)
-		self.partInfoInventoryHBox.pack_start(self.partInfoInventoryLabel2, False, False, 0)
-		self.partInfoRowBox.pack_start(self.partInfoInventoryHBox, False, False, 0)
-		self.partInfoRowBox.pack_start(self.partInfoPricingTable, True, True, 5)
+		self.part_info_row_box.pack_start(self.part_info_button_hbox, True, True, 5)
+		self.part_info_button_hbox.pack_start(self.part_info_scrape_button, True, True, 5)
+		self.part_info_button_hbox.pack_start(self.part_info_datasheet_button, True, True, 5)
+		self.part_info_row_box.pack_start(self.part_info_listing_label, False, False, 0)
+		self.part_info_row_box.pack_start(self.part_info_listing_combo, False, False, 0)
+		self.part_info_inventory_hbox.pack_start(self.part_info_inventory_label, False, False, 0)
+		self.part_info_inventory_hbox.pack_start(self.part_info_inventory_content_label, False, False, 0)
+		self.part_info_row_box.pack_start(self.part_info_inventory_hbox, False, False, 0)
+		self.part_info_row_box.pack_start(self.part_info_pricing_table, True, True, 5)
 		
 		
-		self.dbBox.pack_start(self.dbToolbar, False)
-		self.dbToolbar.insert(self.dbReadDBButton, 0)
-		self.dbBox.pack_start(self.dbFrame)
-		self.dbFrame.add(self.dbScrollWin)
-		self.dbScrollWin.add(self.dbTreeView)
+		self.db_vbox.pack_start(self.db_toolbar, False)
+		self.db_toolbar.insert(self.db_read_database_button, 0)
+		self.db_vbox.pack_start(self.db_frame)
+		self.db_frame.add(self.db_scroll_win)
+		self.db_scroll_win.add(self.db_tree_view)
 		
-		self.dbReadDBCallback(None)
+		self.db_read_database_callback(None)
 		# Show everything
-		self.mainBox.show_all()
+		self.main_box.show_all()
 		self.window.show()
 
 def main():
@@ -1119,7 +1074,7 @@ def main():
 	
 if __name__ == "__main__":
 	from product import *
-	from part import bomPart
+	from part import Part
 	from bom import BOM
 	Manager()
 	main()

@@ -6,7 +6,7 @@ import urlparse
 import sqlite3
 from manager import Workspace
 
-def getFileName(url,openUrl):
+def get_filename(url,openUrl):
 	if 'Content-Disposition' in openUrl.info():
 		# If the response has Content-Disposition, try to get filename from it
 		cd = dict(map(
@@ -39,81 +39,55 @@ VENDOR_SFE_EN = False
 DOWNLOAD_DATASHEET = False	# TODO : Set these from program config
 ENFORCE_MIN_QTY = True
 
-class vendorProduct:
+class Listing:
 	''' A distributor's listing for a Product object. '''
-	
-	@staticmethod
-	def createTables(wspace):
-		''' Create the vendorProducts table for a given Workspace. '''
-		try:
-			(con, cur) = wspace.con_cursor()
-			cur.execute('''CREATE TABLE IF NOT EXISTS vendorproducts
-			(vendor TEXT, 
-			vendor_pn TEXT PRIMARY KEY, 
-			mfg_pn TEXT REFERENCES products(manufacturer_pn), 
-			inventory INTEGER, 
-			packaging TEXT,
-			reelfee FLOAT, 
-			category TEXT,
-			family TEXT,
-			series TEXT)''')
-			
-			cur.execute('''CREATE TABLE IF NOT EXISTS pricebreaks
-			(id INTEGER PRIMARY KEY
-			pn TEXT REFERENCES vendorproducts(vendor_pn) 
-			qty INTEGER
-			unit DOUBLE)''')
-			
-		finally:
-			cur.close()
-			con.close()
-	
+		
 	@staticmethod
 	def select_by_vendor_pn(pn, wspace):
-		''' Return the vendorProduct(s) of given vendor part number in a list. '''
-		vprods = []
+		''' Return the Listing(s) of given vendor part number in a list. '''
+		listings = []
 		try:
 			(con, cur) = wspace.con_cursor()
 			
 			symbol = (pn,)
-			cur.execute('SELECT * FROM vendorproducts WHERE vendor_pn=?', symbol)
+			cur.execute('SELECT * FROM listings WHERE vendor_pn=?', symbol)
 			for row in cur.fetchall():
-				vprod = vendorProduct(row[0], row[1], row[2], {}, row[3], row[4], row[5], row[6], row[7], row[8])
-				vprod.fetchPriceBreaks(wspace)
-				vprods.append(vprod)
+				listing = Listing(row[0], row[1], row[2], {}, row[3], row[4], row[5], row[6], row[7], row[8])
+				listing.fetch_price_breaks(wspace)
+				listings.append(listing)
 			
 		finally:
 			cur.close()
 			con.close()
-			return vprods
+			return listings
 	
 	@staticmethod
 	def select_by_manufacturer_pn(pn, wspace):
-		''' Return the vendorProduct(s) of given manufacturer part number in a list. '''
-		vprods = []
+		''' Return the Listing(s) of given manufacturer part number in a list. '''
+		listings = []
 		try:
 			(con, cur) = wspace.con_cursor()
 			
 			symbol = (pn,)
-			cur.execute('SELECT * FROM vendorproducts WHERE mfg_pn=?', symbol)
+			cur.execute('SELECT * FROM listings WHERE manufacturer_pn=?', symbol)
 			for row in cur.fetchall():
-				vprod = vendorProduct(row[0], row[1], row[2], {}, row[3], row[4], row[5], row[6], row[7], row[8])
-				vprod.fetchPriceBreaks(wspace)
-				vprods.append(vprod)
+				listing = Listing(row[0], row[1], row[2], {}, row[3], row[4], row[5], row[6], row[7], row[8])
+				listing.fetch_price_breaks(wspace)
+				listings.append(listing)
 			
 		finally:
 			cur.close()
 			con.close()
-			return vprods
+			return listings
 	
-	def __init__(self, vend, vendor_pn, mfg_pn, pricesDict, inv, pkg, reel=0, cat='NULL', fam='NULL', ser='NULL'):
+	def __init__(self, vend, vendor_pn, manufacturer_pn, prices_dict, inv, pkg, reel=0, cat='NULL', fam='NULL', ser='NULL'):
 		self.vendor = vend
-		self.vendorPN = vendor_pn
-		self.manufacturer_pn = mfg_pn
-		self.prices = pricesDict
+		self.vendor_pn = vendor_pn
+		self.manufacturer_pn = manufacturer_pn
+		self.prices = prices_dict
 		self.inventory = inv
 		self.packaging = pkg	# Cut Tape, Tape/Reel, Tray, Tube, etc.
-		self.reelFee = reel	# Flat per-order reeling fee (Digi-reel, MouseReel, etc)
+		self.reel_fee = reel	# Flat per-order reeling fee (Digi-reel, MouseReel, etc)
 		self.category = cat	# "Capacitors"
 		self.family = fam	# "Ceramic"
 		self.series = ser	# "C" (TDK series C)
@@ -121,24 +95,24 @@ class vendorProduct:
 	def show(self):
 		''' A simple print method. '''
 		print 'Vendor: ', self.vendor, type(self.vendor)
-		print 'Vendor PN: ', self.vendorPN, type(self.vendorPN)
+		print 'Vendor PN: ', self.vendor_pn, type(self.vendor_pn)
 		print 'Product MFG PN: ', self.manufacturer_pn, type(self.manufacturer_pn)
 		print 'Prices: ', self.prices.items(), type(self.prices.items())
 		print 'Inventory: ', self.inventory, type(self.inventory)
 		print 'Packaging: ', self.packaging, type(self.packaging)
-		print 'Reel Fee: ', self.reelFee, type(self.reelFee)
+		print 'Reel Fee: ', self.reel_fee, type(self.reel_fee)
 		print 'Category: ', self.category, type(self.category)
 		print 'Family: ', self.family, type(self.family)
 		print 'Series: ', self.series, type(self.series)
 	
 	def equals(self, vp):
-		''' Compares the vendorProduct to another vendorProduct.'''
+		''' Compares the Listing to another Listing.'''
 		if type(vp) != type(self):
 			return False
 		eq = True
 		if self.vendor != vp.vendor:
 			eq = False
-		if self.vendorPN != vp.vendorPN:
+		if self.vendor_pn != vp.vendor_pn:
 			eq = False
 		if self.manufacturer_pn != vp.manufacturer_pn:
 			eq = False
@@ -149,7 +123,7 @@ class vendorProduct:
 			eq = False
 		if self.packaging != vp.packaging:
 			eq = False
-		if self.reelFee != vp.reelFee:
+		if self.reel_fee != vp.reel_fee:
 			eq = False
 		if self.category != vp.category:
 			eq = False
@@ -160,25 +134,25 @@ class vendorProduct:
 		return eq
 	
 	def key(self):
-		''' Return a dictionary key as used by the GUI for this vendorProduct.
+		''' Return a dictionary key as used by the GUI for this Listing.
 		Format: key = vendor + ': ' + vendor_pn + ' (' + packaging + ')' '''
-		key = self.vendor + ': ' + self.vendorPN + ' (' + self.packaging + ')'
+		key = self.vendor + ': ' + self.vendor_pn + ' (' + self.packaging + ')'
 		return key
 	
 	def update(self, wspace):
-		''' Update an existing vendorProduct record in the DB. '''
+		''' Update an existing Listing record in the DB. '''
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			cur.execute('DELETE FROM pricebreaks WHERE pn=?', (self.vendorPN,))
+			cur.execute('DELETE FROM pricebreaks WHERE pn=?', (self.vendor_pn,))
 			for pb in self.prices.items():
-				t = (self.vendorPN, pb[0], pb[1],)
+				t = (self.vendor_pn, pb[0], pb[1],)
 				cur.execute('INSERT OR REPLACE INTO pricebreaks VALUES (NULL,?,?,?)', t)
 			
-			symbol = (self.vendor, self.vendorPN, self.manufacturer_pn, self.inventory, self.packaging,
-					self.reelFee, self.category, self.family, self.series, self.vendorPN,)
-			cur.execute('''UPDATE vendorproducts 
-			SET vendor=?, vendor_pn=?, self.mfg_pn=?, inventory=?, packaging=?, reelfee=?, 
+			symbol = (self.vendor, self.vendor_pn, self.manufacturer_pn, self.inventory, self.packaging,
+					self.reel_fee, self.category, self.family, self.series, self.vendor_pn,)
+			cur.execute('''UPDATE listings 
+			SET vendor=?, vendor_pn=?, self.manufacturer_pn=?, inventory=?, packaging=?, reelfee=?, 
 			category=?, family=?, series=? 
 			WHERE vendor_pn=?''', symbol)
 			
@@ -187,44 +161,44 @@ class vendorProduct:
 			con.close()
 	
 	def insert(self, wspace):
-		''' Write the vendorProduct to the DB. '''
+		''' Write the Listing to the DB. '''
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			symbol = (self.vendor, self.vendorPN, self.manufacturer_pn, self.inventory, self.packaging,
-					self.reelFee, self.category, self.family, self.series,)
-			cur.execute('INSERT OR REPLACE INTO vendorproducts VALUES (?,?,?,?,?,?,?,?,?)', symbol)
+			symbol = (self.vendor, self.vendor_pn, self.manufacturer_pn, self.inventory, self.packaging,
+					self.reel_fee, self.category, self.family, self.series,)
+			cur.execute('INSERT OR REPLACE INTO listings VALUES (?,?,?,?,?,?,?,?,?)', symbol)
 			
-			cur.execute('DELETE FROM pricebreaks WHERE pn=?', (self.vendorPN,))
+			cur.execute('DELETE FROM pricebreaks WHERE pn=?', (self.vendor_pn,))
 			for pb in self.prices.items():
-				t = (self.vendorPN, pb[0], pb[1],)
+				t = (self.vendor_pn, pb[0], pb[1],)
 				cur.execute('INSERT OR REPLACE INTO pricebreaks VALUES (NULL,?,?,?)', t)
 		finally:
 			cur.close()
 			con.close()
 	
 	def delete(self, wspace):
-		''' Delete the vendorProduct from the DB. '''
+		''' Delete the Listing from the DB. '''
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			symbol = (self.vendorPN,)
+			symbol = (self.vendor_pn,)
 			cur.execute('DELETE FROM pricebreaks WHERE pn=?', symbol)
-			cur.execute('DELETE FROM vendorproducts WHERE vendor_pn=?', symbol)
+			cur.execute('DELETE FROM listings WHERE vendor_pn=?', symbol)
 			
 		finally:
 			cur.close()
 			con.close()
 	
-	def fetchPriceBreaks(self, wspace):
-		''' Fetch price breaks dictionary for this vendorProduct. 
+	def fetch_price_breaks(self, wspace):
+		''' Fetch price breaks dictionary for this Listing. 
 		Clears and sets the self.prices dictionary directly. '''
 		#print 'self.prices: ', type(self.prices), self.prices
 		self.prices.clear()
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			symbol = (self.vendorPN,)
+			symbol = (self.vendor_pn,)
 			cur.execute('SELECT qty, unit FROM pricebreaks WHERE pn=? ORDER BY qty', symbol)
 			for row in cur.fetchall():
 				self.prices[row[0]] = row[1]
@@ -233,7 +207,7 @@ class vendorProduct:
 			cur.close()
 			con.close()
 		
-	def getPriceBreak(self, qty):
+	def get_price_break(self, qty):
 		''' Returns the (price break, unit price) list pair for the given purchase quantity.
 		If qty is below the lowest break, the lowest is returned.
 		TODO : Raise some kind of error/warning if not ordering enough PCBs to make the lowest break.'''
@@ -254,25 +228,6 @@ class Product:
 	The primary identifying key is the manufacturer PN. '''
 	
 	@staticmethod
-	def createTable(wspace):
-		''' Create the Products table for a given Workspace. '''
-		try:
-			(con, cur) = wspace.con_cursor()
-			cur.execute('''CREATE TABLE IF NOT EXISTS products
-			(manufacturer TEXT, 
-			manufacturer_pn TEXT PRIMARY KEY, 
-			datasheet TEXT, 
-			description TEXT, 
-			package TEXT)''')
-			
-		except:
-			print 'Product.createTable exception, probably because table already created.'
-			
-		finally:
-			cur.close()
-			con.close()
-	
-	@staticmethod
 	def select_all(wspace):
 		''' Return the entire product table except the 'NULL' placeholder row. '''
 		prods = []
@@ -283,7 +238,7 @@ class Product:
 			for row in cur.fetchall():
 				if row[1] != 'NULL':
 					prod = Product(row[0], row[1], row[2], row[3], row[4])
-					prod.fetchListings(wspace)
+					prod.fetch_listings(wspace)
 					prods.append(prod)
 			
 		finally:
@@ -302,7 +257,7 @@ class Product:
 			cur.execute('SELECT * FROM products WHERE manufacturer_pn=?', symbol)
 			for row in cur.fetchall():
 				prod = Product(row[0], row[1], row[2], row[3], row[4])
-				prod.fetchListings(wspace)
+				prod.fetch_listings(wspace)
 				prods.append(prod)
 			
 		finally:
@@ -310,13 +265,13 @@ class Product:
 			con.close()
 			return prods
 		
-	def __init__(self, mfg, mfg_pn, dsheet='NULL', desc='NULL', pkg='NULL'):
+	def __init__(self, mfg, manufacturer_pn, dsheet='NULL', desc='NULL', pkg='NULL'):
 		self.manufacturer = mfg
-		self.manufacturer_pn = mfg_pn
+		self.manufacturer_pn = manufacturer_pn
 		self.datasheet = dsheet
 		self.description = desc
 		self.package = pkg
-		self.vendorProds = {}	# Key is key = vendor + ': ' + vendor_pn + ' (' + packaging + ')'
+		self.listings = {}	# Key is key = vendor + ': ' + vendor_pn + ' (' + packaging + ')'
 	
 	def show(self):
 		''' A simple print method. '''
@@ -326,7 +281,7 @@ class Product:
 		print 'Description: ', self.description, type(self.description)
 		print 'Package: ', self.package, type(self.package)
 		print 'Listings:'
-		for listing in self.vendorProds.items():
+		for listing in self.listings.items():
 			print "\nListing key: ", listing[0]
 			listing[1].show()
 	
@@ -345,11 +300,11 @@ class Product:
 			eq = False
 		if self.package != p.package:
 			eq = False
-		for k in self.vendorProds.keys():
-			if k not in p.vendorProds.keys():
+		for k in self.listings.keys():
+			if k not in p.listings.keys():
 				eq = False
 			else:
-				if self.vendorProds[k].equals(p.vendorProds[k]) == False:
+				if self.listings[k].equals(p.listings[k]) == False:
 					eq = False
 		return eq
 	
@@ -392,80 +347,80 @@ class Product:
 			cur.close()
 			con.close()
 	
-	def fetchListings(self, wspace):
-		''' Fetch vendorProds dictionary for this Product. 
-		Clears and sets the self.vendorProds dictionary directly. '''
-		self.vendorProds.clear()
+	def fetch_listings(self, wspace):
+		''' Fetch listings dictionary for this Product. 
+		Clears and sets the self.listings dictionary directly. '''
+		self.listings.clear()
 		try:
 			(con, cur) = wspace.con_cursor()
 			
 			symbol = (self.manufacturer_pn,)
-			cur.execute('SELECT * FROM vendorproducts WHERE mfg_pn=? ORDER BY vendor', symbol)
+			cur.execute('SELECT * FROM listings WHERE manufacturer_pn=? ORDER BY vendor', symbol)
 			for row in cur.fetchall():
-				vprod = vendorProduct(row[0], row[1], row[2], {}, row[3], row[4], row[5], row[6], row[7], row[8])
-				vprod.fetchPriceBreaks(wspace)
-				self.vendorProds[vprod.key()] = vprod
-				print 'Setting vendorProds[%s] = ' % vprod.key()
-				vprod.show()
+				listing = Listing(row[0], row[1], row[2], {}, row[3], row[4], row[5], row[6], row[7], row[8])
+				listing.fetch_price_breaks(wspace)
+				self.listings[listing.key()] = listing
+				#print 'Setting listings[%s] = ' % listing.key()
+				#listing.show()
 			
 		finally:
 			cur.close()
 			con.close()
 		
-	def bestListing(self, qty):
-		''' Return the vendorProduct listing with the best price for the given order quantity. 
+	def best_listing(self, qty):
+		''' Return the Listing listing with the best price for the given order quantity. 
 		
 		If the "enforce minimum quantities" option is checked in the program config,
 		only returns listings where the order quantity meets/exceeds the minimum
 		order quantity for the listing.'''
-		lowestPrice = int('inf')
-		for listing in self.vendorProds.values():
-			priceBreak = listing.getPriceBreak(qty)
-			if priceBreak[0] > qty and ENFORCE_MIN_QTY:
+		lowest_price = int('inf')
+		for listing in self.listings.values():
+			price_break = listing.get_price_break(qty)
+			if price_break[0] > qty and ENFORCE_MIN_QTY:
 				pass
 			else:
-				if (priceBreak[1]*qty) + listing.reelFee < lowestPrice:
-					lowestPrice = (priceBreak[1]*qty) + listing.reelFee
+				if (price_break[1]*qty) + listing.reel_fee < lowest_price:
+					lowest_price = (price_break[1]*qty) + listing.reel_fee
 					best = listing
 		return best
 	
-	def scrapeDK(self, wspace):
+	def scrape_dk(self, wspace):
 		''' Scrape method for Digikey. '''
 		# Clear previous pricing data (in case price break keys change)
-		searchURL = 'http://search.digikey.com/us/en/products/' + self.manufacturer_pn
-		searchPage = urllib2.urlopen(searchURL)
-		searchSoup = BeautifulSoup(searchPage)
+		search_url = 'http://search.digikey.com/us/en/products/' + self.manufacturer_pn
+		search_page = urllib2.urlopen(search_url)
+		search_soup = BeautifulSoup(search_page)
 		
 		# Create a list of product URLs from the search page
-		prodURLs = []
-		searchTable = searchSoup.body('table', id="productTable")[0]
-		#print 'searchTable: \n', searchTable
-		#print 'searchTable.contents: \n', searchTable.contents
+		prod_urls = []
+		search_table = search_soup.body('table', id="productTable")[0]
+		#print 'search_table: \n', search_table
+		#print 'search_table.contents: \n', search_table.contents
 		
 		# Find tbody tag in table
-		tBody = searchTable.find('tbody')
-		#print 'tbody: \n', type(tBody), tBody
-		#print 'tbody.contents: \n', type(tBody.contents), tBody.contents
-		#print 'tbody.contents[0]: \n', type(tBody.contents[0]), tBody.contents[0]
-		prodRows = tBody.findAll('tr')
-		#print 'prodrows: \n', type(prodRows), prodRows
-		for row in prodRows:
-			#print "Search row in prodRows: ", row
+		tbody_tag = search_table.find('tbody')
+		#print 'tbody: \n', type(tbody_tag), tbody_tag
+		#print 'tbody.contents: \n', type(tbody_tag.contents), tbody_tag.contents
+		#print 'tbody.contents[0]: \n', type(tbody_tag.contents[0]), tbody_tag.contents[0]
+		prod_rows = tbody_tag.findAll('tr')
+		#print 'prod_rows: \n', type(prod_rows), prod_rows
+		for row in prod_rows:
+			#print "Search row in prod_rows: ", row
 			anchor = row.find('a')
 			# DK uses a relative path for these links
-			prodURLs.append('http://search.digikey.com' + anchor['href'])
+			prod_urls.append('http://search.digikey.com' + anchor['href'])
 			#print 'Adding URL: ', 'http://search.digikey.com' + anchor['href']
 		
-		for url in prodURLs:
+		for url in prod_urls:
 		
 			page = urllib2.urlopen(url)
 			soup = BeautifulSoup(page)
 			print "URL: %s" % url
 			# Get prices
 			prices = {}
-			priceTable = soup.body('table', id="pricing")
-			# priceTable.contents[x] should be the tr tags...
-			for t in priceTable:
+			price_table = soup.body('table', id="pricing")
+			# price_table.contents[x] should be the tr tags...
+			for t in price_table:
 				for r in t:
 					# r.contents should be td Tags... except the first!
 					if r == '\n':
@@ -474,32 +429,32 @@ class Product:
 						pass
 						#print "Found r.name == th"
 					else:
-						newBreakString = r.contents[0].string
+						new_break_str = r.contents[0].string
 						# Remove commas
-						if newBreakString.isdigit() == False:
-							newBreakString = newBreakString.replace(",", "")
-						#print "newBreakString is: %s" % newBreakString					
-						newBreak = int(newBreakString)
-						newUnitPrice = float(r.contents[1].string)
-						prices[newBreak] = newUnitPrice
-						#print 'Adding break/price to pricing dict: ', (newBreak, newUnitPrice)
+						if new_break_str.isdigit() == False:
+							new_break_str = new_break_str.replace(",", "")
+						#print "new_break_str is: %s" % new_break_str					
+						new_break = int(new_break_str)
+						new_unit_price = float(r.contents[1].string)
+						prices[new_break] = new_unit_price
+						#print 'Adding break/price to pricing dict: ', (new_break, new_unit_price)
 					
 			# Get inventory
 			# If the item is out of stock, the <td> that normally holds the
 			# quantity available will have a text input box that we need to
 			# watch out for
-			invSoup = soup.body('td', id="quantityavailable")
-			#print 'invSoup: ', type(invSoup), invSoup
-			#print "Length of form search results: %s" % len(invSoup[0].findAll('form'))
-			if len(invSoup[0].findAll('form')) > 0:
+			inv_soup = soup.body('td', id="quantityavailable")
+			#print 'inv_soup: ', type(inv_soup), inv_soup
+			#print "Length of form search results: %s" % len(inv_soup[0].findAll('form'))
+			if len(inv_soup[0].findAll('form')) > 0:
 				inventory = 0
 			
 			else:
-				invString = invSoup[0].contents[0]
-				#print 'invString: ', type(invString), invString
-				if invString.isdigit() == False:
-					invString = invString.replace(",", "")
-				inventory = int(invString)
+				inv_str = inv_soup[0].contents[0]
+				#print 'inv_str: ', type(inv_str), inv_str
+				if inv_str.isdigit() == False:
+					inv_str = inv_str.replace(",", "")
+				inventory = int(inv_str)
 				print 'inventory: ', type(inventory), inventory
 			
 			vendor_pn = soup.body('th', text="Digi-Key Part Number")[0].parent.nextSibling.contents[0].string.__str__()
@@ -510,20 +465,20 @@ class Product:
 			#print "manufacturer_pn is: %s" % self.manufacturer_pn
 			
 			# Get datasheet filename and download
-			datasheetSoup = soup.body('th', text="Datasheets")[0].parent.nextSibling
-			datasheetA = datasheetSoup.findAllNext('a')[0]
-			#print "datasheetSoup is: %s" % datasheetSoup
-			#print "datasheetA is: %s" % datasheetA
-			self.datasheetURL = datasheetA['href']
-			#print "self.datasheetURL is: %s" % self.datasheetURL
+			datasheet_soup = soup.body('th', text="Datasheets")[0].parent.nextSibling
+			datasheet_anchor = datasheet_soup.findAllNext('a')[0]
+			#print "datasheet_soup is: %s" % datasheet_soup
+			#print "datasheet_anchor is: %s" % datasheet_anchor
+			self.datasheet_url = datasheet_anchor['href']
+			#print "self.datasheet_url is: %s" % self.datasheet_url
 			
-			r = urllib2.urlopen(urllib2.Request(self.datasheetURL))
+			r = urllib2.urlopen(urllib2.Request(self.datasheet_url))
 			try:
-				fileName = getFileName(url,r)
-				self.datasheet = fileName;
+				file_name = get_filename(url,r)
+				self.datasheet = file_name;
 				# TODO: Do not re-download if already saved
 				if DOWNLOAD_DATASHEET:
-					with open(fileName, 'wb') as f:
+					with open(file_name, 'wb') as f:
 						shutil.copyfileobj(r,f)
 			finally:
 				r.close()
@@ -540,48 +495,48 @@ class Product:
 			self.package = soup.body('th', text="Package / Case")[0].parent.nextSibling.contents[0].string.__str__()
 			#print "package is: %s" % self.package
 			
-			packagingSoup = soup.body('th', text="Packaging")[0].parent.parent.nextSibling.contents[0]
-			#print "packagingSoup: ", type(packagingSoup), packagingSoup
-			if type(packagingSoup) == NavigableString:
-				packaging = packagingSoup.string.__str__()
+			packaging_soup = soup.body('th', text="Packaging")[0].parent.parent.nextSibling.contents[0]
+			#print "packaging_soup: ", type(packaging_soup), packaging_soup
+			if type(packaging_soup) == NavigableString:
+				packaging = packaging_soup.string.__str__()
 				print "packaging (from text): ", type(packaging), packaging
-			elif type(packagingSoup) == Tag:
-				packaging = packagingSoup.contents[0].string.__str__()
+			elif type(packaging_soup) == Tag:
+				packaging = packaging_soup.contents[0].string.__str__()
 				print "packaging (from link): ", type(packaging), packaging
 			else:
 				print 'Error: DK Packaging scrape failure!'
 			if "Digi-Reel" in packaging:
 				packaging = "Digi-Reel"	# Remove Restricted symbol
 			key = VENDOR_DK + ': ' + vendor_pn + ' (' + packaging + ')'
-			self.vendorProds[key] = vendorProduct(VENDOR_DK, vendor_pn, self.manufacturer_pn, prices, inventory, packaging)
-			#v = vendorProduct(VENDOR_DK, vendor_pn, self.manufacturer_pn, prices, inventory, pkg, reel, cat, fam, ser)
-			self.vendorProds[key].category = category
-			self.vendorProds[key].family = family
-			self.vendorProds[key].series = series
+			self.listings[key] = Listing(VENDOR_DK, vendor_pn, self.manufacturer_pn, prices, inventory, packaging)
+			#v = Listing(VENDOR_DK, vendor_pn, self.manufacturer_pn, prices, inventory, pkg, reel, cat, fam, ser)
+			self.listings[key].category = category
+			self.listings[key].family = family
+			self.listings[key].series = series
 			if "Digi-Reel" in packaging:
-				self.vendorProds[key].reelFee = 7
+				self.listings[key].reel_fee = 7
 	
-	def scrapeFAR(self):
+	def scrape_far(self):
 		''' Scrape method for Farnell. '''
 		print "Distributor scraping not yet implemented!"
 	
-	def scrapeFUE(self):
+	def scrape_fue(self):
 		''' Scrape method for Future Electronics. '''
 		print "Distributor scraping not yet implemented!"
 		
-	def scrapeJAM(self):
+	def scrape_jam(self):
 		''' Scrape method for Jameco. '''
 		print "Distributor scraping not yet implemented!"
 		
-	def scrapeME(self):
+	def scrape_me(self):
 		''' Scrape method for Mouser Electronics. '''
 		print "Distributor scraping not yet implemented!"
 	
-	def scrapeNEW(self):
+	def scrape_new(self):
 		''' Scrape method for Newark. '''
 		print "Distributor scraping not yet implemented!"
 	
-	def scrapeSFE(self):
+	def scrape_sfe(self):
 		''' Scrape method for Sparkfun. '''	
 		print "Distributor scraping not yet implemented!"
 		# Clear previous pricing data (in case price break keys change)
@@ -594,34 +549,34 @@ class Product:
 			
 	def scrape(self, wspace):
 		''' Scrape each vendor page to refresh product pricing info. '''
-		self.vendorProds.clear()
+		self.listings.clear()
 		# Proceed based on vendor config
 		if VENDOR_DK_EN:
-			self.scrapeDK(wspace)
+			self.scrape_dk(wspace)
 		if VENDOR_FAR_EN:
-			self.scrapeFAR()
+			self.scrape_far()
 		if VENDOR_FUE_EN:
-			self.scrapeFUE()
+			self.scrape_fue()
 		if VENDOR_JAM_EN:
-			self.scrapeJAM()
+			self.scrape_jam()
 		if VENDOR_ME_EN:
-			self.scrapeME()
+			self.scrape_me()
 		if VENDOR_NEW_EN:
-			self.scrapeNEW()
+			self.scrape_new()
 		if VENDOR_SFE_EN:
-			self.scrapeSFE()
+			self.scrape_sfe()
 		
 		print 'Writing the following Product to DB: \n'
 		#self.show()
-		if self.isInDB(wspace):
+		if self.is_in_db(wspace):
 			self.update(wspace)
 		else:
 			self.insert(wspace)
-		for vprod in self.vendorProds.values():
-			vprod.insert(wspace)
+		for listing in self.listings.values():
+			listing.insert(wspace)
 				
 
-	def isInDB(self, wspace):
+	def is_in_db(self, wspace):
 		''' Check if this Product is in the database. '''
 		result = Product.select_by_pn(self.manufacturer_pn, wspace)
 		if len(result) == 0:
@@ -630,15 +585,15 @@ class Product:
 			return True
 
 	''' Sets the product fields, pulling from the local DB if possible.'''	
-	def selectOrScrape(self, wspace):
-		if(self.isInDB(wspace)):
+	def select_or_scrape(self, wspace):
+		if(self.is_in_db(wspace)):
 			temp = Product.select_by_pn(self.manufacturer_pn, wspace)[0]
 			self.manufacturer = temp.manufacturer
 			self.manufacturer_pn = temp.manufacturer_pn
 			self.datasheet = temp.datasheet
 			self.description = temp.description
 			self.package = temp.package
-			self.fetchListings(wspace)
+			self.fetch_listings(wspace)
 		elif self.manufacturer_pn != 'none' and self.manufacturer_pn != 'NULL':
 			self.scrape(wspace)
 

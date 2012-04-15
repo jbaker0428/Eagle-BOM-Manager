@@ -5,15 +5,15 @@ import urlparse
 from operator import itemgetter
 import sqlite3
 from manager import Workspace
-from part import bomPart
+from part import Part
 from product import Product
 
 			
 class BOM:
-	'''For determining the name of a project's bomPart table.'''
+	'''For determining the name of a project's Part table.'''
 	
 	@staticmethod
-	def readFromDB(name, wspace):
+	def read_from_db(name, wspace):
 		''' Return any BOM object from a DB based on its table name. '''
 		boms = []
 		try:
@@ -31,12 +31,12 @@ class BOM:
 			return boms
 	
 	@staticmethod
-	def newProject(name, desc, infile, wspace):
+	def new_project(name, desc, infile, wspace):
 		''' Create a new BOM object and its part table.
 		Add the BOM to the Workspace's projects table.
 		Returns the created BOM object. '''
 		new = BOM(name, desc, infile)
-		new.createTable(wspace)
+		new.create_table(wspace)
 		try:
 			(con, cur) = wspace.con_cursor()
 			
@@ -48,16 +48,16 @@ class BOM:
 			con.close()
 			return new
 	
-	def __init__(self, name, desc, inputFile="bom.csv"):
+	def __init__(self, name, desc, input_file="bom.csv"):
 		self.name = name	# Table name
 		self.description = desc # Longer description string
-		self.input = inputFile
+		self.input = input_file
 		self.parts = [] # List of 3-element lists of part name, value, and product.name
 		# This is used for sorting in the BOM table in the GUI
-		self.valCounts = {}
-		self.prodCounts = {}
+		self.val_counts = {}
+		self.prod_counts = {}
 	
-	def createTable(self, wspace):
+	def create_table(self, wspace):
 		''' Create the Parts table for a project in the given Workspace. '''
 		try:
 			(con, cur) = wspace.con_cursor()
@@ -97,18 +97,18 @@ class BOM:
 			cur.close()
 			con.close()
 	
-	def sortByName(self):
+	def sort_by_name(self):
 		self.parts.sort(key=itemgetter(0))
 		
-	def sortByVal(self):
+	def sort_by_val(self):
 		self.parts.sort(key=itemgetter(1))
 		
-	def sortByProd(self):
+	def sort_by_prod(self):
 		self.parts.sort(key=itemgetter(2))
 	
-	def setValCounts(self, wspace):
-		print "BOM.setValCounts"
-		self.valCounts.clear()
+	def set_val_counts(self, wspace):
+		print "BOM.set_val_counts"
+		self.val_counts.clear()
 		vals = set()
 		try:
 			(con, cur) = wspace.con_cursor()
@@ -121,15 +121,15 @@ class BOM:
 				sql = 'SELECT name FROM %s WHERE value=?' % self.name
 				symbol = (v,)
 				cur.execute(sql, symbol)
-				self.valCounts[v] = len(cursor.fetchall())
+				self.val_counts[v] = len(cur.fetchall())
 			
 		finally:
 			cur.close()
 			con.close()
 
-	def setProdCounts(self, wspace):
-		print "BOM.setProdCounts"
-		self.prodCounts.clear()
+	def set_prod_counts(self, wspace):
+		print "BOM.set_prod_counts"
+		self.prod_counts.clear()
 		
 		prods = set()
 		try:
@@ -143,36 +143,36 @@ class BOM:
 				sql = 'SELECT name FROM %s WHERE product=?' % self.name
 				symbol = (p,)
 				cur.execute(sql, symbol)
-				self.prodCounts[p] = len(cursor.fetchall())
+				self.prod_counts[p] = len(cur.fetchall())
 			
 		finally:
 			cur.close()
 			con.close()
 	
-	def getCost(self, wspace, runSize=1):
+	def get_cost(self, wspace, runSize=1):
 		''' Get the total project BOM cost for a given production run size. '''
-		self.setProdCounts()
-		projProdCounts = self.prodCounts.copy()
+		self.set_prod_counts()
+		project_prod_counts = self.prod_counts.copy()
 		cost = 0
-		for x in projProdCounts.keys():
-			projProdCounts[x] = self.prodCounts[x] * runSize
+		for x in project_prod_counts.keys():
+			project_prod_counts[x] = self.prod_counts[x] * runSize
 			
-		for x in projProdCounts.items():
+		for x in project_prod_counts.items():
 			# Find x[0] (the dict key) in the product DB
 			if x[0] is 'NULL':
 				# TODO : Print a warning on screen?
-				print "Warning: BOM.getCost() skipped a part with no product"
+				print "Warning: BOM.get_cost() skipped a part with no product"
 			else:
 				prod = Product.select_by_pn(x[0], wspace)[0]
-				prod.fetchListings(wspace)
-				listing = product.bestListing(projProdCounts[x[0]])
-				priceBreak = listing.getPriceBreak(x[1])
-				cost += (priceBreak[1] * projProdCounts[x[0]]) + listing.reelFee
+				prod.fetch_listings(wspace)
+				listing = product.best_listing(project_prod_counts[x[0]])
+				price_break = listing.get_price_break(x[1])
+				cost += (price_break[1] * project_prod_counts[x[0]]) + listing.reel_fee
 				
 		return cost
 	
-	def updateParts(self, part):
-		''' Take in a bomPart, find it in self.parts, update product.name entry'''
+	def update_parts(self, part):
+		''' Take in a Part, find it in self.parts, update product.name entry'''
 		# Find p in self.parts by name
 		for p in self.parts:
 			if p[0] == part.name:
@@ -182,25 +182,25 @@ class BOM:
 	
 	# TODO: Should the read/write methods write the actual BOM object?		
 		
-	def readPartsListFromDB(self, wspace):
-		print "BOM.readPartsListFromDB"
-		newParts = []	# List of 3-element lists of part name, value, and product
+	def read_parts_list_from_db(self, wspace):
+		print "BOM.read_parts_list_from_db"
+		new_parts = []	# List of 3-element lists of part name, value, and product
 		try:
 			(con, cur) = wspace.con_cursor()
 			
 			sql = 'SELECT name, value, product FROM %s' % self.name
 			cur.execute(sql)
 			for row in cur.fetchall():
-				newParts.append([row[0], row[1], row[2]])
+				new_parts.append([row[0], row[1], row[2]])
 			
 		finally:
 			cur.close()
 			con.close()
-			#print 'readPartsListFromDB: newParts = ', newParts
-			return newParts
+			#print 'read_parts_list_from_db: new_parts = ', new_parts
+			return new_parts
 		
-	def readFromFile(self, wspace):
-		print "BOM.readFromFile"
+	def read_from_file(self, wspace):
+		print "BOM.read_from_file"
 		# Clear self.parts
 		del self.parts[:]
 		with open(self.input, 'rb') as f:
@@ -209,20 +209,20 @@ class BOM:
 				print row
 				# Check for optional product column
 				if len(row) > 5:
-					part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
+					part = Part(row[0], row[1], row[2], row[3], row[4], row[5])
 				else:
-					part = bomPart(row[0], row[1], row[2], row[3], row[4])
+					part = Part(row[0], row[1], row[2], row[3], row[4])
 				#print "Part: %s %s %s %s" % (part.name, part.value, part.device, part.package)
 				# Check if identical part is already in DB with a product
 				# If so, preserve the product entry
-				if(part.isInDB(self.name, wspace)):
+				if(part.is_in_db(self.name, wspace)):
 					print "Part already in DB"
-					oldPart = bomPart.select_by_name(part.name, self.name, wspace)[0]
-					print "oldPart: ", oldPart.name, oldPart.value, oldPart.package, oldPart.product
-					if(part.value == oldPart.value and part.device == oldPart.device and part.package == oldPart.package):
-						if oldPart.product != 'none':
-							print "Part found in DB with existing product ", oldPart.product
-							part.product = oldPart.product
+					old_part = Part.select_by_name(part.name, self.name, wspace)[0]
+					print "old_part: ", old_part.name, old_part.value, old_part.package, old_part.product
+					if(part.value == old_part.value and part.device == old_part.device and part.package == old_part.package):
+						if old_part.product != 'none':
+							print "Part found in DB with existing product ", old_part.product
+							part.product = old_part.product
 						else:
 							print "Part found in DB without product entry, overwriting..."
 							part.update(self.name, wspace)
@@ -234,7 +234,7 @@ class BOM:
 		print "Parts list: ", self.parts
 	
 	def select_parts_by_name(self, name, wspace):
-		''' Return the bomPart(s) of given name. '''
+		''' Return the Part(s) of given name. '''
 		parts = []
 		try:
 			(con, cur) = wspace.con_cursor()
@@ -243,7 +243,7 @@ class BOM:
 			symbol = (name,)
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
-				part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
+				part = Part(row[0], row[1], row[2], row[3], row[4], row[5])
 				parts.append(part)
 			
 		finally:
@@ -252,7 +252,7 @@ class BOM:
 			return parts
 	
 	def select_parts_by_value(self, val, wspace):
-		''' Return the bomPart(s) of given value in a list. '''
+		''' Return the Part(s) of given value in a list. '''
 		parts = []
 		try:
 			(con, cur) = wspace.con_cursor()
@@ -261,7 +261,7 @@ class BOM:
 			symbol = (val,)
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
-				part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
+				part = Part(row[0], row[1], row[2], row[3], row[4], row[5])
 				parts.append(part)
 			
 		finally:
@@ -269,9 +269,8 @@ class BOM:
 			con.close()
 			return parts
 	
-	@staticmethod
 	def select_parts_by_product(self, prod, wspace):
-		''' Return the bomPart(s) of given product in a list. '''
+		''' Return the Part(s) of given product in a list. '''
 		parts = []
 		try:
 			(con, cur) = wspace.con_cursor()
@@ -280,7 +279,7 @@ class BOM:
 			symbol = (prod,)
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
-				part = bomPart(row[0], row[1], row[2], row[3], row[4], row[5])
+				part = Part(row[0], row[1], row[2], row[3], row[4], row[5])
 				parts.append(part)
 			
 		finally:
