@@ -174,7 +174,7 @@ class BOM:
 				
 		return (unit_price, total_cost)
 	
-	def update_parts(self, part):
+	def update_parts_list(self, part):
 		''' Take in a Part, find it in self.parts, update product.name entry'''
 		# Find p in self.parts by name
 		for p in self.parts:

@@ -335,7 +335,7 @@ class Manager(gobject.GObject):
 			self.bom_selected_product.select_or_scrape(wspace)
 			
 			self.selected_bom_part.update(self.active_bom.name, wspace)
-			self.active_bom.update_parts(self.selected_bom_part)
+			self.active_bom.update_parts_list(self.selected_bom_part)
 			
 			if self.bom_group_name.get_active():
 				self.bom_store_populate_by_name()
