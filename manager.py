@@ -176,6 +176,8 @@ class Manager(gobject.GObject):
 		selected_product = model.get(row_iter,5)[0]
 		print "selected_product is: %s" % selected_product
 		if selected_product != 'NULL': # Look up part in DB
+			self.part_info_datasheet_button.set_sensitive(True)
+			self.part_info_scrape_button.set_sensitive(True)
 			# Set class field for currently selected product
 			print "Querying with selected_product: %s" % selected_product
 			self.bom_selected_product.manufacturer_pn = selected_product
@@ -190,6 +192,8 @@ class Manager(gobject.GObject):
 			if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
 				self.set_part_price_labels(self.bom_selected_product.listings[self.part_info_listing_combo.get_active_text()])
 		else:
+			self.part_info_datasheet_button.set_sensitive(False)
+			self.part_info_scrape_button.set_sensitive(False)
 			self.set_part_info_listing_combo()
 			self.destroy_part_price_labels()
 			self.clear_part_info_labels()
