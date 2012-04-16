@@ -8,7 +8,16 @@ from manager import Workspace
 from part import Part
 from product import Product
 
-			
+
+class NullProductInProjectException(Exception):
+	''' Raised in situations where correct results require all Parts in the project
+	to have a non-NULL Product for correct results, but a NULL product is found. '''
+	def __init__(self, source, text):
+		self.source = source
+		self.text = text
+	def __str__(self):
+		return repr(self.text)
+	
 class BOM:
 	'''For determining the name of a project's Part table.'''
 	
@@ -156,6 +165,8 @@ class BOM:
 		project_prod_counts = self.prod_counts.copy()
 		unit_price = 0
 		total_cost = 0
+		if 'NULL' in project_prod_counts.keys():
+			raise NullProductInProjectException(self.get_cost.__name__, 'Warning: Cost calculation does not account for parts with no product assigned!')
 		for x in project_prod_counts.keys():
 			project_prod_counts[x] = self.prod_counts[x] * run_size
 			
@@ -163,8 +174,7 @@ class BOM:
 			# Find x[0] (the dict key) in the product DB
 			# x is [manufacturer_pn, qty]
 			if x[0] == 'NULL':
-				# TODO : Print a warning on screen?
-				print "Warning: BOM.get_cost() skipped a part with no product"
+				pass
 			else:
 				prod = Product.select_by_pn(x[0], wspace)[0]
 				listing = prod.best_listing(project_prod_counts[x[0]])
