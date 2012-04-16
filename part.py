@@ -110,6 +110,50 @@ class Part:
 				rownum = rownum + 1
 			return -1
 	
+	def find_similar_parts(self, project, wspace, check_wspace=True):
+		''' Search the project and optionally workspace for parts of matching value/device/package.
+		If check_wspace = True, returns a pair of lists: (project_results, workspace_results).
+		If check_wspace = False, only returns the project_results list. 
+		The contents of the workspace_results list are pairs: (project, Part). 
+		This allows for parts in different projects that incidentally have the same name to be added. '''
+		# Can pass these returned lists to a new version of find_matching_products with a similar return pair
+		# New version of find_matching_prods, boolean optional (default True) arg for "check workspace"
+		project_results = set()
+		workspace_results = set()
+		try:
+			(con, cur) = wspace.con_cursor()
+			sql = """SELECT DISTINCT * FROM %s WHERE value=? INTERSECT
+				SELECT product FROM %s WHERE device=? INTERSECT
+				SELECT product FROM %s WHERE package=?""" % (project, project, project)
+			t = (self.value, self.device, self.package,)
+			cur.execute(sql, t)
+			rows = cur.fetchall()
+			for row in rows:
+				part = Part(row[0], row[1], row[2], row[3], row[4], row[5])
+				project_results.add(part)
+					
+			if check_wspace:
+				for proj in wspace.list_projects():
+					if proj == project:
+						continue	# Do not re-check the passed project
+					sql = """SELECT DISTINCT * FROM %s WHERE value=? INTERSECT
+					SELECT product FROM %s WHERE device=? INTERSECT
+					SELECT product FROM %s WHERE package=?""" % (proj, proj, proj)
+					t = (self.value, self.device, self.package,)
+					cur.execute(sql, t)
+					rows = cur.fetchall()
+					for row in rows:
+						part = Part(row[0], row[1], row[2], row[3], row[4], row[5])
+						workspace_results.add((proj, part))
+							
+		finally:
+			cur.close()
+			con.close()
+			if check_wspace:
+				return (list(project_results), list(workspace_results))
+			else:
+				return list(project_results)
+		
 	def find_matching_products(self, wspace):
 		''' Search all projects in a Workspace for Parts with the same value/device/pakage.
 		Checks the search results for non-NULL product columns.
