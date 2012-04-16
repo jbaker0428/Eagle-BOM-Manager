@@ -5,7 +5,7 @@ All BOM and product information is stored in a local sqlite3 database.
 
 The latest version of the BOM-AM and BOM-EX ULP scripts are available at:
 http://www.cadsoftusa.com/downloads/ulps
-Note that the basic bom.ulp script bundled with Eagle is not supported, BOM-AM and BOM-EX both work.
+Note that while the basic bom.ulp script bundled with Eagle is not supported at this time, BOM-AM and BOM-EX both work.
 
 Required third-party Python (2.7) modules:
 Beautiful Soup: http://www.crummy.com/software/BeautifulSoup/
