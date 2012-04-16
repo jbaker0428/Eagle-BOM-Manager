@@ -183,8 +183,6 @@ class BOM:
 		# TODO : If inline addition of parts is added later (as in, not from a
 		# CSV file), a check needs to be added here to make sure part is in self.parts
 	
-	# TODO: Should the read/write methods write the actual BOM object?		
-		
 	def read_parts_list_from_db(self, wspace):
 		print "BOM.read_parts_list_from_db"
 		new_parts = []	# List of 3-element lists of part name, value, and product
