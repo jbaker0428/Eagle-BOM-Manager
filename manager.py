@@ -139,7 +139,7 @@ class Manager(gobject.GObject):
 			
 		self.bom_tree_view.columns_autosize()
 		# TODO: Uncomment this when spin is working
-		#self.order_size_spin_callback(self.order_size_spin)
+		#self.order_size_spin_callback(self.run_size_spin)
 		self.window.show_all()
 		
 	'''Callback for the "Read CSV" button on the BOM tab.'''
@@ -370,10 +370,10 @@ class Manager(gobject.GObject):
 	def order_size_spin_callback(self, widget):
 		''' Update the per-unit and total order prices when the order size
 		spin button is changed. '''
-		qty = self.order_size_spin.get_value_as_int()
+		qty = self.run_size_spin.get_value_as_int()
 		(unit_price, total_cost) = self.active_bom.get_cost(wspace, qty)
-		self.order_unit_price_content_label.set_text('$'+str(unit_price))
-		self.order_total_cost_content_label.set_text('$'+str(total_cost))
+		self.run_unit_price_content_label.set_text('$'+str(unit_price))
+		self.run_total_cost_content_label.set_text('$'+str(total_cost))
 	
 	''' Clear self.db_product_store and repopulate it. '''
 	def db_store_populate(self):
@@ -699,18 +699,16 @@ class Manager(gobject.GObject):
 		
 		self.pricing_frame = gtk.Frame("Project pricing") # Goes in bottom half of bom_vpane
 		self.pricing_vbox = gtk.VBox(False, 5)
-		self.order_size_pin_label = gtk.Label("Number of kits: ")
-		#self.order_size_hbox = gtk.HBox(False, 5)
-		self.order_size_adjustment = gtk.Adjustment(1, 1, 99999, 1, 10, 0.0)
-		self.order_size_spin = gtk.SpinButton(self.order_size_adjustment, 0.5, 0)
-		#self.order_size_scale = gtk.HScale(self.order_size_adjustment)
-		#self.order_size_entry = gtk.Entry(10000)
-		self.order_unit_price_hbox = gtk.HBox(False, 5)
-		self.order_unit_price_label= gtk.Label("Per-kit BOM cost: ")
-		self.order_unit_price_content_label= gtk.Label("\t")
-		self.order_total_price_hbox = gtk.HBox(False, 5)
-		self.order_total_cost_label= gtk.Label("Total cost: ")
-		self.order_total_cost_content_label= gtk.Label("\t")
+		self.run_size_pin_label = gtk.Label("Run size: ")
+		#self.run_size_hbox = gtk.HBox(False, 5)
+		self.run_size_adjustment = gtk.Adjustment(1, 1, 99999, 1, 10, 0.0)
+		self.run_size_spin = gtk.SpinButton(self.run_size_adjustment, 0.5, 0)
+		self.run_unit_price_hbox = gtk.HBox(False, 5)
+		self.run_unit_price_label= gtk.Label("Per-kit BOM cost: ")
+		self.run_unit_price_content_label= gtk.Label("\t")
+		self.run_total_price_hbox = gtk.HBox(False, 5)
+		self.run_total_cost_label= gtk.Label("Total run cost: ")
+		self.run_total_cost_content_label= gtk.Label("\t")
 		
 		# --- Product DB tab ---
 		self.db_vbox = gtk.VBox(False, 0) # Third tab in notebook
@@ -894,14 +892,14 @@ class Manager(gobject.GObject):
 		self.part_info_listing_combo.connect("changed", self.part_info_listing_combo_callback)
 		
 		# --- Pricing frame ---
-		self.order_size_pin_label.set_alignment(0.0, 0.5)
-		self.order_unit_price_label.set_alignment(0.0, 0.5)
-		self.order_unit_price_content_label.set_alignment(0.0, 0.5)
-		self.order_total_cost_label.set_alignment(0.0, 0.5)
-		self.order_total_cost_content_label.set_alignment(0.0, 0.5)
-		self.order_size_spin.set_numeric(True)
-		self.order_size_spin.set_update_policy(gtk.UPDATE_IF_VALID)
-		self.order_size_spin.connect("value-changed", self.order_size_spin_callback)
+		self.run_size_pin_label.set_alignment(0.0, 0.5)
+		self.run_unit_price_label.set_alignment(0.0, 0.5)
+		self.run_unit_price_content_label.set_alignment(0.0, 0.5)
+		self.run_total_cost_label.set_alignment(0.0, 0.5)
+		self.run_total_cost_content_label.set_alignment(0.0, 0.5)
+		self.run_size_spin.set_numeric(True)
+		self.run_size_spin.set_update_policy(gtk.UPDATE_IF_VALID)
+		self.run_size_spin.connect("value-changed", self.order_size_spin_callback)
 		#self.order_size_scale.set_draw_value(False)
 		#self.order_size_scale.set_digits(0)
 		
@@ -1094,17 +1092,16 @@ class Manager(gobject.GObject):
 		
 		# Pricing frame elements
 		self.pricing_frame.add(self.pricing_vbox)
-		self.pricing_vbox.pack_start(self.order_size_pin_label, False, False, 0)
-		#self.pricing_vbox.pack_start(self.order_size_hbox, False, False, 0)
-		#self.order_size_hbox.pack_start(self.order_size_scale, False, False, 0)
-		#self.order_size_hbox.pack_start(self.order_size_entry, False, False, 0)
-		self.pricing_vbox.pack_start(self.order_size_spin, False, False, 0)
-		self.pricing_vbox.pack_start(self.order_unit_price_hbox, False, False, 0)
-		self.order_unit_price_hbox.pack_start(self.order_unit_price_label, False, False, 0)
-		self.order_unit_price_hbox.pack_start(self.order_unit_price_content_label, False, False, 0)
-		self.pricing_vbox.pack_start(self.order_total_price_hbox, False, False, 0)
-		self.order_total_price_hbox.pack_start(self.order_total_cost_label, False, False, 0)
-		self.order_total_price_hbox.pack_start(self.order_total_cost_content_label, False, False, 0)
+		self.pricing_vbox.pack_start(self.run_size_pin_label, False, False, 0)
+		#self.pricing_vbox.pack_start(self.run_size_hbox, False, False, 0)
+		#self.run_size_hbox.pack_start(self.run_size_spin, False, False, 0)
+		self.pricing_vbox.pack_start(self.run_size_spin, False, False, 0)
+		self.pricing_vbox.pack_start(self.run_unit_price_hbox, False, False, 0)
+		self.run_unit_price_hbox.pack_start(self.run_unit_price_label, False, False, 0)
+		self.run_unit_price_hbox.pack_start(self.run_unit_price_content_label, False, False, 0)
+		self.pricing_vbox.pack_start(self.run_total_price_hbox, False, False, 0)
+		self.run_total_price_hbox.pack_start(self.run_total_cost_label, False, False, 0)
+		self.run_total_price_hbox.pack_start(self.run_total_cost_content_label, False, False, 0)
 		
 		# Product database tab elements
 		self.db_vbox.pack_start(self.db_toolbar, False)
