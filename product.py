@@ -544,6 +544,13 @@ class Product:
 		
 	def scrape_me(self):
 		''' Scrape method for Mouser Electronics. '''
+		search_url = 'http://www.mouser.com/Search/Refine.aspx?Keyword=' + self.manufacturer_pn
+		search_page = urllib2.urlopen(search_url)
+		search_soup = BeautifulSoup(search_page)
+		
+		# Create a list of product URLs from the search page
+		prod_urls = []
+		# Check "Mouser Part #" column in table -- ignore any rows where that cell says "Not Assigned"
 		print "Distributor scraping not yet implemented!"
 	
 	def scrape_new(self):
