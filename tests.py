@@ -10,7 +10,7 @@ class DatabaseTestCase(unittest.TestCase):
 		
 		self.wspace = Workspace('DB Tests', os.path.join(os.getcwd(), 'dbtests.sqlite'))
 		
-		self.test_part = Part('C1', '1uF', 'C-USC0603', 'C0603', 'CAPACITOR, American symbol', 'C1608X5R1E105K')
+		self.test_part = Part('C1', 'dbtests', '1uF', 'C-USC0603', 'C0603', 'CAPACITOR, American symbol', 'C1608X5R1E105K')
 		self.test_product = Product('TDK Corporation', 'C1608X5R1E105K', 'general_B11.pdf', 'CAP CER 1UF 25V 10% X5R 0603', '0603 (1608 Metric)')
 		self.prices_ct = dict({10 : 0.09000, 100 : 0.04280, 250 : 0.03600, 500 : 0.03016, 1000 : 0.02475})
 		self.prices_tr = dict({4000 : 0.01935, 8000 : 0.01800, 12000 : 0.01710, 280000 : 0.01620, 100000 : 0.01227})
@@ -37,6 +37,7 @@ class DatabaseTestCase(unittest.TestCase):
 		con.close()
 		
 		assert 'products' in tables
+		assert 'parts'
 		assert 'listings' in tables
 		assert 'projects' in tables
 		assert 'pricebreaks' in tables
@@ -51,7 +52,7 @@ class DatabaseTestCase(unittest.TestCase):
 		self.test_listing_ct.insert(self.wspace)
 		self.test_listing_tr.insert(self.wspace)
 		self.test_listing_dr.insert(self.wspace)
-		self.test_part.insert(self.test_BOM.name, self.wspace)
+		self.test_part.insert(self.wspace)
 		
 		# Product.select_by_pn fetches listings for the product, and fetch_listings fetches the price dicts
 		ret_products = Product.select_by_pn(self.test_product.manufacturer_pn, self.wspace)
@@ -66,17 +67,17 @@ class DatabaseTestCase(unittest.TestCase):
 		assert len (Listing.select_by_manufacturer_pn(self.test_product.manufacturer_pn, self.wspace)) == 3
 		assert self.test_product.equals(ret_products[0])
 		
-		ret_parts = Part.select_by_name(self.test_part.name, self.test_BOM.name, self.wspace)
+		ret_parts = Part.select_by_name(self.test_part.name, self.wspace, self.test_BOM.name)
 		assert len(ret_parts) == 1
 		assert self.test_part.equals(ret_parts[0])
-		assert self.test_part.is_in_db(self.test_BOM.name, self.wspace)
+		assert self.test_part.is_in_db(self.wspace)
 		ret_parts = self.test_BOM.select_parts_by_name(self.test_part.name, self.wspace)
 		assert len(ret_parts) == 1
 		assert self.test_part.equals(ret_parts[0])
 		
-		self.test_part.delete(self.test_BOM.name, self.wspace)
+		self.test_part.delete(self.wspace)
 		assert len(self.test_BOM.select_parts_by_name(self.test_part.name, self.wspace)) == 0
-		assert self.test_part.is_in_db(self.test_BOM.name, self.wspace) == False
+		assert self.test_part.is_in_db(self.wspace) == False
 		
 		assert len (Listing.select_by_manufacturer_pn(self.test_product.manufacturer_pn, self.wspace)) == 3
 		self.test_listing_ct.delete(self.wspace)
@@ -109,6 +110,7 @@ class DatabaseTestCase(unittest.TestCase):
 		con.close()
 		
 		assert 'products' in tables
+		assert 'parts' in tables
 		assert 'listings' in tables
 		assert 'projects' in tables
 		assert 'pricebreaks' in tables

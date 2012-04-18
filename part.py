@@ -6,17 +6,17 @@ class Part:
 	''' A part in the BOM exported from Eagle. '''
 	
 	@staticmethod
-	def select_by_name(name, project, wspace):
+	def select_by_name(name, wspace, project='*'):
 		''' Return the Part(s) of given name. '''
 		parts = []
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			sql = 'SELECT * FROM %s WHERE name=?' % project
+			sql = "SELECT * FROM parts WHERE name=? and project='%s'" % project
 			symbol = (name,)
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
-				part = Part(row[0], row[1], row[2], row[3], row[4], row[5])
+				part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
 				parts.append(part)
 			
 		finally:
@@ -25,17 +25,17 @@ class Part:
 			return parts
 	
 	@staticmethod
-	def select_by_value(val, project, wspace):
+	def select_by_value(val, wspace, project='*'):
 		''' Return the Part(s) of given value in a list. '''
 		parts = []
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			sql = 'SELECT * FROM %s WHERE value=?' % project
+			sql = "SELECT * FROM parts WHERE value=? and project='%s'" % project
 			symbol = (val,)
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
-				part = Part(row[0], row[1], row[2], row[3], row[4], row[5])
+				part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
 				parts.append(part)
 			
 		finally:
@@ -44,17 +44,17 @@ class Part:
 			return parts
 		
 	@staticmethod
-	def select_by_product(prod, project, wspace):
+	def select_by_product(prod, wspace, project='*'):
 		''' Return the Part(s) of given product in a list. '''
 		parts = []
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			sql = 'SELECT * FROM %s WHERE product=?' % project
+			sql = "SELECT * FROM parts WHERE product=? and project='%s'" % project
 			symbol = (prod,)
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
-				part = Part(row[0], row[1], row[2], row[3], row[4], row[5])
+				part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
 				parts.append(part)
 			
 		finally:
@@ -62,8 +62,9 @@ class Part:
 			con.close()
 			return parts
 	
-	def __init__(self, name, value, device, package, description='NULL', product='NULL'):
+	def __init__(self, name, project, value, device, package, description='NULL', product='NULL'):
 		self.name = name
+		self.project = project
 		self.value = value
 		self.device = device
 		self.package = package
@@ -73,6 +74,7 @@ class Part:
 	def show(self):
 		''' A simple print method. '''
 		print 'Name: ', self.name, type(self.name)
+		print 'Project', self.project, type(self.project)
 		print 'Value: ', self.value, type(self.value)
 		print 'Device: ', self.device, type(self.device)
 		print 'Package: ', self.package, type(self.package)
@@ -85,6 +87,8 @@ class Part:
 			return False
 		eq = True
 		if self.name != p.name:
+			eq = False
+		if self.project != p.project:
 			eq = False
 		if self.value != p.value:
 			eq = False
@@ -122,28 +126,28 @@ class Part:
 		workspace_results = set()
 		try:
 			(con, cur) = wspace.con_cursor()
-			sql = """SELECT DISTINCT * FROM %s WHERE value=? INTERSECT
-				SELECT product FROM %s WHERE device=? INTERSECT
-				SELECT product FROM %s WHERE package=?""" % (project, project, project)
-			t = (self.value, self.device, self.package,)
+			sql = """SELECT DISTINCT * FROM parts WHERE value=? AND project=? INTERSECT
+				SELECT * FROM parts WHERE device=? AND project=? INTERSECT
+				SELECT * FROM parts WHERE package=? AND project=?"""
+			t = (self.value, self.project, self.device, self.project, self.package, self.project,)
 			cur.execute(sql, t)
 			rows = cur.fetchall()
 			for row in rows:
-				part = Part(row[0], row[1], row[2], row[3], row[4], row[5])
+				part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
 				project_results.add(part)
 					
 			if check_wspace:
 				for proj in wspace.list_projects():
 					if proj == project:
 						continue	# Do not re-check the passed project
-					sql = """SELECT DISTINCT * FROM %s WHERE value=? INTERSECT
-					SELECT product FROM %s WHERE device=? INTERSECT
-					SELECT product FROM %s WHERE package=?""" % (proj, proj, proj)
-					t = (self.value, self.device, self.package,)
+					sql = """SELECT DISTINCT * FROM parts WHERE value=? AND project!=? INTERSECT
+						SELECT * FROM parts WHERE device=? AND project!=? INTERSECT
+						SELECT * FROM parts WHERE package=? AND project!=?"""
+					t = (self.value, self.project, self.device, self.project, self.package, self.project,)
 					cur.execute(sql, t)
 					rows = cur.fetchall()
 					for row in rows:
-						part = Part(row[0], row[1], row[2], row[3], row[4], row[5])
+						part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
 						workspace_results.add((proj, part))
 							
 		finally:
@@ -163,53 +167,52 @@ class Part:
 		try:
 			from product import Product
 			(con, cur) = wspace.con_cursor()
-			for proj in wspace.list_projects():
-				sql = """SELECT DISTINCT product FROM %s WHERE value=? INTERSECT
-				SELECT product FROM %s WHERE device=? INTERSECT
-				SELECT product FROM %s WHERE package=?""" % (proj, proj, proj)
-				t = (self.value, self.device, self.package,)
-				cur.execute(sql, t)
-				rows = cur.fetchall()
-				for row in rows:
-					if row[0] != 'NULL':
-						db_prods = Product.select_by_pn(row[0], wspace)
-						print 'Found db_prods: ', db_prods
-						for p in db_prods:
-							products.add(p)
+			sql = """SELECT DISTINCT product FROM parts WHERE value=? INTERSECT
+			SELECT product FROM parts WHERE device=? INTERSECT
+			SELECT product FROM parts WHERE package=?"""
+			t = (self.value, self.device, self.package,)
+			cur.execute(sql, t)
+			rows = cur.fetchall()
+			for row in rows:
+				if row[0] != 'NULL':
+					db_prods = Product.select_by_pn(row[0], wspace)
+					print 'Found db_prods: ', db_prods
+					for p in db_prods:
+						products.add(p)
 		finally:
 			cur.close()
 			con.close()
 			return products
 	
-	def is_in_db(self, project, wspace):
+	def is_in_db(self, wspace):
 		''' Check if a BOM part of this name is in the project's database. '''
-		result = Part.select_by_name(self.name, project, wspace)
+		result = Part.select_by_name(self.name, wspace, self.project)
 		if len(result) == 0:
 			return False
 		else:
 			return True
 	
-	def update(self, project, wspace):
+	def update(self, wspace):
 		''' Update an existing Part record in the DB. '''
 		try:
 			(con, cur) = wspace.con_cursor()
 				
-			sql = 'UPDATE %s SET name=?, value=?, device=?, package=?, description=?, product=? WHERE name=?' % project
-			symbol = (self.name, self.value, self.device, self.package,  
-					self.description, self.product, self.name,)
+			sql = 'UPDATE parts SET name=?, project=?, value=?, device=?, package=?, description=?, product=? WHERE name=? AND project=?'
+			symbol = (self.name, self.project, self.value, self.device, self.package,  
+					self.description, self.product, self.name, self.project,)
 			cur.execute(sql, symbol)
 			
 		finally:
 			cur.close()
 			con.close()
 	
-	def insert(self, project, wspace):
+	def insert(self, wspace):
 		''' Write the Part to the DB. '''
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			sql = 'INSERT OR REPLACE INTO %s VALUES (?,?,?,?,?,?)' % project
-			symbol = (self.name, self.value, self.device, self.package,  
+			sql = 'INSERT OR REPLACE INTO parts VALUES (?,?,?,?,?,?,?)'
+			symbol = (self.name, self.project, self.value, self.device, self.package,  
 					self.description, self.product,)
 			cur.execute(sql, symbol)
 			
@@ -217,13 +220,13 @@ class Part:
 			cur.close()
 			con.close()
 	
-	def delete(self, project, wspace):
+	def delete(self, wspace):
 		''' Delete the Part from the DB. '''
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			sql = 'DELETE FROM %s WHERE name=?' % project
-			symbol = (self.name,)
+			sql = 'DELETE FROM parts WHERE name=? AND project=?'
+			symbol = (self.name, self.project)
 			cur.execute(sql, symbol)
 			
 		finally:

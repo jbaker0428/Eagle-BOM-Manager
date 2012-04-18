@@ -45,7 +45,6 @@ class BOM:
 		Add the BOM to the Workspace's projects table.
 		Returns the created BOM object. '''
 		new = BOM(name, desc, infile)
-		new.create_table(wspace)
 		try:
 			(con, cur) = wspace.con_cursor()
 			
@@ -66,26 +65,12 @@ class BOM:
 		self.val_counts = {}
 		self.prod_counts = {}
 	
-	def create_table(self, wspace):
-		''' Create the Parts table for a project in the given Workspace. '''
-		try:
-			(con, cur) = wspace.con_cursor()
-			
-			sql = 'CREATE TABLE IF NOT EXISTS %s (name TEXT PRIMARY KEY, value TEXT, device TEXT, package TEXT, description TEXT, product TEXT REFERENCES products(manufacturer_pn) )' % self.name
-			cur.execute(sql)
-		
-		finally:
-			cur.close()
-			con.close()
-		
 	def delete(self, wspace):
 		''' Delete the BOM table for a project from the given Workspace. '''
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			sql = 'DROP TABLE %s' % self.name
 			symbol = (self.name,)
-			cur.execute(sql)
 			cur.execute('DELETE FROM projects WHERE name=?', symbol)
 			
 		finally:
@@ -97,8 +82,6 @@ class BOM:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			symbol = (self.name, new_name,)
-			cur.execute('RENAME ? TO ?', symbol)
 			symbol = (new_name, self.name,)
 			cur.execute('UPDATE projects SET name=? WHERE name=?', symbol)
 			
@@ -122,14 +105,15 @@ class BOM:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			sql = 'SELECT DISTINCT value FROM %s' % self.name
-			cur.execute(sql)
+			params = (self.name,)
+			sql = 'SELECT DISTINCT value FROM parts WHERE project=?'
+			cur.execute(sql, params)
 			for row in cur.fetchall():
 				vals.add(row[0])
 			for v in vals:
-				sql = 'SELECT name FROM %s WHERE value=?' % self.name
-				symbol = (v,)
-				cur.execute(sql, symbol)
+				sql = 'SELECT name FROM parts WHERE value=? INTERSECT SELECT name FROM parts WHERE project=?'
+				params = (v, self.name,)
+				cur.execute(sql, params)
 				self.val_counts[v] = len(cur.fetchall())
 			
 		finally:
@@ -144,14 +128,15 @@ class BOM:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			sql = 'SELECT DISTINCT product FROM %s' % self.name
-			cur.execute(sql)
+			params = (self.name,)
+			sql = 'SELECT DISTINCT product FROM parts WHERE project=?'
+			cur.execute(sql, params)
 			for row in cur.fetchall():
 				prods.add(row[0])
 			for p in prods:
-				sql = 'SELECT name FROM %s WHERE product=?' % self.name
-				symbol = (p,)
-				cur.execute(sql, symbol)
+				sql = 'SELECT name FROM parts WHERE product=? INTERSECT SELECT name FROM parts WHERE project=?'
+				params = (p, self.name,)
+				cur.execute(sql, params)
 				self.prod_counts[p] = len(cur.fetchall())
 			
 		finally:
@@ -199,8 +184,9 @@ class BOM:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			sql = 'SELECT name, value, product FROM %s' % self.name
-			cur.execute(sql)
+			sql = 'SELECT name, value, product FROM parts WHERE project=?'
+			params = (self.name,)
+			cur.execute(sql, params)
 			for row in cur.fetchall():
 				new_parts.append([row[0], row[1], row[2]])
 			
@@ -220,22 +206,22 @@ class BOM:
 				print row
 				# Check for optional product column
 				if len(row) > 5:
-					part = Part(row[0], row[1], row[2], row[3], row[4], row[5])
+					part = Part(row[0], self.name, row[1], row[2], row[3], row[4], row[5])
 				else:
-					part = Part(row[0], row[1], row[2], row[3], row[4])
+					part = Part(row[0], self.name, row[1], row[2], row[3], row[4])
 				#print "Part: %s %s %s %s" % (part.name, part.value, part.device, part.package)
 				# Check if identical part is already in DB with a product
 				# If so, preserve the product entry
-				if(part.is_in_db(self.name, wspace)):
+				if(part.is_in_db(wspace)):
 					print "Part of same name already in DB"
-					old_part = Part.select_by_name(part.name, self.name, wspace)[0]
+					old_part = Part.select_by_name(part.name, wspace, self.name)[0]
 					if(part.value == old_part.value and part.device == old_part.device and part.package == old_part.package):
 						if part.product != 'NULL':
 							if old_part.product != 'NULL':
 								# TODO: prompt? Defaulting to old_part.product for now (aka do nothing)
 								print 'Matching CSV and DB parts with non-NULL product mismatch, keeping DB version...'
 							elif old_part.product == 'NULL':
-								part.update(self.name, wspace)
+								part.update(wspace)
 						elif part.product == 'NULL':
 							if old_part.product != 'NULL':
 								pass	# Do nothing in this case
@@ -247,16 +233,16 @@ class BOM:
 								elif len(candidate_products) == 1:
 									part.product = candidate_products[0].manufacturer_pn
 									print 'Found exactly one matching product, setting product and updating', part.show()
-									part.update(self.name, wspace)
+									part.update(wspace)
 								else:
 									print 'Found multiple product matches, prompting for selection...'
 									# TODO: Currently going with first result, need to prompt for selection
 									part.product = candidate_products[0].manufacturer_pn
-									part.update(self.name, wspace)
+									part.update(wspace)
 								
 					else:	# Value/device/package mismatch
 						if part.product != 'NULL':
-							part.update(self.name, wspace)
+							part.update(wspace)
 						elif part.product == 'NULL':
 							candidate_products = list(part.find_matching_products(wspace))
 							if len(candidate_products) == 0:
@@ -268,7 +254,7 @@ class BOM:
 								print 'Found multiple product matches, prompting for selection...'
 								# TODO: Currently going with first result, need to prompt for selection
 								part.product = candidate_products[0].manufacturer_pn
-							part.update(self.name, wspace)
+							part.update(wspace)
 				
 				else:
 					print 'Part not in DB'
@@ -284,7 +270,7 @@ class BOM:
 							# TODO: Currently going with first result, need to prompt for selection
 							part.product = candidate_products[0].manufacturer_pn
 					
-					part.insert(self.name, wspace)
+					part.insert(wspace)
 				self.parts.append([part.name, part.value, part.product])
 				
 		print "Parts list: ", self.parts
@@ -295,11 +281,11 @@ class BOM:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			sql = 'SELECT * FROM %s WHERE name=?' % self.name
-			symbol = (name,)
+			sql = 'SELECT * FROM parts WHERE name=? INTERSECT SELECT * FROM parts WHERE project=?'
+			symbol = (name, self.name)
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
-				part = Part(row[0], row[1], row[2], row[3], row[4], row[5])
+				part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
 				parts.append(part)
 			
 		finally:
@@ -313,11 +299,11 @@ class BOM:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			sql = 'SELECT * FROM %s WHERE value=?' % self.name
-			symbol = (val,)
+			sql = 'SELECT * FROM parts WHERE value=? INTERSECT SELECT * FROM parts WHERE project=?'
+			symbol = (val, self.name)
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
-				part = Part(row[0], row[1], row[2], row[3], row[4], row[5])
+				part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
 				parts.append(part)
 			
 		finally:
@@ -331,11 +317,11 @@ class BOM:
 		try:
 			(con, cur) = wspace.con_cursor()
 			
-			sql = 'SELECT * FROM %s WHERE product=?' % self.name
-			symbol = (prod,)
+			sql = 'SELECT * FROM parts WHERE product=? INTERSECT SELECT * FROM parts WHERE project=?'
+			symbol = (prod, self.name)
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
-				part = Part(row[0], row[1], row[2], row[3], row[4], row[5])
+				part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
 				parts.append(part)
 			
 		finally:

@@ -345,16 +345,16 @@ class Manager(gobject.GObject):
 			self.selected_bom_part.device = self.edit_part_device_entry.get_text()
 			self.selected_bom_part.package = self.edit_part_package_entry.get_text()
 			self.selected_bom_part.description = self.edit_part_description_entry.get_text()
-			print "Setting selected_bom_part.product to: %s" % self.edit_part_product_entry.get_text()
+			#print "Setting selected_bom_part.product to: %s" % self.edit_part_product_entry.get_text()
 			self.selected_bom_part.product = self.product_entry_text
-			print "selected_bom_part's product field: %s" % self.selected_bom_part.product
+			#print "selected_bom_part's product field: %s" % self.selected_bom_part.product
 			
 			# We need to check the products table for this Product, creating an entry
 			# for it if necessary, before updating selected_bom_part in the DB.
 			self.bom_selected_product.manufacturer_pn = self.product_entry_text
 			self.bom_selected_product.select_or_scrape(wspace)
 			
-			self.selected_bom_part.update(self.active_bom.name, wspace)
+			self.selected_bom_part.update(wspace)
 			self.active_bom.update_parts_list(self.selected_bom_part)
 			
 			if self.bom_group_name.get_active():
@@ -681,7 +681,7 @@ class Manager(gobject.GObject):
 		self.bom_group_product = gtk.RadioButton(self.bom_group_name, "Part Number")
 		
 		self.bom_selected_product = Product("init", "init", wspace)
-		self.selected_bom_part = Part("init", "init", "init", "init", self.active_bom)
+		self.selected_bom_part = Part("init", "init", "init", "init", "init")
 		
 		self.part_info_frame = gtk.Frame("Part information") # Goes in top half of bom_vpane
 		self.part_info_vbox = gtk.VBox(False, 5) # Fill with HBoxes 
