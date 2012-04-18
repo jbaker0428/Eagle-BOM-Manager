@@ -207,7 +207,8 @@ class BOM:
 			has_header = sniffer.has_header(f.read(2048))
 			f.seek(0)
 			reader = csv.reader(f, dialect=sniffed_dialect)
-			print 'CSV has header: ', has_header
+			if has_header:
+				header = reader.next()
 			for row in reader:
 				#print row
 				# Check for optional product column
