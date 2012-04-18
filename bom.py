@@ -206,15 +206,20 @@ class BOM:
 				print row
 				# Check for optional product column
 				if len(row) > 5:
-					part = Part(row[0], self.name, row[1], row[2], row[3], row[4], row[5])
+					if len(row[5]) > 0:
+						part = Part(row[0], self.name, row[1], row[2], row[3], row[4], row[5])
+					else:
+						part = Part(row[0], self.name, row[1], row[2], row[3], row[4])
 				else:
 					part = Part(row[0], self.name, row[1], row[2], row[3], row[4])
-				#print "Part: %s %s %s %s" % (part.name, part.value, part.device, part.package)
+				print 'Got part from CSV: '
+				part.show() 
 				# Check if identical part is already in DB with a product
 				# If so, preserve the product entry
 				if(part.is_in_db(wspace)):
 					print "Part of same name already in DB"
 					old_part = Part.select_by_name(part.name, wspace, self.name)[0]
+					old_part.show()
 					if(part.value == old_part.value and part.device == old_part.device and part.package == old_part.package):
 						if part.product != 'NULL':
 							if old_part.product != 'NULL':
@@ -269,7 +274,9 @@ class BOM:
 							print 'Found multiple product matches, prompting for selection...'
 							# TODO: Currently going with first result, need to prompt for selection
 							part.product = candidate_products[0].manufacturer_pn
-					
+					else:
+						newprod = Product('NULL', part.product)
+						newprod.insert(wspace)
 					part.insert(wspace)
 				self.parts.append([part.name, part.value, part.product])
 				
