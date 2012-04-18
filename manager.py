@@ -56,10 +56,10 @@ class Workspace:
 			product TEXT REFERENCES products(manufacturer_pn), 
 			PRIMARY KEY(name, project))''')
 			
-			cur.execute('''CREATR TRIGGER IF NOT EXISTS rename_project UPDATE OF name ON projects
+			cur.execute('''CREATE TRIGGER IF NOT EXISTS rename_project UPDATE OF name ON projects
 			FOR EACH ROW BEGIN UPDATE parts SET project = new.name WHERE project = old.name; END''')
 			
-			cur.execute('''CREATR TRIGGER IF NOT EXISTS delete_project DELETE ON projects
+			cur.execute('''CREATE TRIGGER IF NOT EXISTS delete_project DELETE ON projects
 			FOR EACH ROW BEGIN DELETE FROM parts WHERE project = old.name; END''')
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS products
