@@ -46,6 +46,16 @@ class Workspace:
 			(con, cur) = self.con_cursor()
 			cur.execute('CREATE TABLE IF NOT EXISTS projects(name TEXT PRIMARY KEY, description TEXT, infile TEXT)')
 			
+			cur.execute('''CREATE TABLE IF NOT EXISTS parts 
+			(name TEXT, 
+			project TEXT REFERENCES projects(name), 
+			value TEXT, 
+			device TEXT, 
+			package TEXT, 
+			description TEXT, 
+			product TEXT REFERENCES products(manufacturer_pn), 
+			PRIMARY KEY(name, project))''')
+			
 			cur.execute('''CREATE TABLE IF NOT EXISTS products
 			(manufacturer TEXT, 
 			manufacturer_pn TEXT PRIMARY KEY, 
