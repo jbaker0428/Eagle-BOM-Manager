@@ -147,6 +147,7 @@ class Manager(gobject.GObject):
 		self.new_project_input_file_entry.set_text('')
 		
 	def project_open_callback(self, widget, data=None):
+		''' Callback for the Open Project button. '''
 		(model, row_iter) = self.project_tree_view.get_selection().get_selected()
 		self.active_bom = BOM.read_from_db(model.get(row_iter,0)[0], wspace)[0]
 		self.active_project_name = model.get(row_iter,0)[0]
@@ -166,6 +167,13 @@ class Manager(gobject.GObject):
 		# TODO: Uncomment this when spin is working
 		#self.order_size_spin_callback(self.run_size_spin)
 		self.window.show_all()
+	
+	def project_delete_callback(self, widget, data=None):
+		''' Callback for the Delete Project button. '''
+		(model, row_iter) = self.project_tree_view.get_selection().get_selected()
+		selected_bom = BOM.read_from_db(model.get(row_iter,0)[0], wspace)[0]
+		selected_bom.delete(wspace)
+		self.project_store_populate()
 		
 	'''Callback for the "Read CSV" button on the BOM tab.'''
 	def read_input_callback(self, widget, data=None):
@@ -440,7 +448,7 @@ class Manager(gobject.GObject):
 			elif p != 'dummy':
 				#print 'p = ', p
 				bom = BOM.read_from_db(p, wspace)[0]
-				print 'Returned BOM: ', bom, type(bom)
+				#print 'Returned BOM: ', bom, type(bom)
 				iter = self.project_store.append([bom.name, bom.description, wspace.name, bom.input])
 		self.project_tree_view.columns_autosize()
 	
@@ -791,6 +799,7 @@ class Manager(gobject.GObject):
 		self.new_project_input_file_button.connect("clicked", self.new_project_input_file_callback)
 		
 		self.project_open_button.connect("clicked", self.project_open_callback)
+		self.project_delete_button.connect("clicked", self.project_delete_callback)
 		
 		self.new_project_name_label.set_alignment(0.0, 0.5)
 		self.new_project_description_label.set_alignment(0.0, 0.5)
