@@ -133,15 +133,14 @@ class Part:
 				rownum = rownum + 1
 			return -1
 	
-	# TODO: find_similar_parts needs to check self.attributes
-	# Only return parts that have all of self's attributes and of the same attribute value
-	# Don't worry about the returned part having other attributes not in self.attributes
 	def find_similar_parts(self, project, wspace, check_wspace=True):
 		''' Search the project and optionally workspace for parts of matching value/device/package.
 		If check_wspace = True, returns a pair of lists: (project_results, workspace_results).
 		If check_wspace = False, only returns the project_results list. 
 		The contents of the workspace_results list are pairs: (project, Part). 
-		This allows for parts in different projects that incidentally have the same name to be added. '''
+		This allows for parts in different projects that incidentally have the same name to be added.
+		Only returns parts that have all of the attributes of in self.attributes
+		(with equal values). This behavior is equivalent to self.equals(some_part, False). '''
 		# Can pass these returned lists to a new version of find_matching_products with a similar return pair
 		# New version of find_matching_prods, boolean optional (default True) arg for "check workspace"
 		project_results = set()
@@ -157,7 +156,15 @@ class Part:
 			for row in rows:
 				part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
 				part.fetch_attributes(wspace)
-				project_results.add(part)
+				attribs_eq = True
+				for k in self.attributes.keys():
+					if k not in part.attributes.keys():
+						attribs_eq = False
+					else:
+						if self.attributes[k].equals(part.attributes[k]) == False:
+							attribs_eq = False
+				if attribs_eq is True:
+					project_results.add(part)
 					
 			if check_wspace:
 				for proj in wspace.list_projects():
@@ -172,7 +179,15 @@ class Part:
 					for row in rows:
 						part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
 						part.fetch_attributes(wspace)
-						workspace_results.add((proj, part))
+						attribs_eq = True
+						for k in self.attributes.keys():
+							if k not in part.attributes.keys():
+								attribs_eq = False
+							else:
+								if self.attributes[k].equals(part.attributes[k]) == False:
+									attribs_eq = False
+						if attribs_eq is True:
+							workspace_results.add((proj, part))
 							
 		finally:
 			cur.close()
