@@ -211,6 +211,12 @@ class BOM:
 				header = reader.next()
 				# Process column names from header
 				index = 0
+				name_col = -1
+				val_col = -1
+				dev_col = -1
+				pkg_col = -1
+				desc_col = -1
+				prod_col = -1
 				bom_attribs = {}	# Key = column index, value = name of attribute
 				for col in header:
 					if 'Name' in col:
@@ -223,6 +229,8 @@ class BOM:
 						pkg_col = index
 					elif 'Description' in col:
 						desc_col = index
+					elif 'PARTNO' in col or 'Part Number' in col or 'PART#' in col or ('PN' in col and 'Vendor' not in col):
+						prod_col = index
 					else:
 						bom_attribs[index] = col
 					index += 1
