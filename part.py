@@ -133,7 +133,7 @@ class Part:
 				rownum = rownum + 1
 			return -1
 	
-	def find_similar_parts(self, project, wspace, check_wspace=True):
+	def find_similar_parts(self, wspace, check_wspace=True):
 		''' Search the project and optionally workspace for parts of matching value/device/package.
 		If check_wspace = True, returns a pair of lists: (project_results, workspace_results).
 		If check_wspace = False, only returns the project_results list. 
@@ -168,7 +168,7 @@ class Part:
 					
 			if check_wspace:
 				for proj in wspace.list_projects():
-					if proj == project:
+					if proj == self.project:
 						continue	# Do not re-check the passed project
 					sql = """SELECT DISTINCT * FROM parts WHERE value=? AND project!=? INTERSECT
 						SELECT * FROM parts WHERE device=? AND project!=? INTERSECT
