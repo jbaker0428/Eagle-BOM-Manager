@@ -156,6 +156,7 @@ class Part:
 			rows = cur.fetchall()
 			for row in rows:
 				part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
+				part.fetch_attributes(wspace)
 				project_results.add(part)
 					
 			if check_wspace:
@@ -170,6 +171,7 @@ class Part:
 					rows = cur.fetchall()
 					for row in rows:
 						part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
+						part.fetch_attributes(wspace)
 						workspace_results.add((proj, part))
 							
 		finally:
