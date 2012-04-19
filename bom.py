@@ -207,7 +207,7 @@ class BOM:
 			has_header = sniffer.has_header(f.read(2048))
 			f.seek(0)
 			reader = csv.reader(f, dialect=sniffed_dialect)
-			if has_header:
+			if has_header is True:
 				header = reader.next()
 				# Process column names from header
 				index = 0
@@ -235,20 +235,31 @@ class BOM:
 						bom_attribs[index] = col
 					index += 1
 					
-			for row in reader:
-				#print row
-				# Check for optional product column
-				if len(row) > 5:
-					if len(row[5]) > 0:
-						part = Part(row[0], self.name, row[1], row[2], row[3], row[4], row[5])
+				for row in reader:
+					row_attribs = {}
+					for attrib in bom_attribs.items():
+						row_attribs[attrib[1]] = row[attrib[0]]
+					if prod_col == -1:
+						part = Part(row[name_col], self.name, row[val_col], row[dev_col], row[pkg_col], row[desc_col], 'NULL', row_attribs)
+					else:
+						part = Part(row[name_col], self.name, row[val_col], row[dev_col], row[pkg_col], row[desc_col], row[prod_col], row_attribs)
+					
+			else:		
+				for row in reader:
+					#print row
+					# Check for optional product column
+					if len(row) > 5:
+						if len(row[5]) > 0:
+							part = Part(row[0], self.name, row[1], row[2], row[3], row[4], row[5])
+						else:
+							part = Part(row[0], self.name, row[1], row[2], row[3], row[4])
 					else:
 						part = Part(row[0], self.name, row[1], row[2], row[3], row[4])
-				else:
-					part = Part(row[0], self.name, row[1], row[2], row[3], row[4])
 				#print 'Got part from CSV: '
 				#part.show() 
 				# Check if identical part is already in DB with a product
 				# If so, preserve the product entry
+				# TODO: Check attributes
 				if(part.is_in_db(wspace)):
 					print "Part of same name already in DB"
 					old_part = Part.select_by_name(part.name, wspace, self.name)[0]
