@@ -140,7 +140,6 @@ class Part:
 		''' Search the project and optionally workspace for parts of matching value/device/package/attributes.
 		If check_wspace = True, returns a pair of lists: (project_results, workspace_results).
 		If check_wspace = False, only returns the project_results list. 
-		The contents of the workspace_results list are pairs: (project, Part). 
 		This allows for parts in different projects that incidentally have the same name to be added.
 		Only returns parts that have all of the non-empty attributes in self.attributes
 		(with equal values). This behavior is equivalent to self.equals(some_part, False). '''
@@ -190,7 +189,7 @@ class Part:
 									if self.attributes[k].equals(part.attributes[k]) == False:
 										attribs_eq = False
 						if attribs_eq is True:
-							workspace_results.add((proj, part))
+							workspace_results.add(part)
 							
 		finally:
 			cur.close()
@@ -203,6 +202,7 @@ class Part:
 	def find_matching_products(self, wspace, proj_parts, wspace_parts):
 		''' Takes in the output of self.find_similar_parts. 
 		Returns a list of Product objects.'''
+		# TODO : Find more results by searching the product_attributes table
 		products = set()
 		for part in proj_parts:
 			if part.product != 'NULL':
