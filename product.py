@@ -300,13 +300,13 @@ class Product:
 		eq = True
 		if self.manufacturer != p.manufacturer:
 			eq = False
-		if self.manufacturer_pn != p.manufacturer_pn:
+		elif self.manufacturer_pn != p.manufacturer_pn:
 			eq = False
-		if self.datasheet != p.datasheet:
+		elif self.datasheet != p.datasheet:
 			eq = False
-		if self.description != p.description:
+		elif self.description != p.description:
 			eq = False
-		if self.package != p.package:
+		elif self.package != p.package:
 			eq = False
 		for k in self.listings.keys():
 			if k not in p.listings.keys():
@@ -314,6 +314,9 @@ class Product:
 			else:
 				if self.listings[k].equals(p.listings[k]) == False:
 					eq = False
+		for k in p.listings.keys():
+			if k not in self.listings.keys():
+				eq = False
 		return eq
 	
 	def update(self, wspace):
