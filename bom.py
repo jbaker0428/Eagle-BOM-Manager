@@ -209,6 +209,24 @@ class BOM:
 			reader = csv.reader(f, dialect=sniffed_dialect)
 			if has_header:
 				header = reader.next()
+				# Process column names from header
+				index = 0
+				bom_attribs = {}	# Key = column index, value = name of attribute
+				for col in header:
+					if 'Name' in col:
+						name_col = index
+					elif 'Value' in col:
+						val_col = index
+					elif 'Device' in col:
+						dev_col = index
+					elif 'Package' in col:
+						pkg_col = index
+					elif 'Description' in col:
+						desc_col = index
+					else:
+						bom_attribs[index] = col
+					index += 1
+					
 			for row in reader:
 				#print row
 				# Check for optional product column
