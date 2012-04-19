@@ -275,7 +275,8 @@ class BOM:
 							if old_part.product != 'NULL':
 								pass	# Do nothing in this case
 							elif old_part.product == 'NULL':
-								candidate_products = list(part.find_matching_products(wspace))
+								(candidate_proj_parts, candidate_wspace_parts) = part.find_similar_parts(wspace)
+								candidate_products = part.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts)
 								if len(candidate_products) == 0:
 									#print 'No matching products found, nothing to do'
 									pass
@@ -293,7 +294,8 @@ class BOM:
 						if part.product != 'NULL':
 							part.update(wspace)
 						elif part.product == 'NULL':
-							candidate_products = list(part.find_matching_products(wspace))
+							(candidate_proj_parts, candidate_wspace_parts) = part.find_similar_parts(wspace)
+							candidate_products = part.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts)
 							if len(candidate_products) == 0:
 								print 'No matching products found, updating as-is'
 							elif len(candidate_products) == 1:
@@ -308,7 +310,8 @@ class BOM:
 				else:
 					print 'Part not in DB'
 					if part.product == 'NULL':
-						candidate_products = list(part.find_matching_products(wspace))
+						(candidate_proj_parts, candidate_wspace_parts) = part.find_similar_parts(wspace)
+						candidate_products = part.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts)
 						if len(candidate_products) == 0:
 							print 'No matching products found, inserting as-is', part.show()
 						elif len(candidate_products) == 1:

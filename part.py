@@ -134,15 +134,13 @@ class Part:
 			return -1
 	
 	def find_similar_parts(self, wspace, check_wspace=True):
-		''' Search the project and optionally workspace for parts of matching value/device/package.
+		''' Search the project and optionally workspace for parts of matching value/device/package/attributes.
 		If check_wspace = True, returns a pair of lists: (project_results, workspace_results).
 		If check_wspace = False, only returns the project_results list. 
 		The contents of the workspace_results list are pairs: (project, Part). 
 		This allows for parts in different projects that incidentally have the same name to be added.
-		Only returns parts that have all of the attributes of in self.attributes
+		Only returns parts that have all of the attributes in self.attributes
 		(with equal values). This behavior is equivalent to self.equals(some_part, False). '''
-		# Can pass these returned lists to a new version of find_matching_products with a similar return pair
-		# New version of find_matching_prods, boolean optional (default True) arg for "check workspace"
 		project_results = set()
 		workspace_results = set()
 		try:
@@ -195,33 +193,28 @@ class Part:
 			if check_wspace:
 				return (list(project_results), list(workspace_results))
 			else:
-				return list(project_results)
-		
-	def find_matching_products(self, wspace):
-		''' Search all projects in a Workspace for Parts with the same value/device/pakage.
-		Checks the search results for non-NULL product columns.
-		Return a set of candidate Product objects for this Part.'''
-		#print 'Entering %s.find_matching_products...' % self.name
+				return (list(project_results), [])
+	
+	def find_matching_products(self, wspace, proj_parts, wspace_parts):
+		''' Takes in the output of self.find_similar_parts. 
+		Returns a list of Product objects.'''
 		products = set()
 		try:
 			from product import Product
-			(con, cur) = wspace.con_cursor()
-			sql = """SELECT DISTINCT product FROM parts WHERE value=? INTERSECT
-			SELECT product FROM parts WHERE device=? INTERSECT
-			SELECT product FROM parts WHERE package=?"""
-			t = (self.value, self.device, self.package,)
-			cur.execute(sql, t)
-			rows = cur.fetchall()
-			for row in rows:
-				if row[0] != 'NULL':
-					db_prods = Product.select_by_pn(row[0], wspace)
-					#print 'Found db_prods: ', db_prods
-					for p in db_prods:
-						products.add(p)
+			for part in proj_parts:
+				if part.product != 'NULL':
+					db_prods = Product.select_by_pn(part.product, wspace)
+					for prod in db_prods:
+						products.add(prod)
+			
+			for part in wspace_parts:
+				if part.product != 'NULL':
+					db_prods = Product.select_by_pn(part.product, wspace)
+					for prod in db_prods:
+						products.add(prod)
+		
 		finally:
-			cur.close()
-			con.close()
-			return products
+			return list(products)
 	
 	def is_in_db(self, wspace):
 		''' Check if a BOM part of this name is in the project's database. '''
