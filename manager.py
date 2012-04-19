@@ -47,20 +47,14 @@ class Workspace:
 			cur.execute('CREATE TABLE IF NOT EXISTS projects(name TEXT PRIMARY KEY, description TEXT, infile TEXT)')
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS parts 
-			(name TEXT, 
-			project TEXT REFERENCES projects(name), 
+			(name TEXT NOT NULL, 
+			project TEXT REFERENCES projects(name) ON DELETE CASCADE ON UPDATE CASCADE, 
 			value TEXT, 
 			device TEXT, 
 			package TEXT, 
 			description TEXT, 
-			product TEXT REFERENCES products(manufacturer_pn), 
+			product TEXT REFERENCES products(manufacturer_pn) ON DELETE SET NULL ON UPDATE CASCADE, 
 			PRIMARY KEY(name, project))''')
-			
-			cur.execute('''CREATE TRIGGER IF NOT EXISTS rename_project UPDATE OF name ON projects
-			FOR EACH ROW BEGIN UPDATE parts SET project = new.name WHERE project = old.name; END''')
-			
-			cur.execute('''CREATE TRIGGER IF NOT EXISTS delete_project DELETE ON projects
-			FOR EACH ROW BEGIN DELETE FROM parts WHERE project = old.name; END''')
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS part_attributes
 			(id INTEGER PRIMARY KEY,
@@ -81,8 +75,8 @@ class Workspace:
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS listings
 			(vendor TEXT, 
-			vendor_pn TEXT PRIMARY KEY, 
-			manufacturer_pn TEXT REFERENCES products(manufacturer_pn), 
+			vendor_pn TEXT NOT NULL PRIMARY KEY, 
+			manufacturer_pn TEXT REFERENCES products(manufacturer_pn) ON DELETE CASCADE ON UPDATE CASCADE, 
 			inventory INTEGER, 
 			packaging TEXT,
 			reelfee FLOAT, 
@@ -92,7 +86,7 @@ class Workspace:
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS pricebreaks
 			(id INTEGER PRIMARY KEY,
-			pn TEXT REFERENCES listings(vendor_pn), 
+			pn TEXT REFERENCES listings(vendor_pn) ON DELETE CASCADE ON UPDATE CASCADE, 
 			qty INTEGER,
 			unit DOUBLE)''')
 						
