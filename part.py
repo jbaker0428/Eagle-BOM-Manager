@@ -1,9 +1,10 @@
 import types
 import sqlite3
 from manager import Workspace
+from product import Product
 
 class Part:
-	''' A part in the BOM exported from Eagle. '''
+	''' A self in the BOM exported from Eagle. '''
 	
 	@staticmethod
 	def select_by_name(name, wspace, project='*'):
@@ -110,20 +111,22 @@ class Part:
 		elif self.product != p.product:
 			eq = False
 		for k in self.attributes.keys():
-			if k not in p.attributes.keys():
-				eq = False
-			else:
-				if self.attributes[k].equals(p.attributes[k]) == False:
+			if self.attributes[k] != "":
+				if k not in p.attributes.keys():
 					eq = False
+				else:
+					if self.attributes[k].equals(p.attributes[k]) == False:
+						eq = False
 		if check_foreign_attribs is True:
 			for k in p.attributes.keys():
-				if k not in self.attributes.keys():
-					eq = False
+				if p.attributes[k] != "":
+					if k not in self.attributes.keys():
+						eq = False
 		return eq
 		
 
 	def findInFile(self, bom_file):
-		''' Check if a BOM part of this name is in the given CSV BOM. '''
+		''' Check if a BOM self of this name is in the given CSV BOM. '''
 		with open(bom_file, 'rb') as f:
 			db = csv.reader(f, delimiter=',', quotechar = '"', quoting=csv.QUOTE_ALL)
 			rownum = 0
@@ -139,7 +142,7 @@ class Part:
 		If check_wspace = False, only returns the project_results list. 
 		The contents of the workspace_results list are pairs: (project, Part). 
 		This allows for parts in different projects that incidentally have the same name to be added.
-		Only returns parts that have all of the attributes in self.attributes
+		Only returns parts that have all of the non-empty attributes in self.attributes
 		(with equal values). This behavior is equivalent to self.equals(some_part, False). '''
 		project_results = set()
 		workspace_results = set()
@@ -156,11 +159,12 @@ class Part:
 				part.fetch_attributes(wspace)
 				attribs_eq = True
 				for k in self.attributes.keys():
-					if k not in part.attributes.keys():
-						attribs_eq = False
-					else:
-						if self.attributes[k].equals(part.attributes[k]) == False:
+					if self.attributes[k] != "":
+						if k not in part.attributes.keys():
 							attribs_eq = False
+						else:
+							if self.attributes[k].equals(part.attributes[k]) == False:
+								attribs_eq = False
 				if attribs_eq is True:
 					project_results.add(part)
 					
@@ -179,11 +183,12 @@ class Part:
 						part.fetch_attributes(wspace)
 						attribs_eq = True
 						for k in self.attributes.keys():
-							if k not in part.attributes.keys():
-								attribs_eq = False
-							else:
-								if self.attributes[k].equals(part.attributes[k]) == False:
+							if self.attributes[k] != "":
+								if k not in part.attributes.keys():
 									attribs_eq = False
+								else:
+									if self.attributes[k].equals(part.attributes[k]) == False:
+										attribs_eq = False
 						if attribs_eq is True:
 							workspace_results.add((proj, part))
 							
@@ -199,31 +204,101 @@ class Part:
 		''' Takes in the output of self.find_similar_parts. 
 		Returns a list of Product objects.'''
 		products = set()
-		try:
-			from product import Product
-			for part in proj_parts:
-				if part.product != 'NULL':
-					db_prods = Product.select_by_pn(part.product, wspace)
-					for prod in db_prods:
-						products.add(prod)
-			
-			for part in wspace_parts:
-				if part.product != 'NULL':
-					db_prods = Product.select_by_pn(part.product, wspace)
-					for prod in db_prods:
-						products.add(prod)
+		for part in proj_parts:
+			if part.product != 'NULL':
+				db_prods = Product.select_by_pn(part.product, wspace)
+				for prod in db_prods:
+					products.add(prod)
 		
-		finally:
-			return list(products)
+		for part in wspace_parts:
+			if part.product != 'NULL':
+				db_prods = Product.select_by_pn(part.product, wspace)
+				for prod in db_prods:
+					products.add(prod)
+	
+		return list(products)
 	
 	def is_in_db(self, wspace):
-		''' Check if a BOM part of this name is in the project's database. '''
+		''' Check if a BOM self of this name is in the project's database. '''
 		result = Part.select_by_name(self.name, wspace, self.project)
 		if len(result) == 0:
 			return False
 		else:
 			return True
 	
+	def product_updater(self, wspace):
+		''' Checks if the Part is already in the DB. 
+		Inserts/updates self into DB depending on:
+		- The presence of a matching Part in the DB
+		- The value of self.product
+		- The product of the matching Part in the DB '''
+		if(self.is_in_db(wspace)):
+			print "Part of same name already in DB"
+			old_part = Part.select_by_name(self.name, wspace, self.project)[0]
+			#old_part.show()
+			if(self.value == old_part.value and self.device == old_part.device and self.package == old_part.package):
+				if self.product != 'NULL':
+					if old_part.product != 'NULL':
+						# TODO: prompt? Defaulting to old_part.product for now (aka do nothing)
+						print 'Matching CSV and DB parts with non-NULL product mismatch, keeping DB version...'
+					elif old_part.product == 'NULL':
+						self.update(wspace)
+				elif self.product == 'NULL':
+					if old_part.product != 'NULL':
+						pass	# Do nothing in this case
+					elif old_part.product == 'NULL':
+						(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace)
+						candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts)
+						if len(candidate_products) == 0:
+							#print 'No matching products found, nothing to do'
+							pass
+						elif len(candidate_products) == 1:
+							self.product = candidate_products[0].manufacturer_pn
+							print 'Found exactly one matching product, setting product and updating', #self.show()
+							self.update(wspace)
+						else:
+							print 'Found multiple product matches, prompting for selection...'
+							# TODO: Currently going with first result, need to prompt for selection
+							self.product = candidate_products[0].manufacturer_pn
+							self.update(wspace)
+						
+			else:	# Value/device/package mismatch
+				if self.product != 'NULL':
+					self.update(wspace)
+				elif self.product == 'NULL':
+					(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace)
+					candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts)
+					if len(candidate_products) == 0:
+						print 'No matching products found, updating as-is'
+					elif len(candidate_products) == 1:
+						self.product = candidate_products[0].manufacturer_pn
+						print 'Found exactly one matching product, setting product and updating'#, self.show()
+					else:
+						print 'Found multiple product matches, prompting for selection...'
+						# TODO: Currently going with first result, need to prompt for selection
+						self.product = candidate_products[0].manufacturer_pn
+					self.update(wspace)
+		
+		else:
+			print 'Part not in DB'
+			if self.product == 'NULL':
+				(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace)
+				candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts)
+				if len(candidate_products) == 0:
+					print 'No matching products found, inserting as-is'#, self.show()
+				elif len(candidate_products) == 1:
+					self.product = candidate_products[0].manufacturer_pn
+					print 'Found exactly one matching product, setting product and inserting'#, self.show()
+				else:
+					print 'Found multiple product matches, prompting for selection...'
+					# TODO: Currently going with first result, need to prompt for selection
+					self.product = candidate_products[0].manufacturer_pn
+			else:
+				newprod = Product('NULL', self.product)
+				newprod.insert(wspace)
+				newprod.scrape(wspace)
+			self.insert(wspace)
+		
 	def update(self, wspace):
 		''' Update an existing Part record in the DB. '''
 		try:
@@ -322,10 +397,11 @@ class Part:
 			for row in cur.fetchall():
 				db_attribs.append(row[0])
 			for a in self.attributes.items():
-				if a[0] in db_attribs:
-					old_attribs.append((a[1], self.name, self.project, a[0]))
-				else:
-					new_attribs.append((self.name, self.project, a[0], a[1]))
+				if a[1] != "":
+					if a[0] in db_attribs:
+						old_attribs.append((a[1], self.name, self.project, a[0]))
+					else:
+						new_attribs.append((self.name, self.project, a[0], a[1]))
 			
 			cur.executemany('INSERT OR REPLACE INTO part_attributes VALUES (NULL,?,?,?,?)', new_attribs)
 			cur.executemany('UPDATE part_attributes SET value=? WHERE part=? AND project=? AND name=?', old_attribs)

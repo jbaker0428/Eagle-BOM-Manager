@@ -208,41 +208,52 @@ class BOM:
 			f.seek(0)
 			reader = csv.reader(f, dialect=sniffed_dialect)
 			if has_header is True:
-				header = reader.next()
-				# Process column names from header
-				index = 0
-				name_col = -1
-				val_col = -1
-				dev_col = -1
-				pkg_col = -1
-				desc_col = -1
-				prod_col = -1
-				bom_attribs = {}	# Key = column index, value = name of attribute
-				for col in header:
-					if 'Name' in col:
-						name_col = index
-					elif 'Value' in col:
-						val_col = index
-					elif 'Device' in col:
-						dev_col = index
-					elif 'Package' in col:
-						pkg_col = index
-					elif 'Description' in col:
-						desc_col = index
-					elif 'PARTNO' in col or 'Part Number' in col or 'PART#' in col or ('PN' in col and 'Vendor' not in col):
-						prod_col = index
-					else:
-						bom_attribs[index] = col
-					index += 1
+				rownum = 0
+				print 'Header found in CSV'
+				
 					
 				for row in reader:
-					row_attribs = {}
-					for attrib in bom_attribs.items():
-						row_attribs[attrib[1]] = row[attrib[0]]
-					if prod_col == -1:
-						part = Part(row[name_col], self.name, row[val_col], row[dev_col], row[pkg_col], row[desc_col], 'NULL', row_attribs)
+					if rownum == 0:
+						header = row
+						# Process column names from header
+						index = 0
+						name_col = -1
+						val_col = -1
+						dev_col = -1
+						pkg_col = -1
+						desc_col = -1
+						prod_col = -1
+						bom_attribs = {}	# Key = column index, value = name of attribute
+						for col in header:
+							if 'Part' in col or 'Name' in col:
+								name_col = index
+							elif 'Value' in col:
+								val_col = index
+							elif 'Device' in col:
+								dev_col = index
+							elif 'Package' in col:
+								pkg_col = index
+							elif 'Description' in col:
+								desc_col = index
+							elif 'PARTNO' in col or 'Part Number' in col or 'PART#' in col or ('PN' in col and 'Vendor' not in col):
+								prod_col = index
+							else:
+								bom_attribs[index] = col
+							index += 1
 					else:
-						part = Part(row[name_col], self.name, row[val_col], row[dev_col], row[pkg_col], row[desc_col], row[prod_col], row_attribs)
+						#print 'Row: ', row
+						row_attribs = {}
+						for attrib in bom_attribs.items():
+							row_attribs[attrib[1]] = row[attrib[0]]
+						#print 'Row attribs: ', row_attribs
+						if prod_col == -1:
+							part = Part(row[name_col], self.name, row[val_col], row[dev_col], row[pkg_col], row[desc_col], 'NULL', row_attribs)
+						else:
+							part = Part(row[name_col], self.name, row[val_col], row[dev_col], row[pkg_col], row[desc_col], row[prod_col], row_attribs)
+						
+						part.product_updater(wspace)
+						self.parts.append([part.name, part.value, part.product])
+					rownum += 1
 					
 			else:		
 				for row in reader:
@@ -257,77 +268,10 @@ class BOM:
 						part = Part(row[0], self.name, row[1], row[2], row[3], row[4])
 				#print 'Got part from CSV: '
 				#part.show() 
-				# Check if identical part is already in DB with a product
-				# If so, preserve the product entry
-				# TODO: Check attributes
-				if(part.is_in_db(wspace)):
-					print "Part of same name already in DB"
-					old_part = Part.select_by_name(part.name, wspace, self.name)[0]
-					#old_part.show()
-					if(part.value == old_part.value and part.device == old_part.device and part.package == old_part.package):
-						if part.product != 'NULL':
-							if old_part.product != 'NULL':
-								# TODO: prompt? Defaulting to old_part.product for now (aka do nothing)
-								print 'Matching CSV and DB parts with non-NULL product mismatch, keeping DB version...'
-							elif old_part.product == 'NULL':
-								part.update(wspace)
-						elif part.product == 'NULL':
-							if old_part.product != 'NULL':
-								pass	# Do nothing in this case
-							elif old_part.product == 'NULL':
-								(candidate_proj_parts, candidate_wspace_parts) = part.find_similar_parts(wspace)
-								candidate_products = part.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts)
-								if len(candidate_products) == 0:
-									#print 'No matching products found, nothing to do'
-									pass
-								elif len(candidate_products) == 1:
-									part.product = candidate_products[0].manufacturer_pn
-									print 'Found exactly one matching product, setting product and updating', #part.show()
-									part.update(wspace)
-								else:
-									print 'Found multiple product matches, prompting for selection...'
-									# TODO: Currently going with first result, need to prompt for selection
-									part.product = candidate_products[0].manufacturer_pn
-									part.update(wspace)
-								
-					else:	# Value/device/package mismatch
-						if part.product != 'NULL':
-							part.update(wspace)
-						elif part.product == 'NULL':
-							(candidate_proj_parts, candidate_wspace_parts) = part.find_similar_parts(wspace)
-							candidate_products = part.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts)
-							if len(candidate_products) == 0:
-								print 'No matching products found, updating as-is'
-							elif len(candidate_products) == 1:
-								part.product = candidate_products[0].manufacturer_pn
-								print 'Found exactly one matching product, setting product and updating', #part.show()
-							else:
-								print 'Found multiple product matches, prompting for selection...'
-								# TODO: Currently going with first result, need to prompt for selection
-								part.product = candidate_products[0].manufacturer_pn
-							part.update(wspace)
-				
-				else:
-					print 'Part not in DB'
-					if part.product == 'NULL':
-						(candidate_proj_parts, candidate_wspace_parts) = part.find_similar_parts(wspace)
-						candidate_products = part.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts)
-						if len(candidate_products) == 0:
-							print 'No matching products found, inserting as-is', part.show()
-						elif len(candidate_products) == 1:
-							part.product = candidate_products[0].manufacturer_pn
-							print 'Found exactly one matching product, setting product and inserting', #part.show()
-						else:
-							print 'Found multiple product matches, prompting for selection...'
-							# TODO: Currently going with first result, need to prompt for selection
-							part.product = candidate_products[0].manufacturer_pn
-					else:
-						newprod = Product('NULL', part.product)
-						newprod.insert(wspace)
-					part.insert(wspace)
+				part.product_updater(wspace)
 				self.parts.append([part.name, part.value, part.product])
 				
-		print "Parts list: ", self.parts
+		#print "Parts list: ", self.parts
 	
 	def select_parts_by_name(self, name, wspace):
 		''' Return the Part(s) of given name. '''
