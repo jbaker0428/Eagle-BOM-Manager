@@ -9,8 +9,8 @@ class DatabaseTestCase(unittest.TestCase):
 		from part import Part
 		
 		self.wspace = Workspace('DB Tests', os.path.join(os.getcwd(), 'dbtests.sqlite'))
-		
-		self.test_part = Part('C1', 'dbtests', '1uF', 'C-USC0603', 'C0603', 'CAPACITOR, American symbol', 'C1608X5R1E105K')
+		self.part_attribs = dict({'TOL' : '10%', 'VOLT' : '25V', 'TC' : 'X5R'})
+		self.test_part = Part('C1', 'dbtests', '1uF', 'C-USC0603', 'C0603', 'CAPACITOR, American symbol', 'C1608X5R1E105K', self.part_attribs)
 		self.test_product = Product('TDK Corporation', 'C1608X5R1E105K', 'general_B11.pdf', 'CAP CER 1UF 25V 10% X5R 0603', '0603 (1608 Metric)')
 		self.prices_ct = dict({10 : 0.09000, 100 : 0.04280, 250 : 0.03600, 500 : 0.03016, 1000 : 0.02475})
 		self.prices_tr = dict({4000 : 0.01935, 8000 : 0.01800, 12000 : 0.01710, 280000 : 0.01620, 100000 : 0.01227})
@@ -37,7 +37,8 @@ class DatabaseTestCase(unittest.TestCase):
 		con.close()
 		
 		assert 'products' in tables
-		assert 'parts'
+		assert 'parts' in tables
+		assert 'part_attributes' in tables
 		assert 'listings' in tables
 		assert 'projects' in tables
 		assert 'pricebreaks' in tables
@@ -67,6 +68,9 @@ class DatabaseTestCase(unittest.TestCase):
 		assert len (Listing.select_by_manufacturer_pn(self.test_product.manufacturer_pn, self.wspace)) == 3
 		assert self.test_product.equals(ret_products[0])
 		
+		assert self.test_part.has_attribute('TOL', self.wspace)
+		assert self.test_part.has_attribute('VOLT', self.wspace)
+		assert self.test_part.has_attribute('TC', self.wspace)
 		ret_parts = Part.select_by_name(self.test_part.name, self.wspace, self.test_BOM.name)
 		assert len(ret_parts) == 1
 		assert self.test_part.equals(ret_parts[0])
@@ -111,6 +115,7 @@ class DatabaseTestCase(unittest.TestCase):
 		
 		assert 'products' in tables
 		assert 'parts' in tables
+		assert 'part_attributes' in tables
 		assert 'listings' in tables
 		assert 'projects' in tables
 		assert 'pricebreaks' in tables

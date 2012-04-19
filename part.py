@@ -17,6 +17,7 @@ class Part:
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
 				part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
+				part.fetch_attributes(wspace)
 				parts.append(part)
 			
 		finally:
@@ -36,6 +37,7 @@ class Part:
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
 				part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
+				part.fetch_attributes(wspace)
 				parts.append(part)
 			
 		finally:
@@ -55,6 +57,7 @@ class Part:
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
 				part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
+				part.fetch_attributes(wspace)
 				parts.append(part)
 			
 		finally:
@@ -62,7 +65,7 @@ class Part:
 			con.close()
 			return parts
 	
-	def __init__(self, name, project, value, device, package, description='NULL', product='NULL'):
+	def __init__(self, name, project, value, device, package, description='NULL', product='NULL', attributes={}):
 		self.name = name
 		self.project = project
 		self.value = value
@@ -70,6 +73,7 @@ class Part:
 		self.package = package
 		self.description = description
 		self.product = product
+		self.attributes = attributes
 
 	def show(self):
 		''' A simple print method. '''
@@ -80,26 +84,41 @@ class Part:
 		print 'Package: ', self.package, type(self.package)
 		print 'Description: ', self.description, type(self.description)
 		print 'Product: ', self.product, type(self.product)
+		for attrib in self.attributes.items():
+			print attrib[0], ': ', attrib[1]
 		
-	def equals(self, p):
-		''' Compares the Part to another Part.'''
+	def equals(self, p, check_foreign_attribs=True):
+		''' Compares the Part to another Part.
+		The check_foreign_attribs argument (default True) controls whether or not
+		p.attributes.keys() is checked for members not in self.attributes.keys().
+		The reverse is always checked. '''
 		if type(p) != type(self):
 			return False
 		eq = True
 		if self.name != p.name:
 			eq = False
-		if self.project != p.project:
+		elif self.project != p.project:
 			eq = False
-		if self.value != p.value:
+		elif self.value != p.value:
 			eq = False
-		if self.device != p.device:
+		elif self.device != p.device:
 			eq = False
-		if self.package != p.package:
+		elif self.package != p.package:
 			eq = False
-		if self.description != p.description:
+		elif self.description != p.description:
 			eq = False
-		if self.product != p.product:
+		elif self.product != p.product:
 			eq = False
+		for k in self.attributes.keys():
+			if k not in p.attributes.keys():
+				eq = False
+			else:
+				if self.attributes[k].equals(p.attributes[k]) == False:
+					eq = False
+		if check_foreign_attribs is True:
+			for k in p.attributes.keys():
+				if k not in self.attributes.keys():
+					eq = False
 		return eq
 		
 
@@ -114,6 +133,9 @@ class Part:
 				rownum = rownum + 1
 			return -1
 	
+	# TODO: find_similar_parts needs to check self.attributes
+	# Only return parts that have all of self's attributes and of the same attribute value
+	# Don't worry about the returned part having other attributes not in self.attributes
 	def find_similar_parts(self, project, wspace, check_wspace=True):
 		''' Search the project and optionally workspace for parts of matching value/device/package.
 		If check_wspace = True, returns a pair of lists: (project_results, workspace_results).
@@ -201,6 +223,7 @@ class Part:
 			symbol = (self.name, self.project, self.value, self.device, self.package,  
 					self.description, self.product, self.name, self.project,)
 			cur.execute(sql, symbol)
+			self.write_attributes(wspace)
 			
 		finally:
 			cur.close()
@@ -215,13 +238,15 @@ class Part:
 			symbol = (self.name, self.project, self.value, self.device, self.package,  
 					self.description, self.product,)
 			cur.execute(sql, symbol)
+			self.write_attributes(wspace)
 			
 		finally:
 			cur.close()
 			con.close()
 	
 	def delete(self, wspace):
-		''' Delete the Part from the DB. '''
+		''' Delete the Part from the DB. 
+		Part attributes are deleted via foreign key constraint cascading. '''
 		try:
 			(con, cur) = wspace.con_cursor()
 			
@@ -232,4 +257,69 @@ class Part:
 		finally:
 			cur.close()
 			con.close()
+	
+	def fetch_attributes(self, wspace):
+		''' Fetch attributes dictionary for this Part. 
+		Clears and sets the self.attributes dictionary directly. '''
+		self.attributes.clear()
+		try:
+			(con, cur) = wspace.con_cursor()
 			
+			params = (self.name, self.project,)
+			cur.execute('''SELECT name, value FROM part_attributes WHERE part=? INTERSECT 
+			SELECT name, value FROM part_attributes WHERE project=?''', params)
+			for row in cur.fetchall():
+				self.attributes[row[0]] = row[1]
+			
+		finally:
+			cur.close()
+			con.close()
+	
+	def has_attribute(self, attrib, wspace):
+		'''Check if this Part has an attribute of given name in the DB. 
+		Ignores value of the attribute. '''
+		results = []
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			params = (self.name, self.project, attrib,)
+			cur.execute('''SELECT name FROM part_attributes WHERE part=? INTERSECT 
+			SELECT name FROM part_attributes WHERE project=? INTERSECT 
+			SELECT name FROM part_attributes WHERE name=?''', params)
+			for row in cur.fetchall():
+				results.append(row[0])
+			
+		finally:
+			cur.close()
+			con.close()
+			if len(results) == 0:
+				return False
+			else:
+				return True
+
+	def write_attributes(self, wspace):
+		''' Write all of this Part's attributes to the DB.
+		Checks attributes currently in DB and updates/inserts as appropriate. '''
+		db_attribs = []
+		old_attribs = []
+		new_attribs = []
+		try:
+			(con, cur) = wspace.con_cursor()
+			
+			params = (self.name, self.project,)
+			cur.execute('''SELECT name FROM part_attributes WHERE part=? INTERSECT 
+			SELECT name FROM part_attributes WHERE project=?''', params)
+			for row in cur.fetchall():
+				db_attribs.append(row[0])
+			for a in self.attributes.items():
+				if a[0] in db_attribs:
+					old_attribs.append((a[1], self.name, self.project, a[0]))
+				else:
+					new_attribs.append((self.name, self.project, a[0], a[1]))
+			
+			cur.executemany('INSERT OR REPLACE INTO part_attributes VALUES (NULL,?,?,?,?)', new_attribs)
+			cur.executemany('UPDATE part_attributes SET value=? WHERE part=? AND project=? AND name=?', old_attribs)
+		
+		finally:
+			cur.close()
+			con.close()

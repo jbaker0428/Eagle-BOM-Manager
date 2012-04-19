@@ -326,6 +326,7 @@ class BOM:
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
 				part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
+				part.fetch_attributes(wspace)
 				parts.append(part)
 			
 		finally:
@@ -344,6 +345,7 @@ class BOM:
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
 				part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
+				part.fetch_attributes(wspace)
 				parts.append(part)
 			
 		finally:
@@ -362,6 +364,7 @@ class BOM:
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
 				part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
+				part.fetch_attributes(wspace)
 				parts.append(part)
 			
 		finally:

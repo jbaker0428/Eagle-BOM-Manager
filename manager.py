@@ -62,6 +62,15 @@ class Workspace:
 			cur.execute('''CREATE TRIGGER IF NOT EXISTS delete_project DELETE ON projects
 			FOR EACH ROW BEGIN DELETE FROM parts WHERE project = old.name; END''')
 			
+			cur.execute('''CREATE TABLE IF NOT EXISTS part_attributes
+			(id INTEGER PRIMARY KEY,
+			part TEXT NOT NULL, 
+			project TEXT NOT NULL, 
+			name TEXT NOT NULL, 
+			value TEXT NOT NULL, 
+			FOREIGN KEY(part, project) REFERENCES parts(name, project) ON DELETE CASCADE ON UPDATE CASCADE,
+			UNIQUE(part ASC, project ASC, name))''')
+			
 			cur.execute('''CREATE TABLE IF NOT EXISTS products
 			(manufacturer TEXT, 
 			manufacturer_pn TEXT PRIMARY KEY, 
