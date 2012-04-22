@@ -7,6 +7,13 @@ class Part:
 	''' A self in the BOM exported from Eagle. '''
 	
 	@staticmethod
+	def new_from_row(row, wspace, connection=None):
+		''' Given a part row from the DB, returns a Part object. '''
+		part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
+		part.fetch_attributes(wspace)
+		return part
+	
+	@staticmethod
 	def select_by_name(name, wspace, project='*', connection=None):
 		''' Return the Part(s) of given name. '''
 		parts = []
@@ -21,9 +28,7 @@ class Part:
 			symbol = (name,)
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
-				part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
-				part.fetch_attributes(wspace)
-				parts.append(part)
+				parts.append(Part.new_from_row(row, wspace, con))
 			
 		finally:
 			cur.close()
@@ -46,9 +51,7 @@ class Part:
 			symbol = (val,)
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
-				part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
-				part.fetch_attributes(wspace)
-				parts.append(part)
+				parts.append(Part.new_from_row(row, wspace, con))
 			
 		finally:
 			cur.close()
@@ -71,9 +74,7 @@ class Part:
 			symbol = (prod,)
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
-				part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
-				part.fetch_attributes(wspace)
-				parts.append(part)
+				parts.append(Part.new_from_row(row, wspace, con))
 			
 		finally:
 			cur.close()
@@ -130,7 +131,7 @@ class Part:
 				if k not in p.attributes.keys():
 					eq = False
 				else:
-					if self.attributes[k].equals(p.attributes[k]) == False:
+					if self.attributes[k] != p.attributes[k]:
 						eq = False
 		if check_foreign_attribs is True:
 			for k in p.attributes.keys():
@@ -173,15 +174,14 @@ class Part:
 			cur.execute(sql, t)
 			rows = cur.fetchall()
 			for row in rows:
-				part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
-				part.fetch_attributes(wspace)
+				part = Part.new_from_row(row, wspace, con)
 				attribs_eq = True
 				for k in self.attributes.keys():
 					if self.attributes[k] != "":
 						if k not in part.attributes.keys():
 							attribs_eq = False
 						else:
-							if self.attributes[k].equals(part.attributes[k]) == False:
+							if self.attributes[k] != part.attributes[k]:
 								attribs_eq = False
 				if attribs_eq is True:
 					project_results.add(part)
@@ -197,15 +197,14 @@ class Part:
 					cur.execute(sql, t)
 					rows = cur.fetchall()
 					for row in rows:
-						part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
-						part.fetch_attributes(wspace)
+						part = Part.new_from_row(row, wspace, con)
 						attribs_eq = True
 						for k in self.attributes.keys():
 							if self.attributes[k] != "":
 								if k not in part.attributes.keys():
 									attribs_eq = False
 								else:
-									if self.attributes[k].equals(part.attributes[k]) == False:
+									if self.attributes[k] != part.attributes[k]:
 										attribs_eq = False
 						if attribs_eq is True:
 							workspace_results.add(part)

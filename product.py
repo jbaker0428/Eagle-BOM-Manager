@@ -41,6 +41,13 @@ ENFORCE_MIN_QTY = True
 
 class Listing:
 	''' A distributor's listing for a Product object. '''
+	
+	@staticmethod
+	def new_from_row(row, wspace, connection=None):
+		''' Given a listing row from the DB, returns a Listing object. '''
+		listing = Listing(row[0], row[1], row[2], {}, row[3], row[4], row[5], row[6], row[7], row[8])
+		listing.fetch_price_breaks(wspace)
+		return listing
 		
 	@staticmethod
 	def select_by_vendor_pn(pn, wspace, connection=None):
@@ -56,9 +63,7 @@ class Listing:
 			symbol = (pn,)
 			cur.execute('SELECT * FROM listings WHERE vendor_pn=?', symbol)
 			for row in cur.fetchall():
-				listing = Listing(row[0], row[1], row[2], {}, row[3], row[4], row[5], row[6], row[7], row[8])
-				listing.fetch_price_breaks(wspace)
-				listings.append(listing)
+				listings.append(Listing.new_from_row(row, wspace, con))
 			
 		finally:
 			cur.close()
@@ -80,9 +85,7 @@ class Listing:
 			symbol = (pn,)
 			cur.execute('SELECT * FROM listings WHERE manufacturer_pn=?', symbol)
 			for row in cur.fetchall():
-				listing = Listing(row[0], row[1], row[2], {}, row[3], row[4], row[5], row[6], row[7], row[8])
-				listing.fetch_price_breaks(wspace)
-				listings.append(listing)
+				listings.append(Listing.new_from_row(row, wspace, con))
 			
 		finally:
 			cur.close()
@@ -266,6 +269,13 @@ class Product:
 	The primary identifying key is the manufacturer PN. '''
 	
 	@staticmethod
+	def new_from_row(row, wspace, connection=None):
+		''' Given a product row from the DB, returns a Product object. '''
+		prod = Product(row[0], row[1], row[2], row[3], row[4])
+		prod.fetch_listings(wspace, connection)
+		return prod
+	
+	@staticmethod
 	def select_all(wspace, connection=None):
 		''' Return the entire product table except the 'NULL' placeholder row. '''
 		prods = []
@@ -278,10 +288,10 @@ class Product:
 			
 			cur.execute('SELECT * FROM products')
 			for row in cur.fetchall():
-				if row[1] != 'NULL':
-					prod = Product(row[0], row[1], row[2], row[3], row[4])
-					prod.fetch_listings(wspace)
-					prods.append(prod)
+				if row[1] == 'NULL':
+					continue
+				else:
+					prods.append(Product.new_from_row(row, wspace, con))
 			
 		finally:
 			cur.close()
@@ -303,9 +313,7 @@ class Product:
 			symbol = (pn,)
 			cur.execute('SELECT * FROM products WHERE manufacturer_pn=?', symbol)
 			for row in cur.fetchall():
-				prod = Product(row[0], row[1], row[2], row[3], row[4])
-				prod.fetch_listings(wspace)
-				prods.append(prod)
+				prods.append(Product.new_from_row(row, wspace, con))
 			
 		finally:
 			cur.close()
@@ -427,8 +435,7 @@ class Product:
 			symbol = (self.manufacturer_pn,)
 			cur.execute('SELECT * FROM listings WHERE manufacturer_pn=? ORDER BY vendor', symbol)
 			for row in cur.fetchall():
-				listing = Listing(row[0], row[1], row[2], {}, row[3], row[4], row[5], row[6], row[7], row[8])
-				listing.fetch_price_breaks(wspace)
+				listing = Listing.new_from_row(row, wspace, con)
 				self.listings[listing.key()] = listing
 				#print 'Setting listings[%s] = ' % listing.key()
 				#listing.show()

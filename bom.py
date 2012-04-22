@@ -322,9 +322,7 @@ class BOM:
 			symbol = (name, self.name)
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
-				part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
-				part.fetch_attributes(wspace)
-				parts.append(part)
+				parts.append(Part.new_from_row(row, wspace, con))
 			
 		finally:
 			cur.close()
@@ -346,9 +344,7 @@ class BOM:
 			symbol = (val, self.name)
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
-				part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
-				part.fetch_attributes(wspace)
-				parts.append(part)
+				parts.append(Part.new_from_row(row, wspace, con))
 			
 		finally:
 			cur.close()
@@ -370,9 +366,7 @@ class BOM:
 			symbol = (prod, self.name)
 			cur.execute(sql, symbol)
 			for row in cur.fetchall():
-				part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
-				part.fetch_attributes(wspace)
-				parts.append(part)
+				parts.append(Part.new_from_row(row, wspace, con))
 			
 		finally:
 			cur.close()
