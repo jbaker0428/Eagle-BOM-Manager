@@ -136,7 +136,10 @@ class Manager(gobject.GObject):
 	def new_project_input_file_callback(self, widget, data=None):
 		self.input_file_dialog.run()
 		self.input_file_dialog.hide()
-		self.new_project_input_file_entry.set_text(self.input_file_dialog.get_filename())
+		if self.input_file_dialog.get_filename() is None:
+			self.new_project_input_file_entry.set_text('')
+		else:
+			self.new_project_input_file_entry.set_text(self.input_file_dialog.get_filename())
 	
 	'''Callback for the New Project button. '''
 	def project_new_callback(self, widget, data=None):
