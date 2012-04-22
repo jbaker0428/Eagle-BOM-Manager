@@ -302,11 +302,11 @@ class BOM:
 							self.parts.append([part.name, part.value, part.product.manufacturer_pn])
 					rownum += 1
 					
-			else:		
+			else:	# No column headers
 				for row in reader:
-					#print row
+					print row
 					# Check for optional product column
-					if len(row) > 5:
+					if len(row) == 6:
 						if len(row[5]) > 0:
 							prod = Product.select_by_pn(row[5], wspace, connection)
 							if prod is not None and len(prod) > 0:
@@ -317,13 +317,13 @@ class BOM:
 							part = Part(row[0], self.name, row[1], row[2], row[3], row[4], None)
 					else:
 						part = Part(row[0], self.name, row[1], row[2], row[3], row[4], None)
-				#print 'Got part from CSV: '
-				#part.show() 
-				part.product_updater(wspace, connection)
-				if part.product is None:
-					self.parts.append([part.name, part.value, ''])
-				else:
-					self.parts.append([part.name, part.value, part.product.manufacturer_pn])
+					#print 'Got part from CSV: '
+					#part.show() 
+					part.product_updater(wspace, connection)
+					if part.product is None:
+						self.parts.append([part.name, part.value, ''])
+					else:
+						self.parts.append([part.name, part.value, part.product.manufacturer_pn])
 				
 		#print "Parts list: ", self.parts
 	
