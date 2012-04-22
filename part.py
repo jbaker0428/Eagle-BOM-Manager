@@ -37,7 +37,7 @@ class Part:
 			print 'Rows: ', type(rows), rows
 			for row in rows:
 				part = Part.new_from_row(row, wspace, con)
-				print 'Appending part: ', part.show()
+				#print 'Appending part: ', part.show()
 				parts.append(part)
 		
 		finally:
@@ -292,7 +292,7 @@ class Part:
 		- The product of the matching Part in the DB
 		Passing an open connection to this method is recommended. '''
 		unset_pn = ('', 'NULL', 'none', None, [])
-		self.show()
+		#self.show()
 		if(self.is_in_db(wspace, connection)):
 			#print "Part of same name already in DB"
 			old_part = Part.select_by_name(self.name, wspace, self.project, connection)[0]
@@ -320,8 +320,6 @@ class Part:
 							self.update(wspace, connection)
 						else:
 							#print 'Found multiple product matches, prompting for selection...'
-							for prod in candidate_products:
-								prod.show()
 							# TODO: Currently going with first result, need to prompt for selection
 							self.product = candidate_products[0]
 							self.update(wspace, connection)
