@@ -358,9 +358,10 @@ class Part:
 					# TODO: Currently going with first result, need to prompt for selection
 					self.product = candidate_products[0]
 			else:
-				newprod = Product('NULL', self.product.manufacturer_pn)
-				newprod.insert(wspace, connection)
-				newprod.scrape(wspace, connection)
+				if self.product.is_in_db(wspace, connection) == False:
+					newprod = Product('NULL', self.product.manufacturer_pn)
+					newprod.insert(wspace, connection)
+					newprod.scrape(wspace, connection)
 			self.insert(wspace, connection)
 		
 	def update(self, wspace, connection=None):
