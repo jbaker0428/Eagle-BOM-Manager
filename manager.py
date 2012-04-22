@@ -28,9 +28,7 @@ class Workspace:
 	def con_cursor(self):
 		''' Connect to the DB, enable foreign keys, set autocommit mode,  
 		and return a (connection, cursor) pair. '''
-		con = sqlite3.connect(self.db)
-		con.isolation_level = None
-		con.execute('PRAGMA foreign_keys = ON')
+		con = self.connection()
 		cur = con.cursor()
 		return (con, cur)
 		
