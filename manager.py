@@ -78,14 +78,15 @@ class Workspace:
 			name TEXT NOT NULL, 
 			value TEXT NOT NULL, 
 			FOREIGN KEY(part, project) REFERENCES parts(name, project) ON DELETE CASCADE ON UPDATE CASCADE,
-			UNIQUE(part ASC, project ASC, name))''')
+			UNIQUE(part ASC, project ASC, name) ON CONFLICT REPLACE)''')
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS products
 			(manufacturer TEXT, 
 			manufacturer_pn TEXT PRIMARY KEY, 
 			datasheet TEXT, 
 			description TEXT, 
-			package TEXT)''')
+			package TEXT,
+			UNIQUE (manufacturer ASC, manufacturer_pn ASC) ON CONFLICT FAIL)''')
 			cur.execute("INSERT OR REPLACE INTO products VALUES ('NULL','NULL','NULL','NULL','NULL')")
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS listings
@@ -103,7 +104,8 @@ class Workspace:
 			(id INTEGER PRIMARY KEY,
 			pn TEXT REFERENCES listings(vendor_pn) ON DELETE CASCADE ON UPDATE CASCADE, 
 			qty INTEGER,
-			unit DOUBLE)''')
+			unit DOUBLE,
+			UNIQUE(pn ASC, qty ASC, unit) ON CONFLICT REPLACE)''')
 						
 		finally:
 			cur.close()
@@ -235,7 +237,8 @@ class Manager(gobject.GObject):
 			# Set class field for currently selected product
 			print "Querying with selected_pn: %s" % selected_pn
 			self.selected_bom_part.product.manufacturer_pn = selected_pn
-			# TODO: Call NYI product.has_listings method here, if false, scrape
+			if len(self.select_bom_part.product.listings) == 0:
+				self.select_bom_part.product.scrape(wspace, con)
 			#self.selected_bom_part.product.show()
 			self.set_part_info_labels(self.selected_bom_part.product)
 			self.set_part_info_listing_combo(self.selected_bom_part.product)
