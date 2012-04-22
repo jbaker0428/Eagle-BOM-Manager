@@ -477,7 +477,7 @@ class Product:
 				cur = con.cursor()
 			
 			params = (self.manufacturer_pn,)
-			cur.execute('SELECT * FROM listings WHERE manufacturer_pn=? ORDER BY source', params)
+			cur.execute('SELECT * FROM listings WHERE manufacturer_pn=? ORDER BY vendor', params)
 			for row in cur.fetchall():
 				listing = Listing.new_from_row(row, wspace, con)
 				self.listings[listing.key()] = listing
