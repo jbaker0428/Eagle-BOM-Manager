@@ -204,7 +204,10 @@ class BOM:
 		# Find p in self.parts by name
 		for p in self.parts:
 			if p[0] == part.name:
-				p[2] = part.product.manufacturer_pn
+				if part.product is None:
+					p[2] = ''
+				else:
+					p[2] = part.product.manufacturer_pn
 		# TODO : If inline addition of parts is added later (as in, not from a
 		# CSV file), a check needs to be added here to make sure part is in self.parts
 	

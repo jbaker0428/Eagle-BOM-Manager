@@ -236,7 +236,6 @@ class Manager(gobject.GObject):
 			self.part_info_scrape_button.set_sensitive(True)
 			# Set class field for currently selected product
 			print "Querying with selected_pn: %s" % selected_pn
-			self.selected_bom_part.product.manufacturer_pn = selected_pn
 			if len(self.selected_bom_part.product.listings) == 0:
 				self.selected_bom_part.product.scrape(wspace, con)
 			#self.selected_bom_part.product.show()
@@ -336,7 +335,10 @@ class Manager(gobject.GObject):
 		self.edit_part_device_entry.set_text(self.selected_bom_part.device)
 		self.edit_part_package_entry.set_text(self.selected_bom_part.package)
 		self.edit_part_description_entry.set_text(self.selected_bom_part.description)
-		self.edit_part_product_entry.set_text(self.selected_bom_part.product.manufacturer_pn)
+		if self.selected_bom_part.product is None:
+			self.edit_part_product_entry.set_text('')
+		else:
+			self.edit_part_product_entry.set_text(self.selected_bom_part.product.manufacturer_pn)
 		
 		# Pack labels/entry fields into HBoxes
 		edit_part_dialog_name_hbox.pack_start(edit_part_name_label, False, True, 0)
@@ -375,9 +377,23 @@ class Manager(gobject.GObject):
 			con = wspace.connection()
 			# If the product text entry field is left blank, set the product to 'NULL'
 			if type(self.edit_part_product_entry.get_text()) is types.NoneType or len(self.edit_part_product_entry.get_text()) == 0:
-				self.product_entry_text = 'NULL'
+				self.product_entry_text = ''
+				self.selected_bom_part.product = None
 			else:
 				self.product_entry_text = self.edit_part_product_entry.get_text()
+				if self.selected_bom_part.product is not None and self.selected_bom_part.product.manufacturer_pn == self.product_entry_text:
+					pass	# Nothing to do here
+				else:
+					prod = Product.select_by_pn(self.product_entry_text, wspace, con)
+					if len(prod) > 0:
+						self.selected_bom_part.product = prod[0]
+					else:
+						newprod = Product('NULL', self.product_entry_text)
+						newprod.insert(wspace, con)
+						newprod.scrape(wspace, con)
+						self.selected_bom_part.product = newprod
+				if len(self.selected_bom_part.product.listings) == 0:
+					self.selected_bom_part.product.scrape(wspace, con)
 			
 			# Set selected_bom_part
 			# TODO: If grouping by value or PN, what to do? Grey out the name field?
@@ -390,8 +406,7 @@ class Manager(gobject.GObject):
 			
 			# We need to check the products table for this Product, creating an entry
 			# for it if necessary, before updating selected_bom_part in the DB.
-			self.selected_bom_part.product.manufacturer_pn = self.product_entry_text
-			self.selected_bom_part.product.select_or_scrape(wspace, con)
+			
 			
 			self.selected_bom_part.update(wspace,con)
 			self.active_bom.update_parts_list(self.selected_bom_part)
@@ -404,7 +419,7 @@ class Manager(gobject.GObject):
 				self.bom_store_populate_by_product(con)
 					
 			self.set_part_info_listing_combo(self.selected_bom_part.product)
-			if self.selected_bom_part.product.manufacturer_pn is None or self.selected_bom_part.product.manufacturer_pn == 'NULL':
+			if self.selected_bom_part.product is None or self.selected_bom_part.product.manufacturer_pn == 'NULL' or self.selected_bom_part.product.manufacturer_pn == '':
 				self.clear_part_info_labels()
 			else:
 				self.set_part_info_labels(self.selected_bom_part.product)

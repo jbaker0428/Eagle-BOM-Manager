@@ -332,10 +332,15 @@ class Part:
 			else:
 				con = connection
 				cur = con.cursor()
-				
+			
+			if self.product is None:
+				pn = 'NULL'
+			else:
+				pn = self.product.manufacturer_pn
+			
 			sql = 'UPDATE parts SET name=?, project=?, value=?, device=?, package=?, description=?, product=? WHERE name=? AND project=?'
 			params = (self.name, self.project, self.value, self.device, self.package,  
-					self.description, self.product.manufacturer_pn, self.name, self.project,)
+					self.description, pn, self.name, self.project,)
 			cur.execute(sql, params)
 			self.write_attributes(wspace, con)
 			
@@ -353,9 +358,14 @@ class Part:
 				con = connection
 				cur = con.cursor()
 			
+			if self.product is None:
+				pn = 'NULL'
+			else:
+				pn = self.product.manufacturer_pn
+			
 			sql = 'INSERT OR REPLACE INTO parts VALUES (?,?,?,?,?,?,?)'
 			params = (self.name, self.project, self.value, self.device, self.package,  
-					self.description, self.product.manufacturer_pn,)
+					self.description, pn,)
 			cur.execute(sql, params)
 			self.write_attributes(wspace, con)
 			
