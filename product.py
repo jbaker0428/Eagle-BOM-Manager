@@ -373,17 +373,18 @@ class Product:
 		self.package = pkg
 		self.listings = {}	# Key is key = source + ': ' + vendor_pn + ' (' + packaging + ')'
 	
-	def show(self):
+	def show(self, show_listings=False):
 		''' A simple print method. '''
 		print 'Manufacturer: ', self.manufacturer, type(self.manufacturer)
 		print 'Manufacturer PN: ', self.manufacturer_pn, type(self.manufacturer_pn)
 		print 'Datasheet: ', self.datasheet, type(self.datasheet)
 		print 'Description: ', self.description, type(self.description)
 		print 'Package: ', self.package, type(self.package)
-		print 'Listings:'
-		for listing in self.listings.items():
-			print "\nListing key: ", listing[0]
-			listing[1].show()
+		if show_listings is True:
+			print 'Listings:'
+			for listing in self.listings.items():
+				print "\nListing key: ", listing[0]
+				listing[1].show()
 	
 	def equals(self, p):
 		''' Compares the Product to another Product.'''
