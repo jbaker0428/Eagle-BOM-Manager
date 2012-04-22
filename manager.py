@@ -237,8 +237,8 @@ class Manager(gobject.GObject):
 			# Set class field for currently selected product
 			print "Querying with selected_pn: %s" % selected_pn
 			self.selected_bom_part.product.manufacturer_pn = selected_pn
-			if len(self.select_bom_part.product.listings) == 0:
-				self.select_bom_part.product.scrape(wspace, con)
+			if len(self.selected_bom_part.product.listings) == 0:
+				self.selected_bom_part.product.scrape(wspace, con)
 			#self.selected_bom_part.product.show()
 			self.set_part_info_labels(self.selected_bom_part.product)
 			self.set_part_info_listing_combo(self.selected_bom_part.product)
