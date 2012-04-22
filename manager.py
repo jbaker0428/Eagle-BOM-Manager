@@ -189,6 +189,8 @@ class Manager(gobject.GObject):
 		(model, row_iter) = self.project_tree_view.get_selection().get_selected()
 		con = wspace.connection()
 		selected_bom = BOM.read_from_db(model.get(row_iter,0)[0], wspace, con)[0]
+		if selected_bom.name == self.active_bom.name:
+			self.bom_store.clear()
 		selected_bom.delete(wspace, con)
 		self.project_store_populate(con)
 		con.close()
