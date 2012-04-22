@@ -39,6 +39,16 @@ VENDOR_SFE_EN = False
 DOWNLOAD_DATASHEET = False	# TODO : Set these from program config
 ENFORCE_MIN_QTY = True
 
+class ScrapeException(Exception):
+	''' Raised when something goes wrong scraping. '''
+	def __init__(self, vendor, mfg_pn, text):
+		self.vendor = vendor
+		self.manufacturer_pn = mfg_pn
+		self.text = text
+	def __str__(self):
+		str = self.text + ' Vendor: ' + self.vendor + ' Manufacturer Part Number: ' + self.manufacturer_pn
+		return repr(str)
+
 class Listing:
 	''' A distributor's listing for a Product object. '''
 	
@@ -174,7 +184,7 @@ class Listing:
 			params = (self.vendor, self.vendor_pn, self.manufacturer_pn, self.inventory, self.packaging,
 					self.reel_fee, self.category, self.family, self.series, self.vendor_pn,)
 			cur.execute('''UPDATE listings 
-			SET vendor=?, vendor_pn=?, self.manufacturer_pn=?, inventory=?, packaging=?, reelfee=?, 
+			SET vendor=?, vendor_pn=?, manufacturer_pn=?, inventory=?, packaging=?, reelfee=?, 
 			category=?, family=?, series=? 
 			WHERE vendor_pn=?''', params)
 			
@@ -484,23 +494,27 @@ class Product:
 		
 		# Create a list of product URLs from the search page
 		prod_urls = []
-		search_table = search_soup.body('table', id="productTable")[0]
-		#print 'search_table: \n', search_table
-		#print 'search_table.contents: \n', search_table.contents
-		
-		# Find tbody tag in table
-		tbody_tag = search_table.find('tbody')
-		#print 'tbody: \n', type(tbody_tag), tbody_tag
-		#print 'tbody.contents: \n', type(tbody_tag.contents), tbody_tag.contents
-		#print 'tbody.contents[0]: \n', type(tbody_tag.contents[0]), tbody_tag.contents[0]
-		prod_rows = tbody_tag.findAll('tr')
-		#print 'prod_rows: \n', type(prod_rows), prod_rows
-		for row in prod_rows:
-			#print "Search row in prod_rows: ", row
-			anchor = row.find('a')
-			# DK uses a relative path for these links
-			prod_urls.append('http://search.digikey.com' + anchor['href'])
-			#print 'Adding URL: ', 'http://search.digikey.com' + anchor['href']
+		search_table = search_soup.body('table', id="productTable")
+		if len(search_table) == 0:
+			raise ScrapeException(VENDOR_DK, self.manufacturer_pn, 'No listings found!')
+		else:
+			product_table = search_table[0]
+			#print 'product_table: \n', product_table
+			#print 'product_table.contents: \n', product_table.contents
+			
+			# Find tbody tag in table
+			tbody_tag = product_table.find('tbody')
+			#print 'tbody: \n', type(tbody_tag), tbody_tag
+			#print 'tbody.contents: \n', type(tbody_tag.contents), tbody_tag.contents
+			#print 'tbody.contents[0]: \n', type(tbody_tag.contents[0]), tbody_tag.contents[0]
+			prod_rows = tbody_tag.findAll('tr')
+			#print 'prod_rows: \n', type(prod_rows), prod_rows
+			for row in prod_rows:
+				#print "Search row in prod_rows: ", row
+				anchor = row.find('a')
+				# DK uses a relative path for these links
+				prod_urls.append('http://search.digikey.com' + anchor['href'])
+				#print 'Adding URL: ', 'http://search.digikey.com' + anchor['href']
 		
 		for url in prod_urls:
 		
