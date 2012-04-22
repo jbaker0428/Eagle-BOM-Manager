@@ -26,24 +26,33 @@ class Workspace:
 		cur = con.cursor()
 		return (con, cur)
 		
-	def list_projects(self):
+	def list_projects(self, connection=None):
 		''' Returns a list of BOM project tables in the DB. '''
 		projects = []
 		try:
-			(con, cur) = self.con_cursor()
+			if connection is None:
+				(con, cur) = self.con_cursor()
+			else:
+				con = connection
+				cur = con.cursor()
 			cur.execute('SELECT name FROM projects ORDER BY name')
 			for row in cur.fetchall():
 				projects.append(row[0])
 			
 		finally:
 			cur.close()
-			con.close()
+			if connection is None:
+				con.close()
 			return projects
 	
-	def create_tables(self):
+	def create_tables(self, connection=None):
 		''' Create the workspace-wide database tables. '''		
 		try:
-			(con, cur) = self.con_cursor()
+			if connection is None:
+				(con, cur) = self.con_cursor()
+			else:
+				con = connection
+				cur = con.cursor()
 			cur.execute('CREATE TABLE IF NOT EXISTS projects(name TEXT PRIMARY KEY, description TEXT, infile TEXT)')
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS parts 
@@ -92,7 +101,8 @@ class Workspace:
 						
 		finally:
 			cur.close()
-			con.close()
+			if connection is None:
+				con.close()
 
 wspace = Workspace()
 wspace.create_tables()

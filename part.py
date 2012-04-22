@@ -7,11 +7,15 @@ class Part:
 	''' A self in the BOM exported from Eagle. '''
 	
 	@staticmethod
-	def select_by_name(name, wspace, project='*'):
+	def select_by_name(name, wspace, project='*', connection=None):
 		''' Return the Part(s) of given name. '''
 		parts = []
 		try:
-			(con, cur) = wspace.con_cursor()
+			if connection is None:
+				(con, cur) = wspace.con_cursor()
+			else:
+				con = connection
+				cur = con.cursor()
 			
 			sql = "SELECT * FROM parts WHERE name=? and project='%s'" % project
 			symbol = (name,)
@@ -23,15 +27,20 @@ class Part:
 			
 		finally:
 			cur.close()
-			con.close()
+			if connection is None:
+				con.close()
 			return parts
 	
 	@staticmethod
-	def select_by_value(val, wspace, project='*'):
+	def select_by_value(val, wspace, project='*', connection=None):
 		''' Return the Part(s) of given value in a list. '''
 		parts = []
 		try:
-			(con, cur) = wspace.con_cursor()
+			if connection is None:
+				(con, cur) = wspace.con_cursor()
+			else:
+				con = connection
+				cur = con.cursor()
 			
 			sql = "SELECT * FROM parts WHERE value=? and project='%s'" % project
 			symbol = (val,)
@@ -43,15 +52,20 @@ class Part:
 			
 		finally:
 			cur.close()
-			con.close()
+			if connection is None:
+				con.close()
 			return parts
 		
 	@staticmethod
-	def select_by_product(prod, wspace, project='*'):
+	def select_by_product(prod, wspace, project='*', connection=None):
 		''' Return the Part(s) of given product in a list. '''
 		parts = []
 		try:
-			(con, cur) = wspace.con_cursor()
+			if connection is None:
+				(con, cur) = wspace.con_cursor()
+			else:
+				con = connection
+				cur = con.cursor()
 			
 			sql = "SELECT * FROM parts WHERE product=? and project='%s'" % project
 			symbol = (prod,)
@@ -63,7 +77,8 @@ class Part:
 			
 		finally:
 			cur.close()
-			con.close()
+			if connection is None:
+				con.close()
 			return parts
 	
 	def __init__(self, name, project, value, device, package, description='NULL', product='NULL', attributes={}):
@@ -136,7 +151,7 @@ class Part:
 				rownum = rownum + 1
 			return -1
 	
-	def find_similar_parts(self, wspace, check_wspace=True):
+	def find_similar_parts(self, wspace, check_wspace=True, connection=None):
 		''' Search the project and optionally workspace for parts of matching value/device/package/attributes.
 		If check_wspace = True, returns a pair of lists: (project_results, workspace_results).
 		If check_wspace = False, only returns the project_results list. 
@@ -146,7 +161,11 @@ class Part:
 		project_results = set()
 		workspace_results = set()
 		try:
-			(con, cur) = wspace.con_cursor()
+			if connection is None:
+				(con, cur) = wspace.con_cursor()
+			else:
+				con = connection
+				cur = con.cursor()
 			sql = """SELECT DISTINCT * FROM parts WHERE value=? AND project=? INTERSECT
 				SELECT * FROM parts WHERE device=? AND project=? INTERSECT
 				SELECT * FROM parts WHERE package=? AND project=?"""
@@ -193,13 +212,14 @@ class Part:
 							
 		finally:
 			cur.close()
-			con.close()
+			if connection is None:
+				con.close()
 			if check_wspace:
 				return (list(project_results), list(workspace_results))
 			else:
 				return (list(project_results), [])
 	
-	def find_matching_products(self, wspace, proj_parts, wspace_parts):
+	def find_matching_products(self, wspace, proj_parts, wspace_parts, connection=None):
 		''' Takes in the output of self.find_similar_parts. 
 		Returns a list of Product objects.'''
 		# TODO : Find more results by searching the product_attributes table
@@ -218,7 +238,7 @@ class Part:
 	
 		return list(products)
 	
-	def is_in_db(self, wspace):
+	def is_in_db(self, wspace, connection=None):
 		''' Check if a BOM self of this name is in the project's database. '''
 		result = Part.select_by_name(self.name, wspace, self.project)
 		if len(result) == 0:
@@ -226,7 +246,7 @@ class Part:
 		else:
 			return True
 	
-	def product_updater(self, wspace):
+	def product_updater(self, wspace, connection=None):
 		''' Checks if the Part is already in the DB. 
 		Inserts/updates self into DB depending on:
 		- The presence of a matching Part in the DB
@@ -299,10 +319,14 @@ class Part:
 				newprod.scrape(wspace)
 			self.insert(wspace)
 		
-	def update(self, wspace):
+	def update(self, wspace, connection=None):
 		''' Update an existing Part record in the DB. '''
 		try:
-			(con, cur) = wspace.con_cursor()
+			if connection is None:
+				(con, cur) = wspace.con_cursor()
+			else:
+				con = connection
+				cur = con.cursor()
 				
 			sql = 'UPDATE parts SET name=?, project=?, value=?, device=?, package=?, description=?, product=? WHERE name=? AND project=?'
 			symbol = (self.name, self.project, self.value, self.device, self.package,  
@@ -312,12 +336,17 @@ class Part:
 			
 		finally:
 			cur.close()
-			con.close()
+			if connection is None:
+				con.close()
 	
-	def insert(self, wspace):
+	def insert(self, wspace, connection=None):
 		''' Write the Part to the DB. '''
 		try:
-			(con, cur) = wspace.con_cursor()
+			if connection is None:
+				(con, cur) = wspace.con_cursor()
+			else:
+				con = connection
+				cur = con.cursor()
 			
 			sql = 'INSERT OR REPLACE INTO parts VALUES (?,?,?,?,?,?,?)'
 			symbol = (self.name, self.project, self.value, self.device, self.package,  
@@ -327,13 +356,18 @@ class Part:
 			
 		finally:
 			cur.close()
-			con.close()
+			if connection is None:
+				con.close()
 	
-	def delete(self, wspace):
+	def delete(self, wspace, connection=None):
 		''' Delete the Part from the DB. 
 		Part attributes are deleted via foreign key constraint cascading. '''
 		try:
-			(con, cur) = wspace.con_cursor()
+			if connection is None:
+				(con, cur) = wspace.con_cursor()
+			else:
+				con = connection
+				cur = con.cursor()
 			
 			sql = 'DELETE FROM parts WHERE name=? AND project=?'
 			symbol = (self.name, self.project)
@@ -341,14 +375,19 @@ class Part:
 			
 		finally:
 			cur.close()
-			con.close()
+			if connection is None:
+				con.close()
 	
-	def fetch_attributes(self, wspace):
+	def fetch_attributes(self, wspace, connection=None):
 		''' Fetch attributes dictionary for this Part. 
 		Clears and sets the self.attributes dictionary directly. '''
 		self.attributes.clear()
 		try:
-			(con, cur) = wspace.con_cursor()
+			if connection is None:
+				(con, cur) = wspace.con_cursor()
+			else:
+				con = connection
+				cur = con.cursor()
 			
 			params = (self.name, self.project,)
 			cur.execute('''SELECT name, value FROM part_attributes WHERE part=? INTERSECT 
@@ -358,14 +397,19 @@ class Part:
 			
 		finally:
 			cur.close()
-			con.close()
+			if connection is None:
+				con.close()
 	
-	def has_attribute(self, attrib, wspace):
+	def has_attribute(self, attrib, wspace, connection=None):
 		'''Check if this Part has an attribute of given name in the DB. 
 		Ignores value of the attribute. '''
 		results = []
 		try:
-			(con, cur) = wspace.con_cursor()
+			if connection is None:
+				(con, cur) = wspace.con_cursor()
+			else:
+				con = connection
+				cur = con.cursor()
 			
 			params = (self.name, self.project, attrib,)
 			cur.execute('''SELECT name FROM part_attributes WHERE part=? INTERSECT 
@@ -376,20 +420,25 @@ class Part:
 			
 		finally:
 			cur.close()
-			con.close()
+			if connection is None:
+				con.close()
 			if len(results) == 0:
 				return False
 			else:
 				return True
 
-	def write_attributes(self, wspace):
+	def write_attributes(self, wspace, connection=None):
 		''' Write all of this Part's attributes to the DB.
 		Checks attributes currently in DB and updates/inserts as appropriate. '''
 		db_attribs = []
 		old_attribs = []
 		new_attribs = []
 		try:
-			(con, cur) = wspace.con_cursor()
+			if connection is None:
+				(con, cur) = wspace.con_cursor()
+			else:
+				con = connection
+				cur = con.cursor()
 			
 			params = (self.name, self.project,)
 			cur.execute('''SELECT name FROM part_attributes WHERE part=? INTERSECT 
@@ -408,4 +457,5 @@ class Part:
 		
 		finally:
 			cur.close()
-			con.close()
+			if connection is None:
+				con.close()
