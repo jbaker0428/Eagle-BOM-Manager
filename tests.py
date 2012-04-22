@@ -9,8 +9,6 @@ class DatabaseTestCase(unittest.TestCase):
 		from part import Part
 		
 		self.wspace = Workspace('DB Tests', os.path.join(os.getcwd(), 'dbtests.sqlite'))
-		self.part_attribs = dict({'TOL' : '10%', 'VOLT' : '25V', 'TC' : 'X5R'})
-		self.test_part = Part('C1', 'dbtests', '1uF', 'C-USC0603', 'C0603', 'CAPACITOR, American symbol', 'C1608X5R1E105K', self.part_attribs)
 		self.test_product = Product('TDK Corporation', 'C1608X5R1E105K', 'general_B11.pdf', 'CAP CER 1UF 25V 10% X5R 0603', '0603 (1608 Metric)')
 		self.prices_ct = dict({10 : 0.09000, 100 : 0.04280, 250 : 0.03600, 500 : 0.03016, 1000 : 0.02475})
 		self.prices_tr = dict({4000 : 0.01935, 8000 : 0.01800, 12000 : 0.01710, 280000 : 0.01620, 100000 : 0.01227})
@@ -21,6 +19,8 @@ class DatabaseTestCase(unittest.TestCase):
 		self.test_product.listings[self.test_listing_ct.key()] = self.test_listing_ct
 		self.test_product.listings[self.test_listing_tr.key()] = self.test_listing_tr
 		self.test_product.listings[self.test_listing_dr.key()] = self.test_listing_dr
+		self.part_attribs = dict({'TOL' : '10%', 'VOLT' : '25V', 'TC' : 'X5R'})
+		self.test_part = Part('C1', 'dbtests', '1uF', 'C-USC0603', 'C0603', 'CAPACITOR, American symbol', self.test_product, self.part_attribs)
 		
 	def testdb(self):
 		self.wspace.create_tables()
