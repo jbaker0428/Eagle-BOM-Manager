@@ -215,7 +215,6 @@ class Listing:
 				cur = con.cursor()
 			
 			params = (self.vendor_pn,)
-			cur.execute('DELETE FROM pricebreaks WHERE pn=?', params)
 			cur.execute('DELETE FROM listings WHERE vendor_pn=?', params)
 			
 		finally:
