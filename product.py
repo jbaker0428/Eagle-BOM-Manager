@@ -468,7 +468,7 @@ class Product:
 					print 'Set best listing: ', best.show_brief()
 		return best
 	
-	def scrape_dk(self, wspace):
+	def scrape_dk(self):
 		''' Scrape method for Digikey. '''
 		# Clear previous pricing data (in case price break keys change)
 		search_url = 'http://search.digikey.com/us/en/products/' + self.manufacturer_pn
@@ -643,7 +643,7 @@ class Product:
 		self.listings.clear()
 		# Proceed based on vendor config
 		if VENDOR_DK_EN:
-			self.scrape_dk(wspace)
+			self.scrape_dk()
 		if VENDOR_FAR_EN:
 			self.scrape_far()
 		if VENDOR_FUE_EN:
