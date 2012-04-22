@@ -9,7 +9,11 @@ class Part:
 	@staticmethod
 	def new_from_row(row, wspace, connection=None):
 		''' Given a part row from the DB, returns a Part object. '''
-		part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
+		if row[6] == 'NULL':
+			product = None
+		else:
+			product = Product.select_by_pn(row[6], wspace, connection)[0]
+		part = Part(row[0], row[1], row[2], row[3], row[4], row[5], product)
 		part.fetch_attributes(wspace, connection)
 		return part
 	
@@ -82,14 +86,14 @@ class Part:
 				con.close()
 			return parts
 	
-	def __init__(self, name, project, value, device, package, description='NULL', product='NULL', attributes={}):
+	def __init__(self, name, project, value, device, package, description=None, product=None, attributes={}):
 		self.name = name
 		self.project = project
 		self.value = value
 		self.device = device
 		self.package = package
 		self.description = description
-		self.product = product
+		self.product = product	# A Product object
 		self.attributes = attributes
 
 	def show(self):
@@ -100,7 +104,7 @@ class Part:
 		print 'Device: ', self.device, type(self.device)
 		print 'Package: ', self.package, type(self.package)
 		print 'Description: ', self.description, type(self.description)
-		print 'Product: ', self.product, type(self.product)
+		print 'Product PN: ', self.product.manufacturer_pn, type(self.product.manufacturer_pn)
 		for attrib in self.attributes.items():
 			print attrib[0], ': ', attrib[1]
 		
@@ -124,7 +128,7 @@ class Part:
 			eq = False
 		elif self.description != p.description:
 			eq = False
-		elif self.product != p.product:
+		elif self.product.manufacturer_pn != p.product.manufacturer_pn:
 			eq = False
 		for k in self.attributes.keys():
 			if self.attributes[k] != "":
@@ -249,72 +253,73 @@ class Part:
 		''' Checks if the Part is already in the DB. 
 		Inserts/updates self into DB depending on:
 		- The presence of a matching Part in the DB
-		- The value of self.product
+		- The value of self.product.manufacturer_pn
 		- The product of the matching Part in the DB
 		Passing an open connection to this method is recommended. '''
+		unset_pn = ('', 'NULL', 'none', None)
 		if(self.is_in_db(wspace, connection)):
 			print "Part of same name already in DB"
 			old_part = Part.select_by_name(self.name, wspace, self.project, connection)[0]
 			#old_part.show()
 			if(self.value == old_part.value and self.device == old_part.device and self.package == old_part.package):
-				if self.product != 'NULL':
-					if old_part.product != 'NULL':
+				if self.product is not None and self.product.manufacturer_pn not in unset_pn:
+					if old_part.product is not None and old_part.product.manufacturer_pn not in unset_pn:
 						# TODO: prompt? Defaulting to old_part.product for now (aka do nothing)
 						print 'Matching CSV and DB parts with non-NULL product mismatch, keeping DB version...'
-					elif old_part.product == 'NULL':
+					elif old_part.product is None or old_part.product.manufacturer_pn in unset_pn:
 						self.update(wspace, connection)
-				elif self.product == 'NULL':
-					if old_part.product != 'NULL':
+				elif self.product is None or self.product.manufacturer_pn in unset_pn:
+					if old_part.product is not None and old_part.product.manufacturer_pn not in unset_pn:
 						pass	# Do nothing in this case
-					elif old_part.product == 'NULL':
+					elif old_part.product is None or old_part.product.manufacturer_pn in unset_pn:
 						(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, connection)
 						candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts, connection)
 						if len(candidate_products) == 0:
 							#print 'No matching products found, nothing to do'
 							pass
 						elif len(candidate_products) == 1:
-							self.product = candidate_products[0].manufacturer_pn
+							self.product = candidate_products[0]
 							print 'Found exactly one matching product, setting product and updating', #self.show()
 							self.update(wspace, connection)
 						else:
 							print 'Found multiple product matches, prompting for selection...'
 							# TODO: Currently going with first result, need to prompt for selection
-							self.product = candidate_products[0].manufacturer_pn
+							self.product = candidate_products[0]
 							self.update(wspace, connection)
 						
 			else:	# Value/device/package mismatch
-				if self.product != 'NULL':
+				if self.product is not None and self.product.manufacturer_pn not in unset_pn:
 					self.update(wspace, connection)
-				elif self.product == 'NULL':
+				elif self.product is None or self.product.manufacturer_pn in unset_pn:
 					(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, connection)
 					candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts, connection)
 					if len(candidate_products) == 0:
 						print 'No matching products found, updating as-is'
 					elif len(candidate_products) == 1:
-						self.product = candidate_products[0].manufacturer_pn
+						self.product = candidate_products[0]
 						print 'Found exactly one matching product, setting product and updating'#, self.show()
 					else:
 						print 'Found multiple product matches, prompting for selection...'
 						# TODO: Currently going with first result, need to prompt for selection
-						self.product = candidate_products[0].manufacturer_pn
+						self.product = candidate_products[0]
 					self.update(wspace, connection)
 		
 		else:
 			print 'Part not in DB'
-			if self.product == 'NULL':
+			if self.product is None or self.product.manufacturer_pn in unset_pn:
 				(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, connection)
 				candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts, connection)
 				if len(candidate_products) == 0:
 					print 'No matching products found, inserting as-is'#, self.show()
 				elif len(candidate_products) == 1:
-					self.product = candidate_products[0].manufacturer_pn
+					self.product = candidate_products[0]
 					print 'Found exactly one matching product, setting product and inserting'#, self.show()
 				else:
 					print 'Found multiple product matches, prompting for selection...'
 					# TODO: Currently going with first result, need to prompt for selection
-					self.product = candidate_products[0].manufacturer_pn
+					self.product = candidate_products[0]
 			else:
-				newprod = Product('NULL', self.product)
+				newprod = Product('NULL', self.product.manufacturer_pn)
 				newprod.insert(wspace, connection)
 				newprod.scrape(wspace, connection)
 			self.insert(wspace, connection)
@@ -330,7 +335,7 @@ class Part:
 				
 			sql = 'UPDATE parts SET name=?, project=?, value=?, device=?, package=?, description=?, product=? WHERE name=? AND project=?'
 			params = (self.name, self.project, self.value, self.device, self.package,  
-					self.description, self.product, self.name, self.project,)
+					self.description, self.product.manufacturer_pn, self.name, self.project,)
 			cur.execute(sql, params)
 			self.write_attributes(wspace, con)
 			
@@ -350,7 +355,7 @@ class Part:
 			
 			sql = 'INSERT OR REPLACE INTO parts VALUES (?,?,?,?,?,?,?)'
 			params = (self.name, self.project, self.value, self.device, self.package,  
-					self.description, self.product,)
+					self.description, self.product.manufacturer_pn,)
 			cur.execute(sql, params)
 			self.write_attributes(wspace, con)
 			

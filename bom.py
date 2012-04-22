@@ -204,7 +204,7 @@ class BOM:
 		# Find p in self.parts by name
 		for p in self.parts:
 			if p[0] == part.name:
-				p[2] = part.product
+				p[2] = part.product.manufacturer_pn
 		# TODO : If inline addition of parts is added later (as in, not from a
 		# CSV file), a check needs to be added here to make sure part is in self.parts
 	
@@ -284,12 +284,19 @@ class BOM:
 							row_attribs[attrib[1]] = row[attrib[0]]
 						#print 'Row attribs: ', row_attribs
 						if prod_col == -1:
-							part = Part(row[name_col], self.name, row[val_col], row[dev_col], row[pkg_col], row[desc_col], 'NULL', row_attribs)
+							part = Part(row[name_col], self.name, row[val_col], row[dev_col], row[pkg_col], row[desc_col], None, row_attribs)
 						else:
-							part = Part(row[name_col], self.name, row[val_col], row[dev_col], row[pkg_col], row[desc_col], row[prod_col], row_attribs)
+							prod = Product.select_by_pn(row[prod_col], wspace, connection)
+							if prod is not None and len(prod) > 0:
+								part = Part(row[name_col], self.name, row[val_col], row[dev_col], row[pkg_col], row[desc_col], prod[0], row_attribs)
+							else:
+								part = Part(row[name_col], self.name, row[val_col], row[dev_col], row[pkg_col], row[desc_col], None, row_attribs)
 						
 						part.product_updater(wspace, connection)
-						self.parts.append([part.name, part.value, part.product])
+						if part.product is None:
+							self.parts.append([part.name, part.value, ''])
+						else:
+							self.parts.append([part.name, part.value, part.product.manufacturer_pn])
 					rownum += 1
 					
 			else:		
@@ -298,15 +305,22 @@ class BOM:
 					# Check for optional product column
 					if len(row) > 5:
 						if len(row[5]) > 0:
-							part = Part(row[0], self.name, row[1], row[2], row[3], row[4], row[5])
+							prod = Product.select_by_pn(row[5], wspace, connection)
+							if prod is not None and len(prod) > 0:
+								part = Part(row[0], self.name, row[1], row[2], row[3], row[4], prod[0])
+							else:
+								part = Part(row[0], self.name, row[1], row[2], row[3], row[4], None)
 						else:
-							part = Part(row[0], self.name, row[1], row[2], row[3], row[4])
+							part = Part(row[0], self.name, row[1], row[2], row[3], row[4], None)
 					else:
-						part = Part(row[0], self.name, row[1], row[2], row[3], row[4])
+						part = Part(row[0], self.name, row[1], row[2], row[3], row[4], None)
 				#print 'Got part from CSV: '
 				#part.show() 
 				part.product_updater(wspace, connection)
-				self.parts.append([part.name, part.value, part.product])
+				if part.product is None:
+					self.parts.append([part.name, part.value, ''])
+				else:
+					self.parts.append([part.name, part.value, part.product.manufacturer_pn])
 				
 		#print "Parts list: ", self.parts
 	

@@ -227,23 +227,22 @@ class Manager(gobject.GObject):
 		con = wspace.connection()
 		self.selected_bom_part = self.active_bom.select_parts_by_name(model.get(row_iter,0)[0], wspace, con)[0]
 		# Grab the vendor part number for the selected item from the label text
-		selected_product = model.get(row_iter,5)[0]
-		print "selected_product is: %s" % selected_product
-		if selected_product != 'NULL': # Look up part in DB
+		selected_pn = model.get(row_iter,5)[0]
+		print "selected_pn is: %s" % selected_pn
+		if selected_pn != 'NULL' and selected_pn != '': # Look up part in DB
 			self.part_info_datasheet_button.set_sensitive(True)
 			self.part_info_scrape_button.set_sensitive(True)
 			# Set class field for currently selected product
-			print "Querying with selected_product: %s" % selected_product
-			self.bom_selected_product.manufacturer_pn = selected_product
-			
-			self.bom_selected_product.select_or_scrape(wspace, con)
-			#self.bom_selected_product.show()
-			self.set_part_info_labels(self.bom_selected_product)
-			self.set_part_info_listing_combo(self.bom_selected_product)
+			print "Querying with selected_pn: %s" % selected_pn
+			self.selected_bom_part.product.manufacturer_pn = selected_pn
+			# TODO: Call NYI product.has_listings method here, if false, scrape
+			#self.selected_bom_part.product.show()
+			self.set_part_info_labels(self.selected_bom_part.product)
+			self.set_part_info_listing_combo(self.selected_bom_part.product)
 			self.destroy_part_price_labels()
-			#print 'self.bom_selected_product.listings: \n', self.bom_selected_product.listings
+			#print 'self.selected_bom_part.product.listings: \n', self.selected_bom_part.product.listings
 			if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
-				self.set_part_price_labels(self.bom_selected_product.listings[self.part_info_listing_combo.get_active_text()])
+				self.set_part_price_labels(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()])
 		else:
 			self.part_info_datasheet_button.set_sensitive(False)
 			self.part_info_scrape_button.set_sensitive(False)
@@ -334,7 +333,7 @@ class Manager(gobject.GObject):
 		self.edit_part_device_entry.set_text(self.selected_bom_part.device)
 		self.edit_part_package_entry.set_text(self.selected_bom_part.package)
 		self.edit_part_description_entry.set_text(self.selected_bom_part.description)
-		self.edit_part_product_entry.set_text(self.selected_bom_part.product)
+		self.edit_part_product_entry.set_text(self.selected_bom_part.product.manufacturer_pn)
 		
 		# Pack labels/entry fields into HBoxes
 		edit_part_dialog_name_hbox.pack_start(edit_part_name_label, False, True, 0)
@@ -385,14 +384,11 @@ class Manager(gobject.GObject):
 			self.selected_bom_part.device = self.edit_part_device_entry.get_text()
 			self.selected_bom_part.package = self.edit_part_package_entry.get_text()
 			self.selected_bom_part.description = self.edit_part_description_entry.get_text()
-			#print "Setting selected_bom_part.product to: %s" % self.edit_part_product_entry.get_text()
-			self.selected_bom_part.product = self.product_entry_text
-			#print "selected_bom_part's product field: %s" % self.selected_bom_part.product
 			
 			# We need to check the products table for this Product, creating an entry
 			# for it if necessary, before updating selected_bom_part in the DB.
-			self.bom_selected_product.manufacturer_pn = self.product_entry_text
-			self.bom_selected_product.select_or_scrape(wspace, con)
+			self.selected_bom_part.product.manufacturer_pn = self.product_entry_text
+			self.selected_bom_part.product.select_or_scrape(wspace, con)
 			
 			self.selected_bom_part.update(wspace,con)
 			self.active_bom.update_parts_list(self.selected_bom_part)
@@ -404,17 +400,17 @@ class Manager(gobject.GObject):
 			elif self.bom_group_product.get_active():
 				self.bom_store_populate_by_product(con)
 					
-			self.set_part_info_listing_combo(self.bom_selected_product)
-			if self.bom_selected_product.manufacturer_pn == 'NULL':
+			self.set_part_info_listing_combo(self.selected_bom_part.product)
+			if self.selected_bom_part.product.manufacturer_pn is None or self.selected_bom_part.product.manufacturer_pn == 'NULL':
 				self.clear_part_info_labels()
 			else:
-				self.set_part_info_labels(self.bom_selected_product)
+				self.set_part_info_labels(self.selected_bom_part.product)
 			con.close()
 	
 	def part_info_scrape_button_callback(self, widget):
 		''' Part info frame "Refresh" button callback. '''
 		con = wspace.connection()
-		self.bom_selected_product.scrape(wspace, con)
+		self.selected_bom_part.product.scrape(wspace, con)
 		if self.bom_group_name.get_active():
 			self.bom_store_populate_by_name(con)
 		elif self.bom_group_value.get_active():
@@ -427,8 +423,8 @@ class Manager(gobject.GObject):
 	def part_info_listing_combo_callback(self, widget, data=None):
 		self.destroy_part_price_labels()
 		if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
-			self.set_part_price_labels(self.bom_selected_product.listings[self.part_info_listing_combo.get_active_text()])
-			self.part_info_inventory_content_label.set_text(str(self.bom_selected_product.listings[self.part_info_listing_combo.get_active_text()].inventory))
+			self.set_part_price_labels(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()])
+			self.part_info_inventory_content_label.set_text(str(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()].inventory))
 	
 	def order_size_spin_callback(self, widget):
 		''' Update the per-unit and total order prices when the order size
@@ -499,7 +495,10 @@ class Manager(gobject.GObject):
 			con = connection
 		for p in self.active_bom.parts:
 			temp = self.active_bom.select_parts_by_name(p[0], wspace, con)[0]
-			iter = self.bom_store.append([temp.name, temp.value, temp.device, temp.package, temp.description, temp.product, 1])
+			if temp.product is None:
+				iter = self.bom_store.append([temp.name, temp.value, temp.device, temp.package, temp.description, '', 1])
+			else:
+				iter = self.bom_store.append([temp.name, temp.value, temp.device, temp.package, temp.description, temp.product.manufacturer_pn, 1])
 		
 		if connection is None:
 			con.close()
@@ -526,7 +525,10 @@ class Manager(gobject.GObject):
 			# Replace trailing comma with tab
 			group_name = group_name[0:-2]
 			temp = group[0]	# Part object
-			iter = self.bom_store.append([group_name, temp.value, temp.device, temp.package, temp.description, temp.product, self.active_bom.val_counts[val]])
+			if temp.product is None:
+				iter = self.bom_store.append([group_name, temp.value, temp.device, temp.package, temp.description, '', self.active_bom.val_counts[val]])
+			else:
+				iter = self.bom_store.append([group_name, temp.value, temp.device, temp.package, temp.description, temp.product.manufacturer_pn, self.active_bom.val_counts[val]])
 		
 		if connection is None:
 			con.close()
@@ -560,7 +562,10 @@ class Manager(gobject.GObject):
 			group_name = group_name[0:-2]
 			
 			temp = group[0]	# Part object
-			iter = self.bom_store.append([group_name, temp.value, temp.device, temp.package, temp.description, temp.product, self.active_bom.prod_counts[prod]])
+			if temp.product is None:
+				iter = self.bom_store.append([group_name, temp.value, temp.device, temp.package, temp.description, '', self.active_bom.prod_counts[prod]])
+			else:
+				iter = self.bom_store.append([group_name, temp.value, temp.device, temp.package, temp.description, temp.product.manufacturer_pn, self.active_bom.prod_counts[prod]])
 		
 		if connection is None:
 			con.close()
@@ -754,7 +759,6 @@ class Manager(gobject.GObject):
 		self.bom_group_value = gtk.RadioButton(self.bom_group_name, "Value")
 		self.bom_group_product = gtk.RadioButton(self.bom_group_name, "Part Number")
 		
-		self.bom_selected_product = Product("init", "init", wspace)
 		self.selected_bom_part = Part("init", "init", "init", "init", "init")
 		
 		self.part_info_frame = gtk.Frame("Part information") # Goes in top half of bom_vpane
