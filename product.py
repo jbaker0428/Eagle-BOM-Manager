@@ -222,6 +222,14 @@ class Listing:
 			if connection is None:
 				con.close()
 	
+	def is_in_db(self, wspace, connection=None):
+		''' Check if this Listing is in the database. '''
+		result = Listing.select_by_vendor_pn(self.vendor_pn, wspace, connection)
+		if len(result) == 0:
+			return False
+		else:
+			return True
+	
 	def fetch_price_breaks(self, wspace, connection=None):
 		''' Fetch price breaks dictionary for this Listing. 
 		Clears and sets the self.prices dictionary directly. '''
@@ -663,7 +671,10 @@ class Product:
 		else:
 			self.insert(wspace, connection)
 		for listing in self.listings.values():
-			listing.insert(wspace, connection)
+			if listing.is_in_db(wspace, connection):
+				listing.update(wspace, connection)
+			else:
+				listing.insert(wspace, connection)
 				
 
 	def is_in_db(self, wspace, connection=None):
