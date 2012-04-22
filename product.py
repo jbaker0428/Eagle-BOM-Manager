@@ -35,18 +35,45 @@ VENDOR_JAM_EN = False
 VENDOR_ME_EN = False
 VENDOR_NEW_EN = False
 VENDOR_SFE_EN = False
+VENDOR_WARN_IF_NONE_EN = True
+
+def no_vendors_enabled():
+	''' Return True if all VENDOR_*_EN config vars are False. '''
+	ret = True
+	if VENDOR_DK_EN == True:
+		ret = False
+	elif VENDOR_FAR_EN == True:
+		ret = False
+	elif VENDOR_FUE_EN == True:
+		ret = False
+	elif VENDOR_JAM_EN == True:
+		ret = False
+	elif VENDOR_ME_EN == True:
+		ret = False
+	elif VENDOR_NEW_EN == True:
+		ret = False
+	elif VENDOR_SFE_EN == True:
+		ret = False
+	return ret
 
 DOWNLOAD_DATASHEET = False	# TODO : Set these from program config
 ENFORCE_MIN_QTY = True
 
 class ScrapeException(Exception):
 	''' Raised when something goes wrong scraping. '''
-	def __init__(self, vendor, mfg_pn, text):
-		self.vendor = vendor
+	errors = {0: 'No listings found on source.', \
+			  1: 'No listings found across all vendors.', \
+			  2: 'Found no listings with inventory in stock.', \
+			  3: 'No vendors enabled.', \
+			  4: 'Could not find pricing table on vendor page.'}
+	soup_errors = {}
+	def __init__(self, source, mfg_pn, error_number):
+		self.source = source
 		self.manufacturer_pn = mfg_pn
-		self.text = text
+		
+		self.error = error_number
 	def __str__(self):
-		str = self.text + ' Vendor: ' + self.vendor + ' Manufacturer Part Number: ' + self.manufacturer_pn
+		str = errors[self.error] + ' Source: ' + self.source + ' Manufacturer Part Number: ' + self.manufacturer_pn
 		return repr(str)
 
 class Listing:
@@ -61,7 +88,7 @@ class Listing:
 		
 	@staticmethod
 	def select_by_vendor_pn(pn, wspace, connection=None):
-		''' Return the Listing(s) of given vendor part number in a list. '''
+		''' Return the Listing(s) of given source part number in a list. '''
 		listings = []
 		try:
 			if connection is None:
@@ -104,7 +131,7 @@ class Listing:
 			return listings
 	
 	def __init__(self, vend, vendor_pn, manufacturer_pn, prices_dict, inv, pkg, reel=0, cat='NULL', fam='NULL', ser='NULL'):
-		self.vendor = vend
+		self.source = vend
 		self.vendor_pn = vendor_pn
 		self.manufacturer_pn = manufacturer_pn
 		self.prices = prices_dict
@@ -117,7 +144,7 @@ class Listing:
 	
 	def show(self):
 		''' A verbose print method. '''
-		print 'Vendor: ', self.vendor, type(self.vendor)
+		print 'Vendor: ', self.source, type(self.source)
 		print 'Vendor PN: ', self.vendor_pn, type(self.vendor_pn)
 		print 'Product MFG PN: ', self.manufacturer_pn, type(self.manufacturer_pn)
 		print 'Prices: ', self.prices.items(), type(self.prices.items())
@@ -138,7 +165,7 @@ class Listing:
 		if type(vp) != type(self):
 			return False
 		eq = True
-		if self.vendor != vp.vendor:
+		if self.source != vp.source:
 			eq = False
 		if self.vendor_pn != vp.vendor_pn:
 			eq = False
@@ -163,8 +190,8 @@ class Listing:
 	
 	def key(self):
 		''' Return a dictionary key as used by the GUI for this Listing.
-		Format: key = vendor + ': ' + vendor_pn + ' (' + packaging + ')' '''
-		key = self.vendor + ': ' + self.vendor_pn + ' (' + self.packaging + ')'
+		Format: key = source + ': ' + vendor_pn + ' (' + packaging + ')' '''
+		key = self.source + ': ' + self.vendor_pn + ' (' + self.packaging + ')'
 		return key
 	
 	def update(self, wspace, connection=None):
@@ -181,10 +208,10 @@ class Listing:
 				params = (self.vendor_pn, pb[0], pb[1],)
 				cur.execute('INSERT OR REPLACE INTO pricebreaks VALUES (NULL,?,?,?)', params)
 			
-			params = (self.vendor, self.vendor_pn, self.manufacturer_pn, self.inventory, self.packaging,
+			params = (self.source, self.vendor_pn, self.manufacturer_pn, self.inventory, self.packaging,
 					self.reel_fee, self.category, self.family, self.series, self.vendor_pn,)
 			cur.execute('''UPDATE listings 
-			SET vendor=?, vendor_pn=?, manufacturer_pn=?, inventory=?, packaging=?, reelfee=?, 
+			SET source=?, vendor_pn=?, manufacturer_pn=?, inventory=?, packaging=?, reelfee=?, 
 			category=?, family=?, series=? 
 			WHERE vendor_pn=?''', params)
 			
@@ -202,7 +229,7 @@ class Listing:
 				con = connection
 				cur = con.cursor()
 			
-			params = (self.vendor, self.vendor_pn, self.manufacturer_pn, self.inventory, self.packaging,
+			params = (self.source, self.vendor_pn, self.manufacturer_pn, self.inventory, self.packaging,
 					self.reel_fee, self.category, self.family, self.series,)
 			cur.execute('INSERT OR REPLACE INTO listings VALUES (?,?,?,?,?,?,?,?,?)', params)
 			
@@ -344,7 +371,7 @@ class Product:
 		self.datasheet = dsheet
 		self.description = desc
 		self.package = pkg
-		self.listings = {}	# Key is key = vendor + ': ' + vendor_pn + ' (' + packaging + ')'
+		self.listings = {}	# Key is key = source + ': ' + vendor_pn + ' (' + packaging + ')'
 	
 	def show(self):
 		''' A simple print method. '''
@@ -450,7 +477,7 @@ class Product:
 				cur = con.cursor()
 			
 			params = (self.manufacturer_pn,)
-			cur.execute('SELECT * FROM listings WHERE manufacturer_pn=? ORDER BY vendor', params)
+			cur.execute('SELECT * FROM listings WHERE manufacturer_pn=? ORDER BY source', params)
 			for row in cur.fetchall():
 				listing = Listing.new_from_row(row, wspace, con)
 				self.listings[listing.key()] = listing
@@ -485,6 +512,14 @@ class Product:
 					print 'Set best listing: ', best.show_brief()
 		return best
 	
+	def in_stock(self):
+		''' Returns true if any Listings have inventory > 0. '''
+		stocked = False
+		for listing in self.listings.values():
+			if listing.inventory > 0:
+				stocked = True
+				break
+	
 	def scrape_dk(self):
 		''' Scrape method for Digikey. '''
 		# Clear previous pricing data (in case price break keys change)
@@ -495,9 +530,7 @@ class Product:
 		# Create a list of product URLs from the search page
 		prod_urls = []
 		search_table = search_soup.body('table', id="productTable")
-		if len(search_table) == 0:
-			raise ScrapeException(VENDOR_DK, self.manufacturer_pn, 'No listings found!')
-		else:
+		if len(search_table) > 0:
 			product_table = search_table[0]
 			#print 'product_table: \n', product_table
 			#print 'product_table.contents: \n', product_table.contents
@@ -520,33 +553,38 @@ class Product:
 		
 			page = urllib2.urlopen(url)
 			soup = BeautifulSoup(page)
-			print "URL: %s" % url
+			#print "URL: %s" % url
 			# Get prices
 			prices = {}
 			price_table = soup.body('table', id="pricing")
+			print 'price_table: ', type(price_table), price_table
+			if len(price_table) == 0:
+				raise ScrapeException(VENDOR_DK, self.manufacturer_pn, 4)
 			# price_table.contents[x] should be the tr tags...
-			for t in price_table:
-				for r in t:
-					# r.contents should be td Tags... except the first!
-					if r == '\n':
+			for tag in price_table:
+				print 'tag: ', type(tag), tag
+				for row in tag:
+					print 'row: ', type(row), row
+					# row.contents should be td Tags... except the first!
+					if row == '\n':
 						pass
-					elif r.contents[0].name == 'th':
+					elif row.contents[0].name == 'th':
 						pass
-						#print "Found r.name == th"
+						#print "Found row.name == th"
 					else:
-						new_break_str = r.contents[0].string
+						new_break_str = row.contents[0].string
 						# Remove commas
 						if new_break_str.isdigit() == False:
 							new_break_str = new_break_str.replace(",", "")
 						#print "new_break_str is: %s" % new_break_str					
 						new_break = int(new_break_str)
-						new_unit_price = float(r.contents[1].string)
+						new_unit_price = float(row.contents[1].string)
 						prices[new_break] = new_unit_price
 						#print 'Adding break/price to pricing dict: ', (new_break, new_unit_price)
 					
 			# Get inventory
 			# If the item is out of stock, the <td> that normally holds the
-			# quantity available will have a text input box that we need to
+			# quantity available will have a error input box that we need to
 			# watch out for
 			inv_soup = soup.body('td', id="quantityavailable")
 			#print 'inv_soup: ', type(inv_soup), inv_soup
@@ -562,49 +600,49 @@ class Product:
 				inventory = int(inv_str)
 				print 'inventory: ', type(inventory), inventory
 			
-			vendor_pn = soup.body('th', text="Digi-Key Part Number")[0].parent.nextSibling.contents[0].string.__str__()
+			vendor_pn = soup.body('th', error="Digi-Key Part Number")[0].parent.nextSibling.contents[0].string.__str__()
 			# Get manufacturer and PN
-			self.manufacturer = soup.body('th', text="Manufacturer")[0].parent.nextSibling.contents[0].string.__str__()
+			self.manufacturer = soup.body('th', error="Manufacturer")[0].parent.nextSibling.contents[0].string.__str__()
 			#print "manufacturer is: %s" % self.manufacturer
-			self.manufacturer_pn = soup.body('th', text="Manufacturer Part Number")[0].parent.nextSibling.contents[0].string.__str__()
+			self.manufacturer_pn = soup.body('th', error="Manufacturer Part Number")[0].parent.nextSibling.contents[0].string.__str__()
 			#print "manufacturer_pn is: %s" % self.manufacturer_pn
 			
 			# Get datasheet filename and download
-			datasheet_soup = soup.body('th', text="Datasheets")[0].parent.nextSibling
+			datasheet_soup = soup.body('th', error="Datasheets")[0].parent.nextSibling
 			datasheet_anchor = datasheet_soup.findAllNext('a')[0]
 			#print "datasheet_soup is: %s" % datasheet_soup
 			#print "datasheet_anchor is: %s" % datasheet_anchor
 			self.datasheet_url = datasheet_anchor['href']
 			#print "self.datasheet_url is: %s" % self.datasheet_url
 			
-			r = urllib2.urlopen(urllib2.Request(self.datasheet_url))
+			row = urllib2.urlopen(urllib2.Request(self.datasheet_url))
 			try:
-				file_name = get_filename(url,r)
+				file_name = get_filename(url,row)
 				self.datasheet = file_name;
 				# TODO: Do not re-download if already saved
 				if DOWNLOAD_DATASHEET:
 					with open(file_name, 'wb') as f:
-						shutil.copyfileobj(r,f)
+						shutil.copyfileobj(row,f)
 			finally:
-				r.close()
+				row.close()
 			#print "datasheet is: %s" % self.datasheet
 			# Get remaining strings (desc, category, family, series, package)
-			self.description = soup.body('th', text="Description")[0].parent.nextSibling.contents[0].string.__str__()
+			self.description = soup.body('th', error="Description")[0].parent.nextSibling.contents[0].string.__str__()
 			#print "description is: %s" % self.description
-			category = soup.body('th', text="Category")[0].parent.nextSibling.contents[0].string.__str__()
+			category = soup.body('th', error="Category")[0].parent.nextSibling.contents[0].string.__str__()
 			#print "category is: %s" % category
-			family = soup.body('th', text="Family")[0].parent.nextSibling.contents[0].string.__str__()
+			family = soup.body('th', error="Family")[0].parent.nextSibling.contents[0].string.__str__()
 			#print "family is: %s" % family
-			series = soup.body('th', text="Series")[0].parent.nextSibling.contents[0].string.__str__()
+			series = soup.body('th', error="Series")[0].parent.nextSibling.contents[0].string.__str__()
 			#print "series is: %s" % series
-			self.package = soup.body('th', text="Package / Case")[0].parent.nextSibling.contents[0].string.__str__()
+			self.package = soup.body('th', error="Package / Case")[0].parent.nextSibling.contents[0].string.__str__()
 			#print "package is: %s" % self.package
 			
-			packaging_soup = soup.body('th', text="Packaging")[0].parent.parent.nextSibling.contents[0]
+			packaging_soup = soup.body('th', error="Packaging")[0].parent.parent.nextSibling.contents[0]
 			#print "packaging_soup: ", type(packaging_soup), packaging_soup
 			if type(packaging_soup) == NavigableString:
 				packaging = packaging_soup.string.__str__()
-				print "packaging (from text): ", type(packaging), packaging
+				print "packaging (from error): ", type(packaging), packaging
 			elif type(packaging_soup) == Tag:
 				packaging = packaging_soup.contents[0].string.__str__()
 				print "packaging (from link): ", type(packaging), packaging
@@ -660,35 +698,49 @@ class Product:
 		soup = BeautifulSoup(page)
 			
 	def scrape(self, wspace, connection=None):
-		''' Scrape each vendor page to refresh product pricing info. '''
-		self.listings.clear()
-		# Proceed based on vendor config
-		if VENDOR_DK_EN:
-			self.scrape_dk()
-		if VENDOR_FAR_EN:
-			self.scrape_far()
-		if VENDOR_FUE_EN:
-			self.scrape_fue()
-		if VENDOR_JAM_EN:
-			self.scrape_jam()
-		if VENDOR_ME_EN:
-			self.scrape_me()
-		if VENDOR_NEW_EN:
-			self.scrape_new()
-		if VENDOR_SFE_EN:
-			self.scrape_sfe()
+		''' Scrape each source page to refresh product pricing info. '''
+		if no_vendors_enabled() == True:
+			if VENDOR_WARN_IF_NONE_EN == True:
+				raise ScrapeException(self.scrape.__name__, self.manufacturer_pn, 3)
 		
-		#print 'Writing the following Product to DB: \n'
-		#self.show()
-		if self.is_in_db(wspace, connection):
-			self.update(wspace, connection)
 		else:
-			self.insert(wspace, connection)
-		for listing in self.listings.values():
-			if listing.is_in_db(wspace, connection):
-				listing.update(wspace, connection)
+			self.listings.clear()
+			# Proceed based on source config
+			if VENDOR_DK_EN:
+				try:
+					self.scrape_dk()
+				except ScrapeException as e:
+					if e.error == 0:
+						pass
+			if VENDOR_FAR_EN:
+				self.scrape_far()
+			if VENDOR_FUE_EN:
+				self.scrape_fue()
+			if VENDOR_JAM_EN:
+				self.scrape_jam()
+			if VENDOR_ME_EN:
+				self.scrape_me()
+			if VENDOR_NEW_EN:
+				self.scrape_new()
+			if VENDOR_SFE_EN:
+				self.scrape_sfe()
+			
+			#print 'Writing the following Product to DB: \n'
+			#self.show()
+			if self.is_in_db(wspace, connection):
+				self.update(wspace, connection)
 			else:
-				listing.insert(wspace, connection)
+				self.insert(wspace, connection)
+			for listing in self.listings.values():
+				if listing.is_in_db(wspace, connection):
+					listing.update(wspace, connection)
+				else:
+					listing.insert(wspace, connection)
+			if len(self.listings.values()) == 0:
+				raise ScrapeException(self.scrape.__name__, self.manufacturer_pn, 1)
+			if self.in_stock() == False:
+				raise ScrapeException(VENDOR_DK, self.manufacturer_pn, 2)
+			
 				
 
 	def is_in_db(self, wspace, connection=None):
