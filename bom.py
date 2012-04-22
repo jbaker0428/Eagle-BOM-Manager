@@ -32,8 +32,8 @@ class BOM:
 				con = connection
 				cur = con.cursor()
 			
-			symbol = (name,)
-			cur.execute('SELECT * FROM projects WHERE name=?', symbol)
+			params = (name,)
+			cur.execute('SELECT * FROM projects WHERE name=?', params)
 			for row in cur.fetchall():
 				bom = BOM(row[0], row[1], row[2])
 				boms.append(bom)
@@ -57,8 +57,8 @@ class BOM:
 				con = connection
 				cur = con.cursor()
 			
-			symbol = (name, desc, infile,)
-			cur.execute('INSERT INTO projects VALUES (?,?,?)', symbol)
+			params = (name, desc, infile,)
+			cur.execute('INSERT INTO projects VALUES (?,?,?)', params)
 			
 		finally:
 			cur.close()
@@ -84,8 +84,8 @@ class BOM:
 				con = connection
 				cur = con.cursor()
 			
-			symbol = (self.name,)
-			cur.execute('DELETE FROM projects WHERE name=?', symbol)
+			params = (self.name,)
+			cur.execute('DELETE FROM projects WHERE name=?', params)
 			
 		finally:
 			cur.close()
@@ -101,8 +101,8 @@ class BOM:
 				con = connection
 				cur = con.cursor()
 			
-			symbol = (new_name, self.name,)
-			cur.execute('UPDATE projects SET name=? WHERE name=?', symbol)
+			params = (new_name, self.name,)
+			cur.execute('UPDATE projects SET name=? WHERE name=?', params)
 			
 		finally:
 			cur.close()
@@ -319,8 +319,8 @@ class BOM:
 				cur = con.cursor()
 			
 			sql = 'SELECT * FROM parts WHERE name=? INTERSECT SELECT * FROM parts WHERE project=?'
-			symbol = (name, self.name)
-			cur.execute(sql, symbol)
+			params = (name, self.name)
+			cur.execute(sql, params)
 			for row in cur.fetchall():
 				parts.append(Part.new_from_row(row, wspace, con))
 			
@@ -341,8 +341,8 @@ class BOM:
 				cur = con.cursor()
 			
 			sql = 'SELECT * FROM parts WHERE value=? INTERSECT SELECT * FROM parts WHERE project=?'
-			symbol = (val, self.name)
-			cur.execute(sql, symbol)
+			params = (val, self.name)
+			cur.execute(sql, params)
 			for row in cur.fetchall():
 				parts.append(Part.new_from_row(row, wspace, con))
 			
@@ -363,8 +363,8 @@ class BOM:
 				cur = con.cursor()
 			
 			sql = 'SELECT * FROM parts WHERE product=? INTERSECT SELECT * FROM parts WHERE project=?'
-			symbol = (prod, self.name)
-			cur.execute(sql, symbol)
+			params = (prod, self.name)
+			cur.execute(sql, params)
 			for row in cur.fetchall():
 				parts.append(Part.new_from_row(row, wspace, con))
 			

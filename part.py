@@ -25,8 +25,8 @@ class Part:
 				cur = con.cursor()
 			
 			sql = "SELECT * FROM parts WHERE name=? and project='%s'" % project
-			symbol = (name,)
-			cur.execute(sql, symbol)
+			params = (name,)
+			cur.execute(sql, params)
 			for row in cur.fetchall():
 				parts.append(Part.new_from_row(row, wspace, con))
 			
@@ -48,8 +48,8 @@ class Part:
 				cur = con.cursor()
 			
 			sql = "SELECT * FROM parts WHERE value=? and project='%s'" % project
-			symbol = (val,)
-			cur.execute(sql, symbol)
+			params = (val,)
+			cur.execute(sql, params)
 			for row in cur.fetchall():
 				parts.append(Part.new_from_row(row, wspace, con))
 			
@@ -71,8 +71,8 @@ class Part:
 				cur = con.cursor()
 			
 			sql = "SELECT * FROM parts WHERE product=? and project='%s'" % project
-			symbol = (prod,)
-			cur.execute(sql, symbol)
+			params = (prod,)
+			cur.execute(sql, params)
 			for row in cur.fetchall():
 				parts.append(Part.new_from_row(row, wspace, con))
 			
@@ -170,8 +170,8 @@ class Part:
 			sql = """SELECT DISTINCT * FROM parts WHERE value=? AND project=? INTERSECT
 				SELECT * FROM parts WHERE device=? AND project=? INTERSECT
 				SELECT * FROM parts WHERE package=? AND project=?"""
-			t = (self.value, self.project, self.device, self.project, self.package, self.project,)
-			cur.execute(sql, t)
+			params = (self.value, self.project, self.device, self.project, self.package, self.project,)
+			cur.execute(sql, params)
 			rows = cur.fetchall()
 			for row in rows:
 				part = Part.new_from_row(row, wspace, con)
@@ -193,8 +193,8 @@ class Part:
 					sql = """SELECT DISTINCT * FROM parts WHERE value=? AND project!=? INTERSECT
 						SELECT * FROM parts WHERE device=? AND project!=? INTERSECT
 						SELECT * FROM parts WHERE package=? AND project!=?"""
-					t = (self.value, self.project, self.device, self.project, self.package, self.project,)
-					cur.execute(sql, t)
+					params = (self.value, self.project, self.device, self.project, self.package, self.project,)
+					cur.execute(sql, params)
 					rows = cur.fetchall()
 					for row in rows:
 						part = Part.new_from_row(row, wspace, con)
@@ -328,9 +328,9 @@ class Part:
 				cur = con.cursor()
 				
 			sql = 'UPDATE parts SET name=?, project=?, value=?, device=?, package=?, description=?, product=? WHERE name=? AND project=?'
-			symbol = (self.name, self.project, self.value, self.device, self.package,  
+			params = (self.name, self.project, self.value, self.device, self.package,  
 					self.description, self.product, self.name, self.project,)
-			cur.execute(sql, symbol)
+			cur.execute(sql, params)
 			self.write_attributes(wspace)
 			
 		finally:
@@ -348,9 +348,9 @@ class Part:
 				cur = con.cursor()
 			
 			sql = 'INSERT OR REPLACE INTO parts VALUES (?,?,?,?,?,?,?)'
-			symbol = (self.name, self.project, self.value, self.device, self.package,  
+			params = (self.name, self.project, self.value, self.device, self.package,  
 					self.description, self.product,)
-			cur.execute(sql, symbol)
+			cur.execute(sql, params)
 			self.write_attributes(wspace)
 			
 		finally:
@@ -369,8 +369,8 @@ class Part:
 				cur = con.cursor()
 			
 			sql = 'DELETE FROM parts WHERE name=? AND project=?'
-			symbol = (self.name, self.project)
-			cur.execute(sql, symbol)
+			params = (self.name, self.project)
+			cur.execute(sql, params)
 			
 		finally:
 			cur.close()

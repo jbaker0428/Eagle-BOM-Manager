@@ -60,8 +60,8 @@ class Listing:
 				con = connection
 				cur = con.cursor()
 			
-			symbol = (pn,)
-			cur.execute('SELECT * FROM listings WHERE vendor_pn=?', symbol)
+			params = (pn,)
+			cur.execute('SELECT * FROM listings WHERE vendor_pn=?', params)
 			for row in cur.fetchall():
 				listings.append(Listing.new_from_row(row, wspace, con))
 			
@@ -82,8 +82,8 @@ class Listing:
 				con = connection
 				cur = con.cursor()
 			
-			symbol = (pn,)
-			cur.execute('SELECT * FROM listings WHERE manufacturer_pn=?', symbol)
+			params = (pn,)
+			cur.execute('SELECT * FROM listings WHERE manufacturer_pn=?', params)
 			for row in cur.fetchall():
 				listings.append(Listing.new_from_row(row, wspace, con))
 			
@@ -168,15 +168,15 @@ class Listing:
 			
 			cur.execute('DELETE FROM pricebreaks WHERE pn=?', (self.vendor_pn,))
 			for pb in self.prices.items():
-				t = (self.vendor_pn, pb[0], pb[1],)
-				cur.execute('INSERT OR REPLACE INTO pricebreaks VALUES (NULL,?,?,?)', t)
+				params = (self.vendor_pn, pb[0], pb[1],)
+				cur.execute('INSERT OR REPLACE INTO pricebreaks VALUES (NULL,?,?,?)', params)
 			
-			symbol = (self.vendor, self.vendor_pn, self.manufacturer_pn, self.inventory, self.packaging,
+			params = (self.vendor, self.vendor_pn, self.manufacturer_pn, self.inventory, self.packaging,
 					self.reel_fee, self.category, self.family, self.series, self.vendor_pn,)
 			cur.execute('''UPDATE listings 
 			SET vendor=?, vendor_pn=?, self.manufacturer_pn=?, inventory=?, packaging=?, reelfee=?, 
 			category=?, family=?, series=? 
-			WHERE vendor_pn=?''', symbol)
+			WHERE vendor_pn=?''', params)
 			
 		finally:
 			cur.close()
@@ -192,14 +192,14 @@ class Listing:
 				con = connection
 				cur = con.cursor()
 			
-			symbol = (self.vendor, self.vendor_pn, self.manufacturer_pn, self.inventory, self.packaging,
+			params = (self.vendor, self.vendor_pn, self.manufacturer_pn, self.inventory, self.packaging,
 					self.reel_fee, self.category, self.family, self.series,)
-			cur.execute('INSERT OR REPLACE INTO listings VALUES (?,?,?,?,?,?,?,?,?)', symbol)
+			cur.execute('INSERT OR REPLACE INTO listings VALUES (?,?,?,?,?,?,?,?,?)', params)
 			
 			cur.execute('DELETE FROM pricebreaks WHERE pn=?', (self.vendor_pn,))
 			for pb in self.prices.items():
-				t = (self.vendor_pn, pb[0], pb[1],)
-				cur.execute('INSERT OR REPLACE INTO pricebreaks VALUES (NULL,?,?,?)', t)
+				params = (self.vendor_pn, pb[0], pb[1],)
+				cur.execute('INSERT OR REPLACE INTO pricebreaks VALUES (NULL,?,?,?)', params)
 		finally:
 			cur.close()
 			if connection is None:
@@ -214,9 +214,9 @@ class Listing:
 				con = connection
 				cur = con.cursor()
 			
-			symbol = (self.vendor_pn,)
-			cur.execute('DELETE FROM pricebreaks WHERE pn=?', symbol)
-			cur.execute('DELETE FROM listings WHERE vendor_pn=?', symbol)
+			params = (self.vendor_pn,)
+			cur.execute('DELETE FROM pricebreaks WHERE pn=?', params)
+			cur.execute('DELETE FROM listings WHERE vendor_pn=?', params)
 			
 		finally:
 			cur.close()
@@ -235,8 +235,8 @@ class Listing:
 				con = connection
 				cur = con.cursor()
 			
-			symbol = (self.vendor_pn,)
-			cur.execute('SELECT qty, unit FROM pricebreaks WHERE pn=? ORDER BY qty', symbol)
+			params = (self.vendor_pn,)
+			cur.execute('SELECT qty, unit FROM pricebreaks WHERE pn=? ORDER BY qty', params)
 			for row in cur.fetchall():
 				self.prices[row[0]] = row[1]
 
@@ -310,8 +310,8 @@ class Product:
 				con = connection
 				cur = con.cursor()
 			
-			symbol = (pn,)
-			cur.execute('SELECT * FROM products WHERE manufacturer_pn=?', symbol)
+			params = (pn,)
+			cur.execute('SELECT * FROM products WHERE manufacturer_pn=?', params)
 			for row in cur.fetchall():
 				prods.append(Product.new_from_row(row, wspace, con))
 			
@@ -376,11 +376,11 @@ class Product:
 				con = connection
 				cur = con.cursor()
 			
-			symbol = (self.manufacturer, self.manufacturer_pn, self.datasheet, self.description, 
+			params = (self.manufacturer, self.manufacturer_pn, self.datasheet, self.description, 
 					self.package, self.manufacturer_pn,)
 			cur.execute('''UPDATE products 
 			SET manufacturer=?, manufacturer_pn=?, datasheet=?, description=?, package=? 
-			WHERE manufacturer_pn=?''', symbol)
+			WHERE manufacturer_pn=?''', params)
 			
 		finally:
 			cur.close()
@@ -396,8 +396,8 @@ class Product:
 				con = connection
 				cur = con.cursor()
 			
-			symbol = (self.manufacturer, self.manufacturer_pn, self.datasheet, self.description, self.package,)
-			cur.execute('INSERT OR REPLACE INTO products VALUES (?,?,?,?,?)', symbol)
+			params = (self.manufacturer, self.manufacturer_pn, self.datasheet, self.description, self.package,)
+			cur.execute('INSERT OR REPLACE INTO products VALUES (?,?,?,?,?)', params)
 				
 		finally:
 			cur.close()
@@ -413,8 +413,8 @@ class Product:
 				con = connection
 				cur = con.cursor()
 			
-			symbol = (self.manufacturer_pn,)
-			cur.execute('DELETE FROM products WHERE manufacturer_pn=?', symbol)
+			params = (self.manufacturer_pn,)
+			cur.execute('DELETE FROM products WHERE manufacturer_pn=?', params)
 			
 		finally:
 			cur.close()
@@ -432,8 +432,8 @@ class Product:
 				con = connection
 				cur = con.cursor()
 			
-			symbol = (self.manufacturer_pn,)
-			cur.execute('SELECT * FROM listings WHERE manufacturer_pn=? ORDER BY vendor', symbol)
+			params = (self.manufacturer_pn,)
+			cur.execute('SELECT * FROM listings WHERE manufacturer_pn=? ORDER BY vendor', params)
 			for row in cur.fetchall():
 				listing = Listing.new_from_row(row, wspace, con)
 				self.listings[listing.key()] = listing
