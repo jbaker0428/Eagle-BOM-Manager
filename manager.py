@@ -424,6 +424,18 @@ class Manager(gobject.GObject):
 			else:
 				self.set_part_info_labels(self.selected_bom_part.product)
 			con.close()
+			
+	def bom_find_prod_callback(self, widget, data=None):
+		''' Calls bom.product_updater on selected part. '''
+		con = wspace.connection()
+		self.selected_bom_part.product_updater(wspace, con)
+		if self.bom_group_name.get_active():
+			self.bom_store_populate_by_name(con)
+		elif self.bom_group_value.get_active():
+			self.bom_store_populate_by_value(con)
+		elif self.bom_group_product.get_active():
+			self.bom_store_populate_by_product(con)
+		con.close()
 	
 	def part_info_scrape_button_callback(self, widget):
 		''' Part info frame "Refresh" button callback. '''
@@ -752,6 +764,7 @@ class Manager(gobject.GObject):
 		self.bom_read_input_button = gtk.ToolButton(None, "Read CSV")
 		self.bom_read_db_button = gtk.ToolButton(None, "Read DB")
 		self.bom_edit_part_button = gtk.ToolButton(None, "Edit Part")
+		self.bom_find_prod_button = gtk.ToolButton(None, "Find Product")
 		self.bom_hpane = gtk.HPaned()	
 		self.bom_vpane = gtk.VPaned()	# Goes in right side of bom_hpane
 		
@@ -990,6 +1003,7 @@ class Manager(gobject.GObject):
 		self.bom_read_input_button.connect("clicked", self.read_input_callback, "read")
 		self.bom_read_db_button.connect("clicked", self.bom_read_db_callback, "read")
 		self.bom_edit_part_button.connect("clicked", self.bom_edit_part_callback, "setPN")
+		self.bom_find_prod_button.connect("clicked", self.bom_find_prod_callback, "findprod")
 		
 		self.bom_scroll_win.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
 		
@@ -1157,6 +1171,7 @@ class Manager(gobject.GObject):
 		self.bom_toolbar.insert(self.bom_read_input_button, 0)
 		self.bom_toolbar.insert(self.bom_read_db_button, 1)
 		self.bom_toolbar.insert(self.bom_edit_part_button, 2)
+		self.bom_toolbar.insert(self.bom_find_prod_button, 3)
 		
 		# TODO : Add toolbar elements
 		
