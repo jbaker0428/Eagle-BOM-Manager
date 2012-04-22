@@ -9,13 +9,42 @@ class Part:
 	@staticmethod
 	def new_from_row(row, wspace, connection=None):
 		''' Given a part row from the DB, returns a Part object. '''
-		if row[6] == 'NULL':
+		#print 'new_from_row: row param: ', row
+		if row[6] is None or row[6] == 'NULL' or row[6] == '':
 			product = None
+			#print 'new_from_row: setting no product'
 		else:
 			product = Product.select_by_pn(row[6], wspace, connection)[0]
+			#print 'new_from_row: product results: ', product
 		part = Part(row[0], row[1], row[2], row[3], row[4], row[5], product)
 		part.fetch_attributes(wspace, connection)
+		#print 'new_from_row returning part: ', part.show()
 		return part
+	
+	@staticmethod
+	def select_all(wspace, connection=None):
+		''' Returns the entire parts table. '''
+		print 'Entered Part.select_all'
+		parts = []
+		try:
+			if connection is None:
+				(con, cur) = wspace.con_cursor()
+			else:
+				con = connection
+				cur = con.cursor()
+			cur.execute('SELECT * FROM parts')
+			rows = cur.fetchall()
+			print 'Rows: ', type(rows), rows
+			for row in rows:
+				part = Part.new_from_row(row, wspace, con)
+				print 'Appending part: ', part.show()
+				parts.append(part)
+		
+		finally:
+			cur.close()
+			if connection is None:
+				con.close()
+			return parts
 	
 	@staticmethod
 	def select_by_name(name, wspace, project='*', connection=None):

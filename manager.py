@@ -512,7 +512,15 @@ class Manager(gobject.GObject):
 		else:
 			con = connection
 		for p in self.active_bom.parts:
-			temp = self.active_bom.select_parts_by_name(p[0], wspace, con)[0]
+			try:
+				temp = self.active_bom.select_parts_by_name(p[0], wspace, con)[0]
+			except IndexError:
+				print 'IndexError:'
+				print 'bom.parts: ', self.active_bom.parts
+				print 'p: ', p
+				print 'p[0]:', p[0]
+				#print 'Trying Part.select_all():', Part.select_all(wspace, con)
+			#print 'Temp: ', type(temp), temp
 			if temp.product is None:
 				iter = self.bom_store.append([temp.name, temp.value, temp.device, temp.package, temp.description, '', 1])
 			else:
