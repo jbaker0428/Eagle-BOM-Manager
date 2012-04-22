@@ -176,7 +176,7 @@ class BOM:
 	def get_cost(self, wspace, run_size=1, connection=None):
 		''' Get the total project BOM cost and unit price for a given production run size.
 		Returns a pair (unit_price, total_cost).'''
-		self.set_prod_counts(wspace)
+		self.set_prod_counts(wspace, connection)
 		project_prod_counts = self.prod_counts.copy()
 		unit_price = 0
 		total_cost = 0
@@ -191,7 +191,7 @@ class BOM:
 			if x[0] == 'NULL':
 				pass
 			else:
-				prod = Product.select_by_pn(x[0], wspace)[0]
+				prod = Product.select_by_pn(x[0], wspace, connection)[0]
 				listing = prod.best_listing(project_prod_counts[x[0]])
 				price_break = listing.get_price_break(x[1])
 				unit_price += (price_break[1] * self.prod_counts[x[0]]) + listing.reel_fee
@@ -232,6 +232,8 @@ class BOM:
 			return new_parts
 		
 	def read_from_file(self, wspace, connection=None):
+		''' Parses a BOM spreadsheet in CSV format and writes it to the DB.
+		Passing an open connection to this method is HIGHLY recommended.  '''
 		print "BOM.read_from_file"
 		# Clear self.parts
 		del self.parts[:]
@@ -286,7 +288,7 @@ class BOM:
 						else:
 							part = Part(row[name_col], self.name, row[val_col], row[dev_col], row[pkg_col], row[desc_col], row[prod_col], row_attribs)
 						
-						part.product_updater(wspace)
+						part.product_updater(wspace, connection)
 						self.parts.append([part.name, part.value, part.product])
 					rownum += 1
 					
@@ -303,7 +305,7 @@ class BOM:
 						part = Part(row[0], self.name, row[1], row[2], row[3], row[4])
 				#print 'Got part from CSV: '
 				#part.show() 
-				part.product_updater(wspace)
+				part.product_updater(wspace, connection)
 				self.parts.append([part.name, part.value, part.product])
 				
 		#print "Parts list: ", self.parts

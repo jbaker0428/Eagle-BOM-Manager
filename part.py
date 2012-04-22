@@ -10,7 +10,7 @@ class Part:
 	def new_from_row(row, wspace, connection=None):
 		''' Given a part row from the DB, returns a Part object. '''
 		part = Part(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
-		part.fetch_attributes(wspace)
+		part.fetch_attributes(wspace, connection)
 		return part
 	
 	@staticmethod
@@ -225,13 +225,13 @@ class Part:
 		products = set()
 		for part in proj_parts:
 			if part.product != 'NULL':
-				db_prods = Product.select_by_pn(part.product, wspace)
+				db_prods = Product.select_by_pn(part.product, wspace, connection)
 				for prod in db_prods:
 					products.add(prod)
 		
 		for part in wspace_parts:
 			if part.product != 'NULL':
-				db_prods = Product.select_by_pn(part.product, wspace)
+				db_prods = Product.select_by_pn(part.product, wspace, connection)
 				for prod in db_prods:
 					products.add(prod)
 	
@@ -239,7 +239,7 @@ class Part:
 	
 	def is_in_db(self, wspace, connection=None):
 		''' Check if a BOM self of this name is in the project's database. '''
-		result = Part.select_by_name(self.name, wspace, self.project)
+		result = Part.select_by_name(self.name, wspace, self.project, connection)
 		if len(result) == 0:
 			return False
 		else:
@@ -250,10 +250,11 @@ class Part:
 		Inserts/updates self into DB depending on:
 		- The presence of a matching Part in the DB
 		- The value of self.product
-		- The product of the matching Part in the DB '''
-		if(self.is_in_db(wspace)):
+		- The product of the matching Part in the DB
+		Passing an open connection to this method is recommended. '''
+		if(self.is_in_db(wspace, connection)):
 			print "Part of same name already in DB"
-			old_part = Part.select_by_name(self.name, wspace, self.project)[0]
+			old_part = Part.select_by_name(self.name, wspace, self.project, connection)[0]
 			#old_part.show()
 			if(self.value == old_part.value and self.device == old_part.device and self.package == old_part.package):
 				if self.product != 'NULL':
@@ -261,32 +262,32 @@ class Part:
 						# TODO: prompt? Defaulting to old_part.product for now (aka do nothing)
 						print 'Matching CSV and DB parts with non-NULL product mismatch, keeping DB version...'
 					elif old_part.product == 'NULL':
-						self.update(wspace)
+						self.update(wspace, connection)
 				elif self.product == 'NULL':
 					if old_part.product != 'NULL':
 						pass	# Do nothing in this case
 					elif old_part.product == 'NULL':
-						(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace)
-						candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts)
+						(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, connection)
+						candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts, connection)
 						if len(candidate_products) == 0:
 							#print 'No matching products found, nothing to do'
 							pass
 						elif len(candidate_products) == 1:
 							self.product = candidate_products[0].manufacturer_pn
 							print 'Found exactly one matching product, setting product and updating', #self.show()
-							self.update(wspace)
+							self.update(wspace, connection)
 						else:
 							print 'Found multiple product matches, prompting for selection...'
 							# TODO: Currently going with first result, need to prompt for selection
 							self.product = candidate_products[0].manufacturer_pn
-							self.update(wspace)
+							self.update(wspace, connection)
 						
 			else:	# Value/device/package mismatch
 				if self.product != 'NULL':
-					self.update(wspace)
+					self.update(wspace, connection)
 				elif self.product == 'NULL':
-					(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace)
-					candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts)
+					(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, connection)
+					candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts, connection)
 					if len(candidate_products) == 0:
 						print 'No matching products found, updating as-is'
 					elif len(candidate_products) == 1:
@@ -296,13 +297,13 @@ class Part:
 						print 'Found multiple product matches, prompting for selection...'
 						# TODO: Currently going with first result, need to prompt for selection
 						self.product = candidate_products[0].manufacturer_pn
-					self.update(wspace)
+					self.update(wspace, connection)
 		
 		else:
 			print 'Part not in DB'
 			if self.product == 'NULL':
-				(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace)
-				candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts)
+				(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, connection)
+				candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts, connection)
 				if len(candidate_products) == 0:
 					print 'No matching products found, inserting as-is'#, self.show()
 				elif len(candidate_products) == 1:
@@ -314,9 +315,9 @@ class Part:
 					self.product = candidate_products[0].manufacturer_pn
 			else:
 				newprod = Product('NULL', self.product)
-				newprod.insert(wspace)
-				newprod.scrape(wspace)
-			self.insert(wspace)
+				newprod.insert(wspace, connection)
+				newprod.scrape(wspace, connection)
+			self.insert(wspace, connection)
 		
 	def update(self, wspace, connection=None):
 		''' Update an existing Part record in the DB. '''
@@ -331,7 +332,7 @@ class Part:
 			params = (self.name, self.project, self.value, self.device, self.package,  
 					self.description, self.product, self.name, self.project,)
 			cur.execute(sql, params)
-			self.write_attributes(wspace)
+			self.write_attributes(wspace, con)
 			
 		finally:
 			cur.close()
@@ -351,7 +352,7 @@ class Part:
 			params = (self.name, self.project, self.value, self.device, self.package,  
 					self.description, self.product,)
 			cur.execute(sql, params)
-			self.write_attributes(wspace)
+			self.write_attributes(wspace, con)
 			
 		finally:
 			cur.close()

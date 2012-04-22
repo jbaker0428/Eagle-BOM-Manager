@@ -46,7 +46,7 @@ class Listing:
 	def new_from_row(row, wspace, connection=None):
 		''' Given a listing row from the DB, returns a Listing object. '''
 		listing = Listing(row[0], row[1], row[2], {}, row[3], row[4], row[5], row[6], row[7], row[8])
-		listing.fetch_price_breaks(wspace)
+		listing.fetch_price_breaks(wspace, connection)
 		return listing
 		
 	@staticmethod
@@ -657,34 +657,35 @@ class Product:
 		if VENDOR_SFE_EN:
 			self.scrape_sfe()
 		
-		print 'Writing the following Product to DB: \n'
+		#print 'Writing the following Product to DB: \n'
 		#self.show()
-		if self.is_in_db(wspace):
-			self.update(wspace)
+		if self.is_in_db(wspace, connection):
+			self.update(wspace, connection)
 		else:
-			self.insert(wspace)
+			self.insert(wspace, connection)
 		for listing in self.listings.values():
-			listing.insert(wspace)
+			listing.insert(wspace, connection)
 				
 
 	def is_in_db(self, wspace, connection=None):
 		''' Check if this Product is in the database. '''
-		result = Product.select_by_pn(self.manufacturer_pn, wspace)
+		result = Product.select_by_pn(self.manufacturer_pn, wspace, connection)
 		if len(result) == 0:
 			return False
 		else:
 			return True
 
-	''' Sets the product fields, pulling from the local DB if possible.'''	
 	def select_or_scrape(self, wspace, connection=None):
-		if(self.is_in_db(wspace)):
-			temp = Product.select_by_pn(self.manufacturer_pn, wspace)[0]
+		''' Sets the product fields, pulling from the local DB if possible.
+		Passing an open connection to this method is recommended. '''	
+		if(self.is_in_db(wspace, connection)):
+			temp = Product.select_by_pn(self.manufacturer_pn, wspace, connection)[0]
 			self.manufacturer = temp.manufacturer
 			self.manufacturer_pn = temp.manufacturer_pn
 			self.datasheet = temp.datasheet
 			self.description = temp.description
 			self.package = temp.package
-			self.fetch_listings(wspace)
+			self.fetch_listings(wspace, connection)
 		elif self.manufacturer_pn != 'none' and self.manufacturer_pn != 'NULL':
-			self.scrape(wspace)
+			self.scrape(wspace, connection)
 
