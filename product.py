@@ -557,14 +557,14 @@ class Product:
 			# Get prices
 			prices = {}
 			price_table = soup.body('table', id="pricing")
-			print 'price_table: ', type(price_table), price_table
+			#print 'price_table: ', type(price_table), price_table
 			if len(price_table) == 0:
 				raise ScrapeException(VENDOR_DK, self.manufacturer_pn, 4)
 			# price_table.contents[x] should be the tr tags...
 			for tag in price_table:
-				print 'tag: ', type(tag), tag
+				#print 'tag: ', type(tag), tag
 				for row in tag:
-					print 'row: ', type(row), row
+					#print 'row: ', type(row), row
 					# row.contents should be td Tags... except the first!
 					if row == '\n':
 						pass
@@ -584,7 +584,7 @@ class Product:
 					
 			# Get inventory
 			# If the item is out of stock, the <td> that normally holds the
-			# quantity available will have a error input box that we need to
+			# quantity available will have a text input box that we need to
 			# watch out for
 			inv_soup = soup.body('td', id="quantityavailable")
 			#print 'inv_soup: ', type(inv_soup), inv_soup
@@ -600,15 +600,15 @@ class Product:
 				inventory = int(inv_str)
 				print 'inventory: ', type(inventory), inventory
 			
-			vendor_pn = soup.body('th', error="Digi-Key Part Number")[0].parent.nextSibling.contents[0].string.__str__()
+			vendor_pn = soup.body("th", text="Digi-Key Part Number")[0].parent.nextSibling.contents[0].string.__str__()
 			# Get manufacturer and PN
-			self.manufacturer = soup.body('th', error="Manufacturer")[0].parent.nextSibling.contents[0].string.__str__()
+			self.manufacturer = soup.body('th', text="Manufacturer")[0].parent.nextSibling.contents[0].string.__str__()
 			#print "manufacturer is: %s" % self.manufacturer
-			self.manufacturer_pn = soup.body('th', error="Manufacturer Part Number")[0].parent.nextSibling.contents[0].string.__str__()
+			self.manufacturer_pn = soup.body('th', text="Manufacturer Part Number")[0].parent.nextSibling.contents[0].string.__str__()
 			#print "manufacturer_pn is: %s" % self.manufacturer_pn
 			
 			# Get datasheet filename and download
-			datasheet_soup = soup.body('th', error="Datasheets")[0].parent.nextSibling
+			datasheet_soup = soup.body('th', text="Datasheets")[0].parent.nextSibling
 			datasheet_anchor = datasheet_soup.findAllNext('a')[0]
 			#print "datasheet_soup is: %s" % datasheet_soup
 			#print "datasheet_anchor is: %s" % datasheet_anchor
@@ -627,22 +627,22 @@ class Product:
 				row.close()
 			#print "datasheet is: %s" % self.datasheet
 			# Get remaining strings (desc, category, family, series, package)
-			self.description = soup.body('th', error="Description")[0].parent.nextSibling.contents[0].string.__str__()
+			self.description = soup.body('th', text="Description")[0].parent.nextSibling.contents[0].string.__str__()
 			#print "description is: %s" % self.description
-			category = soup.body('th', error="Category")[0].parent.nextSibling.contents[0].string.__str__()
+			category = soup.body('th', text="Category")[0].parent.nextSibling.contents[0].string.__str__()
 			#print "category is: %s" % category
-			family = soup.body('th', error="Family")[0].parent.nextSibling.contents[0].string.__str__()
+			family = soup.body('th', text="Family")[0].parent.nextSibling.contents[0].string.__str__()
 			#print "family is: %s" % family
-			series = soup.body('th', error="Series")[0].parent.nextSibling.contents[0].string.__str__()
+			series = soup.body('th', text="Series")[0].parent.nextSibling.contents[0].string.__str__()
 			#print "series is: %s" % series
-			self.package = soup.body('th', error="Package / Case")[0].parent.nextSibling.contents[0].string.__str__()
+			self.package = soup.body('th', text="Package / Case")[0].parent.nextSibling.contents[0].string.__str__()
 			#print "package is: %s" % self.package
 			
-			packaging_soup = soup.body('th', error="Packaging")[0].parent.parent.nextSibling.contents[0]
+			packaging_soup = soup.body('th', text="Packaging")[0].parent.parent.nextSibling.contents[0]
 			#print "packaging_soup: ", type(packaging_soup), packaging_soup
 			if type(packaging_soup) == NavigableString:
 				packaging = packaging_soup.string.__str__()
-				print "packaging (from error): ", type(packaging), packaging
+				print "packaging (from text): ", type(packaging), packaging
 			elif type(packaging_soup) == Tag:
 				packaging = packaging_soup.contents[0].string.__str__()
 				print "packaging (from link): ", type(packaging), packaging
