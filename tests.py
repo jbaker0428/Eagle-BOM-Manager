@@ -42,6 +42,7 @@ class DatabaseTestCase(unittest.TestCase):
 			assert 'listings' in tables
 			assert 'projects' in tables
 			assert 'pricebreaks' in tables
+			assert 'preferred_listings' in tables
 			
 			self.test_BOM = BOM.new_project('dbtests', 'Databse Unit tests', '', self.wspace, con)
 			self.wspace.projects = self.wspace.list_projects(con)
@@ -129,6 +130,7 @@ class DatabaseTestCase(unittest.TestCase):
 			assert 'listings' in tables
 			assert 'projects' in tables
 			assert 'pricebreaks' in tables
+			assert 'preferred_listings' in tables
 			assert 'dbtests' not in tables
 		finally:
 			cur.close()
