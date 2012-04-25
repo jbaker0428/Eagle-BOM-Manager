@@ -541,7 +541,7 @@ class Product:
 			else:
 				con = connection
 				cur = con.cursor()
-			if len(self.get_preferred_listing(project, wspace, con)) == 0:
+			if self.get_preferred_listing(project, wspace, con) is not None:
 				params = (project.name, self.manufacturer_pn, listing.vendor_pn,)
 				cur.execute('INSERT INTO preferred_listings VALUES (NULL,?,?,?)', params) 
 			else:
