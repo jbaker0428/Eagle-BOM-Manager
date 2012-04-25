@@ -125,8 +125,23 @@ wspace.projects = wspace.list_projects()
 
 #active_project_name = 'test1'
 input_file = os.path.join(os.getcwd(), "test.csv")	# TODO: Test dummy
-
 #active_bom = BOM("test1", 'Test BOM 1', wspace, os.path.join(os.getcwd(), "test.csv"))
+
+def set_combo(combo_box, iter_text):
+	'''Sets the active index of a gtk.ComboBox to the index with given string.
+	iter_text must be an exact match to the string in combo_box.get_model().
+	Returns True if the desired row was found and activated.'''
+	model = combo_box.get_model()
+	iter = model.get_iter_root()
+	success = False
+	while iter is not None and success is False:
+		model_text = model.get_value(iter, 0)
+		if iter_text == model_text:
+			success = True 
+			combo_box.set_active_iter(iter)
+		else:
+			iter = model.iter_next(iter)
+	return success
 
 class Manager(gobject.GObject):
 	'''Main GUI class'''
@@ -241,12 +256,12 @@ class Manager(gobject.GObject):
 		self.selected_bom_part = self.active_bom.select_parts_by_name(model.get(row_iter,0)[0], wspace, con)[0]
 		# Grab the vendor part number for the selected item from the label text
 		selected_pn = model.get(row_iter,5)[0]
-		print "selected_pn is: %s" % selected_pn
-		if selected_pn != 'NULL' and selected_pn != '': # Look up part in DB
+		#print "selected_pn is: %s" % selected_pn
+		if selected_pn is not None and selected_pn != 'NULL' and selected_pn != '': # Look up part in DB
 			self.part_info_datasheet_button.set_sensitive(True)
 			self.part_info_scrape_button.set_sensitive(True)
 			# Set class field for currently selected product
-			print "Querying with selected_pn: %s" % selected_pn
+			#rint "Querying with selected_pn: %s" % selected_pn
 			if len(self.selected_bom_part.product.listings) == 0:
 				self.selected_bom_part.product.scrape(wspace, con)
 			#self.selected_bom_part.product.show()
@@ -255,6 +270,11 @@ class Manager(gobject.GObject):
 			self.destroy_part_price_labels()
 			#print 'self.selected_bom_part.product.listings: \n', self.selected_bom_part.product.listings
 			if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
+				#Set the active Listing selection if one has been set
+				assert len(self.selected_bom_part.product.listings.keys()) > 0
+				preferred_listing = self.selected_bom_part.product.get_preferred_listing(self.active_bom, wspace, con)
+				if preferred_listing is not None:
+					set_combo(self.part_info_listing_combo, preferred_listing.key())
 				self.set_part_price_labels(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()])
 		else:
 			self.part_info_datasheet_button.set_sensitive(False)
@@ -468,6 +488,7 @@ class Manager(gobject.GObject):
 			self.part_info_inventory_content_label.set_text(str(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()].inventory))
 	
 	def part_info_set_listing_button_callback(self, widget, data=None):
+		print 'Set preferred listing callback'
 		if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
 			self.selected_bom_part.product.set_preferred_listing(self.active_bom, self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()], wspace)
 	
@@ -645,7 +666,7 @@ class Manager(gobject.GObject):
 	def set_part_info_listing_combo(self, prod=None):
 		''' Populates self.part_info_listing_combo with listings
 		for the selected Product. '''
-		print 'Setting Listing combo...'
+		#print 'Setting Listing combo...'
 		self.part_info_listing_combo.get_model().clear()
 		
 		if type(prod) is not types.NoneType and prod.manufacturer_pn != 'NULL':
@@ -659,22 +680,6 @@ class Manager(gobject.GObject):
 		# If the user has not chosen one, that defaults to prod.best_listing
 		self.part_info_listing_combo.set_active(0)
 		self.part_info_vbox.show_all()
-	
-	def set_combo(combo_box, iter_text):
-		'''Sets the active index of a gtk.ComboBox to the index with given string.
-		iter_text must be an exact match to the string in combo_box.get_model().
-		Returns True if the desired row was found and activated.'''
-		model = combo_box.get_model()
-		iter = model.get_iter_root()
-		success = False
-		while iter is not None and success is False:
-			model_text = model.get_value(iter, 0)
-			if iter_text == model_text:
-				success = True 
-				combo_box.set_active_iter(iter)
-			else:
-				iter = model.iter_next(iter)
-		return success
 	
 	def destroy_part_price_labels(self):
 		for r in self.price_break_labels:
