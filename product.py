@@ -211,7 +211,7 @@ class Listing:
 			params = (self.source, self.vendor_pn, self.manufacturer_pn, self.inventory, self.packaging,
 					self.reel_fee, self.category, self.family, self.series, self.vendor_pn,)
 			cur.execute('''UPDATE listings 
-			SET source=?, vendor_pn=?, manufacturer_pn=?, inventory=?, packaging=?, reelfee=?, 
+			SET vendor=?, vendor_pn=?, manufacturer_pn=?, inventory=?, packaging=?, reelfee=?, 
 			category=?, family=?, series=? 
 			WHERE vendor_pn=?''', params)
 			
