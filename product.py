@@ -524,8 +524,9 @@ class Product:
 				cur = con.cursor()
 			params = (project.name, self.manufacturer_pn,)
 			cur.execute('SELECT listing FROM preferred_listings WHERE project=? AND product=?', params)
-			if row != None:
-				listing = Listing.select_by_vendor_pn(row[0], wspace, con)
+			row = cur.fetchone()
+			if row is not None:
+				listing = Listing.select_by_vendor_pn(row[0], wspace, con)[0]
 			
 		finally:
 			cur.close()
@@ -541,7 +542,8 @@ class Product:
 			else:
 				con = connection
 				cur = con.cursor()
-			if self.get_preferred_listing(project, wspace, con) is not None:
+			current_listing = self.get_preferred_listing(project, wspace, con)
+			if current_listing is None:
 				params = (project.name, self.manufacturer_pn, listing.vendor_pn,)
 				cur.execute('INSERT INTO preferred_listings VALUES (NULL,?,?,?)', params) 
 			else:

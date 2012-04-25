@@ -53,6 +53,16 @@ class DatabaseTestCase(unittest.TestCase):
 			self.test_listing_ct.insert(self.wspace, con)
 			self.test_listing_tr.insert(self.wspace, con)
 			self.test_listing_dr.insert(self.wspace, con)
+			preferred_listing = self.test_product.get_preferred_listing(self.test_BOM, self.wspace, con)
+			assert preferred_listing is None
+			self.test_product.set_preferred_listing(self.test_BOM, self.test_listing_ct, self.wspace, con)
+			preferred_listing = self.test_product.get_preferred_listing(self.test_BOM, self.wspace, con)
+			assert preferred_listing is not None
+			assert preferred_listing.key() == self.test_listing_ct.key()
+			self.test_product.set_preferred_listing(self.test_BOM, self.test_listing_dr, self.wspace, con)
+			preferred_listing = self.test_product.get_preferred_listing(self.test_BOM, self.wspace, con)
+			assert preferred_listing is not None
+			assert preferred_listing.key() == self.test_listing_dr.key()
 			self.test_part.insert(self.wspace, con)
 			
 			# Product.select_by_pn fetches listings for the product, and fetch_listings fetches the price dicts
