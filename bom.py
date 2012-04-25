@@ -312,7 +312,10 @@ class BOM:
 							if prod is not None and len(prod) > 0:
 								part = Part(row[0], self.name, row[1], row[2], row[3], row[4], prod[0])
 							else:
-								part = Part(row[0], self.name, row[1], row[2], row[3], row[4], None)
+								new_prod = Product('NULL', row[5])
+								new_prod.insert(wspace, connection)
+								new_prod.scrape(wspace, connection)
+								part = Part(row[0], self.name, row[1], row[2], row[3], row[4], new_prod)
 						else:
 							part = Part(row[0], self.name, row[1], row[2], row[3], row[4], None)
 					else:
