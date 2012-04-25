@@ -8,7 +8,7 @@ class EagleManagerTestCase(unittest.TestCase):
 		from product import *
 		from part import Part
 		
-		self.wspace = Workspace('DB Tests', os.path.join(os.getcwd(), 'dbtests.sqlite'))
+		self.wspace = Workspace('DB Tests', os.path.join(os.getcwd(), 'testfixtures', 'dbtests.sqlite'))
 		self.test_product = Product('TDK Corporation', 'C1608X5R1E105K', 'general_B11.pdf', 'CAP CER 1UF 25V 10% X5R 0603', '0603 (1608 Metric)')
 		self.prices_ct = dict({10 : 0.09000, 100 : 0.04280, 250 : 0.03600, 500 : 0.03016, 1000 : 0.02475})
 		self.prices_tr = dict({4000 : 0.01935, 8000 : 0.01800, 12000 : 0.01710, 280000 : 0.01620, 100000 : 0.01227})
@@ -21,10 +21,11 @@ class EagleManagerTestCase(unittest.TestCase):
 		self.test_product.listings[self.test_listing_dr.key()] = self.test_listing_dr
 		self.part_attribs = dict({'TOL' : '10%', 'VOLT' : '25V', 'TC' : 'X5R'})
 		self.test_part = Part('C1', 'dbtests', '1uF', 'C-USC0603', 'C0603', 'CAPACITOR, American symbol', self.test_product, self.part_attribs)
-		self.wspace.create_tables()
+		
 		
 	def test_db(self):
 		try:
+			self.wspace.create_tables()
 			from product import Product, Listing
 			from part import Part
 			from bom import BOM
@@ -138,11 +139,18 @@ class EagleManagerTestCase(unittest.TestCase):
 	
 	def test_csv(self):
 		try:
+			other_wspace = Workspace('DB Tests 2', os.path.join(os.getcwd(), 'testfixtures', 'dbtests2.sqlite'))
+			other_wspace.create_tables()
+			self.wspace.create_tables()
 			from product import Product, Listing
 			from part import Part
 			from bom import BOM
 			
+			other_con = other_wspace.connection()
 			(con, cur) = self.wspace.con_cursor()
+			test_c5_prod = Product('TDK Corporation', 'C1005X5R1V104K', 'general_B11.pdf', 'CAP CER 0.1UF 35V 10% X5R 0402', '0402 (1005 Metric)')
+			test_c5_prod.scrape(other_wspace, other_con)	# Don't want to add this to the main test DB
+			test_c5 = Part('C5', '', '0.1uF', 'C-USC0402', 'C0402', 'CAPACITOR, American symbol', test_c5_prod)
 			
 			test1_csv = os.path.join(os.getcwd(), 'testfixtures', "test1.csv")
 			test2_csv = os.path.join(os.getcwd(), 'testfixtures', "test2.csv")
@@ -158,23 +166,51 @@ class EagleManagerTestCase(unittest.TestCase):
 			self.wspace.projects = self.wspace.list_projects()
 			assert len(self.wspace.projects) == 3
 			
+			
 			test1_bom.read_from_file(self.wspace, con)
 			assert len(test1_bom.parts) == 6
+			test1_c5_query =  test1_bom.select_parts_by_name('C5', self.wspace, con)
+			assert len(test1_c5_query) == 1
+			test1_c5 = test1_c5_query[0]
+			assert test1_c5.product.equals(test_c5_prod)
 			
 			test2_bom.read_from_file(self.wspace, con)
 			assert len(test2_bom.parts) == 6
+			test2_c5_query =  test2_bom.select_parts_by_name('C5', self.wspace, con)
+			assert len(test2_c5_query) == 1
+			test2_c5 = test2_c5_query[0]
+			assert test2_c5.product.equals(test_c5_prod)
+			
+			assert test1_bom.parts == test2_bom.parts
 			
 			test3_bom.read_from_file(self.wspace, con)
 			assert len(test3_bom.parts) == 382
+			test3_c5_query =  test3_bom.select_parts_by_name('C5', self.wspace, con)
+			assert len(test3_c5_query) == 1
+			test3_c5 = test3_c5_query[0]
+			assert test3_c5.product.equals(test_c5_prod)
+			
+			test3_c11_query =  test3_bom.select_parts_by_name('C11', self.wspace, con)
+			assert len(test3_c11_query) == 1
+			test3_c11 = test3_c11_query[0]
+			assert test3_c11.product.equals(test_c5_prod)
+			
+			c5_prod_query = Product.select_by_pn('C1005X5R1V104K', self.wspace, con) 
+			assert len(c5_prod_query) == 1
+			c5_prod = c5_prod_query[0]
+			assert c5_prod.equals(test_c5_prod)
 		
 		finally:
 			cur.close()
 			con.close()
+			other_con.close()
+			del other_wspace
+			os.remove(os.path.join(os.getcwd(), 'testfixtures', 'dbtests2.sqlite'))
 	
 	def tearDown(self):
 		unittest.TestCase.tearDown(self)
 		del self.wspace
-		os.remove(os.path.join(os.getcwd(), 'dbtests.sqlite'))
+		os.remove(os.path.join(os.getcwd(), 'testfixtures', 'dbtests.sqlite'))
 
 if __name__ == '__main__':
 	unittest.main()	
