@@ -150,7 +150,7 @@ class EagleManagerTestCase(unittest.TestCase):
 			(con, cur) = self.wspace.con_cursor()
 			test_c5_prod = Product('TDK Corporation', 'C1005X5R1V104K', 'general_B11.pdf', 'CAP CER 0.1UF 35V 10% X5R 0402', '0402 (1005 Metric)')
 			test_c5_prod.scrape(other_wspace, other_con)	# Don't want to add this to the main test DB
-			test_c5 = Part('C5', '', '0.1uF', 'C-USC0402', 'C0402', 'CAPACITOR, American symbol', test_c5_prod)
+			test_c5 = Part('C5', 'other_proj', '0.1uF', 'C-USC0402', 'C0402', 'CAPACITOR, American symbol', test_c5_prod)
 			
 			test1_csv = os.path.join(os.getcwd(), 'testfixtures', "test1.csv")
 			test2_csv = os.path.join(os.getcwd(), 'testfixtures', "test2.csv")
@@ -172,6 +172,8 @@ class EagleManagerTestCase(unittest.TestCase):
 			test1_c5_query =  test1_bom.select_parts_by_name('C5', self.wspace, con)
 			assert len(test1_c5_query) == 1
 			test1_c5 = test1_c5_query[0]
+			assert test1_c5.equals(test_c5, True, False, True) == True
+			assert test1_c5.equals(test_c5, True, True, True) == False
 			assert test1_c5.product.equals(test_c5_prod)
 			
 			test2_bom.read_from_file(self.wspace, con)
@@ -179,6 +181,8 @@ class EagleManagerTestCase(unittest.TestCase):
 			test2_c5_query =  test2_bom.select_parts_by_name('C5', self.wspace, con)
 			assert len(test2_c5_query) == 1
 			test2_c5 = test2_c5_query[0]
+			assert test2_c5.equals(test_c5, True, False, True) == True
+			assert test2_c5.equals(test_c5, True, True, True) == False
 			assert test2_c5.product.equals(test_c5_prod)
 			
 			assert test1_bom.parts == test2_bom.parts
@@ -188,6 +192,8 @@ class EagleManagerTestCase(unittest.TestCase):
 			test3_c5_query =  test3_bom.select_parts_by_name('C5', self.wspace, con)
 			assert len(test3_c5_query) == 1
 			test3_c5 = test3_c5_query[0]
+			assert test3_c5.equals(test_c5, True, False, True) == True
+			assert test3_c5.equals(test_c5, True, True, True) == False
 			assert test3_c5.product.equals(test_c5_prod)
 			
 			test3_c11_query =  test3_bom.select_parts_by_name('C11', self.wspace, con)
@@ -199,6 +205,21 @@ class EagleManagerTestCase(unittest.TestCase):
 			assert len(c5_prod_query) == 1
 			c5_prod = c5_prod_query[0]
 			assert c5_prod.equals(test_c5_prod)
+			
+			test3_c63_query =  test3_bom.select_parts_by_name('C63', self.wspace, con)
+			assert len(test3_c63_query) == 1
+			test3_c63 = test3_c63_query[0]
+			# C63 has a VOLT = 25V attribute, which C5 does not.
+			assert test3_c63.product is None
+			#						Check:	Attribs, Name, Proj, Prod
+			assert test3_c5.equals(test3_c63, True, False, True, False) == False
+			assert test3_c5.equals(test3_c63, False, False, False, False) == True
+			assert test3_c5.equals(test3_c63, False, False, False, True) == True
+			assert test3_c5.equals(test3_c63, False, False, True, False) == True
+			assert test3_c63.equals(test3_c5, True, False, True, False) == False
+			assert test3_c63.equals(test3_c5, False, False, True, False) == False
+			assert test3_c63.equals(test3_c5, True, False, False, False) == False
+			assert test3_c63.equals(test3_c5, False, False, False, False) == False
 		
 		finally:
 			cur.close()

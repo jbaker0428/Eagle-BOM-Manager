@@ -138,7 +138,7 @@ class Part:
 		for attrib in self.attributes.items():
 			print attrib[0], ': ', attrib[1]
 		
-	def equals(self, p, check_foreign_attribs=True):
+	def equals(self, p, check_foreign_attribs=True, same_name=True, same_project=True, same_product=True):
 		''' Compares the Part to another Part.
 		The check_foreign_attribs argument (default True) controls whether or not
 		p.attributes.keys() is checked for members not in self.attributes.keys().
@@ -146,9 +146,9 @@ class Part:
 		if type(p) != type(self):
 			return False
 		eq = True
-		if self.name != p.name:
+		if same_name is True and self.name != p.name:
 			eq = False
-		elif self.project != p.project:
+		elif same_project is True and self.project != p.project:
 			eq = False
 		elif self.value != p.value:
 			eq = False
@@ -158,7 +158,7 @@ class Part:
 			eq = False
 		elif self.description != p.description:
 			eq = False
-		elif self.product.manufacturer_pn != p.product.manufacturer_pn:
+		elif same_product is True and self.product.manufacturer_pn != p.product.manufacturer_pn:
 			eq = False
 		for k in self.attributes.keys():
 			if self.attributes[k] != "":
