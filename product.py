@@ -491,7 +491,7 @@ class Product:
 				con.close()
 		
 	def best_listing(self, qty):
-		''' Return the Listing listing with the best price for the given order quantity. 
+		''' Return the Listing with the best price for the given order quantity. 
 		
 		If the "enforce minimum quantities" option is checked in the program config,
 		only returns listings where the order quantity meets/exceeds the minimum
@@ -512,6 +512,47 @@ class Product:
 					best = listing
 					print 'Set best listing: ', best.show_brief()
 		return best
+	
+	def get_preferred_listing(self, project, wspace, connection=None):
+		'''Get a project's preferred Listing for this Product. '''
+		try:
+			if connection is None:
+				(con, cur) = wspace.con_cursor()
+			else:
+				con = connection
+				cur = con.cursor()
+			params = (project.name, self.manufacturer_pn,)
+			cur.execute('SELECT listing FROM preferred_listings WHERE project=? AND product=?', params)
+			if row != None:
+				listing = Listing.select_by_vendor_pn(row[0], wspace, con)
+			else:
+				listing = None
+			
+		finally:
+			cur.close()
+			if connection is None:
+				con.close()
+			return listing
+	
+	def set_preferred_listing(self, project, listing, wspace, connection=None):
+		'''Set a project's preferred Listing for this Product. '''
+		try:
+			if connection is None:
+				(con, cur) = wspace.con_cursor()
+			else:
+				con = connection
+				cur = con.cursor()
+			if len(self.get_preferred_listing(project, wspace, con)) == 0:
+				params = (project.name, self.manufacturer_pn, listing.vendor_pn,)
+				cur.execute('INSERT INTO preferred_listings VALUES (NULL,?,?,?)', params) 
+			else:
+				params = (listing.vendor_pn, project.name, self.manufacturer_pn,)
+				cur.execute('UPDATE preferred_listings SET listing=? WHERE project=? AND product=?', params)
+			
+		finally:
+			cur.close()
+			if connection is None:
+				con.close()
 	
 	def in_stock(self):
 		''' Returns true if any Listings have inventory > 0. '''
