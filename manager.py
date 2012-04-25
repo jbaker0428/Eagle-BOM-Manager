@@ -482,8 +482,8 @@ class Manager(gobject.GObject):
 		self.run_total_cost_content_label.set_text('$'+str(total_cost))
 		con.close()
 	
-	''' Clear self.db_product_store and repopulate it. '''
 	def db_store_populate(self):
+		''' Clear self.db_product_store and repopulate it. '''
 		con = wspace.connection()
 		self.db_product_store.clear()
 		prods = Product.select_all(wspace, con)
@@ -492,22 +492,22 @@ class Manager(gobject.GObject):
 		con.close()
 		self.db_tree_view.columns_autosize()
 	
-	'''Callback for the "Read DB" button on the product DB tab.'''
 	def db_read_database_callback(self, widget, data=None):
+		'''Callback for the "Read DB" button on the product DB tab.'''
 		print "Read DB callback"
 		self.db_store_populate()
 	
-	'''Callback method triggered when a product DB item is selected.'''
 	def db_selection_callback(self, widget, data=None):
+		'''Callback method triggered when a product DB item is selected.'''
 		# Set class fields for currently selected item
 		(model, row_iter) = self.db_tree_view.get_selection().get_selected()
 		con = wspace.connection()
 		self.db_selected_product = Product.select_by_pn(model.get(row_iter,1)[0], wspace, con)[0]
 		con.close()
 	
-	'''Callback method activated by clicking a DB column header.
-	Sorts the DB TreeView by the values in the clicked column.'''
 	def db_sort_callback(self, widget):
+		'''Callback method activated by clicking a DB column header.
+		Sorts the DB TreeView by the values in the clicked column.'''
 		widget.set_sort_column_id(0)
 	 
 	# -------- HELPER METHODS --------
