@@ -128,7 +128,6 @@ input_file = os.path.join(os.getcwd(), "test.csv")	# TODO: Test dummy
 
 #active_bom = BOM("test1", 'Test BOM 1', wspace, os.path.join(os.getcwd(), "test.csv"))
 
-
 class Manager(gobject.GObject):
 	'''Main GUI class'''
 	def delete_event(self, widget, event, data=None):
@@ -660,6 +659,22 @@ class Manager(gobject.GObject):
 		# If the user has not chosen one, that defaults to prod.best_listing
 		self.part_info_listing_combo.set_active(0)
 		self.part_info_vbox.show_all()
+	
+	def set_combo(combo_box, iter_text):
+		'''Sets the active index of a gtk.ComboBox to the index with given string.
+		iter_text must be an exact match to the string in combo_box.get_model().
+		Returns True if the desired row was found and activated.'''
+		model = combo_box.get_model()
+		iter = model.get_iter_root()
+		success = False
+		while iter is not None and success is False:
+			model_text = model.get_value(iter, 0)
+			if iter_text == model_text:
+				success = True 
+				combo_box.set_active_iter(iter)
+			else:
+				iter = model.iter_next(iter)
+		return success
 	
 	def destroy_part_price_labels(self):
 		for r in self.price_break_labels:
