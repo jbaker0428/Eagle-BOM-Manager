@@ -516,6 +516,7 @@ class Product:
 	def get_preferred_listing(self, project, wspace, connection=None):
 		'''Get a project's preferred Listing for this Product. '''
 		try:
+			listing = None
 			if connection is None:
 				(con, cur) = wspace.con_cursor()
 			else:
@@ -525,8 +526,6 @@ class Product:
 			cur.execute('SELECT listing FROM preferred_listings WHERE project=? AND product=?', params)
 			if row != None:
 				listing = Listing.select_by_vendor_pn(row[0], wspace, con)
-			else:
-				listing = None
 			
 		finally:
 			cur.close()
