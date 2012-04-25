@@ -2,7 +2,7 @@ import os
 import unittest
 from manager import Workspace
 
-class DatabaseTestCase(unittest.TestCase):
+class EagleManagerTestCase(unittest.TestCase):
 	def setUp(self):
 		unittest.TestCase.setUp(self)
 		from product import *
@@ -21,10 +21,10 @@ class DatabaseTestCase(unittest.TestCase):
 		self.test_product.listings[self.test_listing_dr.key()] = self.test_listing_dr
 		self.part_attribs = dict({'TOL' : '10%', 'VOLT' : '25V', 'TC' : 'X5R'})
 		self.test_part = Part('C1', 'dbtests', '1uF', 'C-USC0603', 'C0603', 'CAPACITOR, American symbol', self.test_product, self.part_attribs)
+		self.wspace.create_tables()
 		
-	def testdb(self):
+	def test_db(self):
 		try:
-			self.wspace.create_tables()
 			from product import Product, Listing
 			from part import Part
 			from bom import BOM
@@ -131,7 +131,42 @@ class DatabaseTestCase(unittest.TestCase):
 			assert 'projects' in tables
 			assert 'pricebreaks' in tables
 			assert 'preferred_listings' in tables
-			assert 'dbtests' not in tables
+			assert 'dbtests' not in self.wspace.projects
+		finally:
+			cur.close()
+			con.close()
+	
+	def test_csv(self):
+		try:
+			from product import Product, Listing
+			from part import Part
+			from bom import BOM
+			
+			(con, cur) = self.wspace.con_cursor()
+			
+			test1_csv = os.path.join(os.getcwd(), 'testfixtures', "test1.csv")
+			test2_csv = os.path.join(os.getcwd(), 'testfixtures', "test2.csv")
+			test3_csv = os.path.join(os.getcwd(), 'testfixtures', "test3.csv")
+			
+			self.wspace.projects = self.wspace.list_projects(con)
+			assert len(self.wspace.projects) == 0
+			
+			test1_bom = BOM.new_project('test1', 'Product column, no header', test1_csv, self.wspace, con)
+			test2_bom = BOM.new_project('test2', 'No product column, no header', test2_csv, self.wspace, con)
+			test3_bom = BOM.new_project('test3', 'Header row, no PN attribute', test3_csv, self.wspace, con)
+			
+			self.wspace.projects = self.wspace.list_projects()
+			assert len(self.wspace.projects) == 3
+			
+			test1_bom.read_from_file(self.wspace, con)
+			assert len(test1_bom.parts) == 6
+			
+			test2_bom.read_from_file(self.wspace, con)
+			assert len(test2_bom.parts) == 6
+			
+			test3_bom.read_from_file(self.wspace, con)
+			assert len(test3_bom.parts) == 382
+		
 		finally:
 			cur.close()
 			con.close()
