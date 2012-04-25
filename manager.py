@@ -63,7 +63,7 @@ class Workspace:
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS parts 
 			(name TEXT NOT NULL, 
-			project TEXT REFERENCES projects(name) ON DELETE CASCADE ON UPDATE CASCADE, 
+			project TEXT NOT NULL REFERENCES projects(name) ON DELETE CASCADE ON UPDATE CASCADE, 
 			value TEXT, 
 			device TEXT, 
 			package TEXT, 
