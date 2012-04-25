@@ -106,6 +106,13 @@ class Workspace:
 			qty INTEGER,
 			unit DOUBLE,
 			UNIQUE(pn ASC, qty ASC, unit) ON CONFLICT REPLACE)''')
+			
+			cur.execute('''CREATE TABLE IF NOT EXISTS preferred_listings
+			(id INTEGER PRIMARY KEY,
+			project TEXT REFERENCES projects(name) ON DELETE CASCADE ON UPDATE CASCADE, 
+			product TEXT REFRERENCES products(manufacturer_pn) ON DELETE CASCADE ON UPDATE CASCADE, 
+			listing TEXT REFERENCES listings(vendor_pn) ON DELETE CASCADE ON UPDATE CASCADE, 
+			UNIQUE(project ASC, product) ON CONFLICT REPLACE)''')
 						
 		finally:
 			cur.close()
