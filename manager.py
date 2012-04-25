@@ -468,6 +468,10 @@ class Manager(gobject.GObject):
 			self.set_part_price_labels(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()])
 			self.part_info_inventory_content_label.set_text(str(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()].inventory))
 	
+	def part_info_set_listing_button_callback(self, widget, data=None):
+		if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
+			self.selected_bom_part.product.set_preferred_listing(self.active_bom, self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()], wspace)
+	
 	def order_size_spin_callback(self, widget):
 		''' Update the per-unit and total order prices when the order size
 		spin button is changed. '''
@@ -841,6 +845,7 @@ class Manager(gobject.GObject):
 		
 		self.part_info_listing_label = gtk.Label("Product source: ")
 		self.part_info_listing_combo = gtk.combo_box_new_text()
+		self.part_info_set_listing_button = gtk.Button("Use this listing")
 		
 		self.part_info_inventory_hbox = gtk.HBox(False, 5)
 		self.part_info_inventory_label = gtk.Label("Inventory: ")
@@ -1041,6 +1046,7 @@ class Manager(gobject.GObject):
 		self.part_info_scrape_button.connect("clicked", self.part_info_scrape_button_callback)
 		self.part_info_listing_label.set_alignment(0.0, 0.5)
 		self.part_info_listing_combo.connect("changed", self.part_info_listing_combo_callback)
+		self.part_info_set_listing_button.connect("clicked", self.part_info_set_listing_button_callback)
 		
 		# --- Pricing frame ---
 		self.run_size_pin_label.set_alignment(0.0, 0.5)
@@ -1237,6 +1243,7 @@ class Manager(gobject.GObject):
 		self.part_info_button_hbox.pack_start(self.part_info_datasheet_button, True, True, 5)
 		self.part_info_vbox.pack_start(self.part_info_listing_label, False, False, 0)
 		self.part_info_vbox.pack_start(self.part_info_listing_combo, False, False, 0)
+		self.part_info_vbox.pack_start(self.part_info_set_listing_button, False, False, 0)
 		self.part_info_inventory_hbox.pack_start(self.part_info_inventory_label, False, False, 0)
 		self.part_info_inventory_hbox.pack_start(self.part_info_inventory_content_label, False, False, 0)
 		self.part_info_vbox.pack_start(self.part_info_inventory_hbox, False, False, 0)
