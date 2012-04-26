@@ -641,7 +641,7 @@ class Product:
 				if inv_str.isdigit() == False:
 					inv_str = inv_str.replace(",", "")
 				inventory = int(inv_str)
-				print 'inventory: ', type(inventory), inventory
+				#print 'inventory: ', type(inventory), inventory
 			
 			vendor_pn = soup.body("th", text="Digi-Key Part Number")[0].parent.nextSibling.contents[0].string.__str__()
 			# Get manufacturer and PN
@@ -685,10 +685,10 @@ class Product:
 			#print "packaging_soup: ", type(packaging_soup), packaging_soup
 			if type(packaging_soup) == NavigableString:
 				packaging = packaging_soup.string.__str__()
-				print "packaging (from text): ", type(packaging), packaging
+				#print "packaging (from text): ", type(packaging), packaging
 			elif type(packaging_soup) == Tag:
 				packaging = packaging_soup.contents[0].string.__str__()
-				print "packaging (from link): ", type(packaging), packaging
+				#print "packaging (from link): ", type(packaging), packaging
 			else:
 				print 'Error: DK Packaging scrape failure!'
 			if "Digi-Reel" in packaging:
