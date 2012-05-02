@@ -1,5 +1,6 @@
 import os
 import unittest
+import sqlite3
 from manager import Workspace
 
 class EagleManagerTestCase(unittest.TestCase):
@@ -7,8 +8,11 @@ class EagleManagerTestCase(unittest.TestCase):
 		unittest.TestCase.setUp(self)
 		from product import *
 		from part import Part
+		from bom import BOM
 		
 		self.wspace = Workspace('DB Tests', os.path.join(os.getcwd(), 'testfixtures', 'dbtests.sqlite'))
+		
+		
 		self.test_product = Product('TDK Corporation', 'C1608X5R1E105K', 'general_B11.pdf', 'CAP CER 1UF 25V 10% X5R 0603', '0603 (1608 Metric)')
 		self.prices_ct = dict({10 : 0.09000, 100 : 0.04280, 250 : 0.03600, 500 : 0.03016, 1000 : 0.02475})
 		self.prices_tr = dict({4000 : 0.01935, 8000 : 0.01800, 12000 : 0.01710, 280000 : 0.01620, 100000 : 0.01227})
@@ -20,7 +24,6 @@ class EagleManagerTestCase(unittest.TestCase):
 		self.test_product.listings[self.test_listing_tr.key()] = self.test_listing_tr
 		self.test_product.listings[self.test_listing_dr.key()] = self.test_listing_dr
 		self.part_attribs = dict({'TOL' : '10%', 'VOLT' : '25V', 'TC' : 'X5R'})
-		self.test_part = Part('C1', 'dbtests', '1uF', 'C-USC0603', 'C0603', 'CAPACITOR, American symbol', self.test_product, self.part_attribs)
 		
 		
 	def test_db(self):
@@ -45,11 +48,13 @@ class EagleManagerTestCase(unittest.TestCase):
 			assert 'pricebreaks' in tables
 			assert 'preferred_listings' in tables
 			
-			self.test_BOM = BOM.new_project('dbtests', 'Databse Unit tests', '', self.wspace, con)
-			self.wspace.projects = self.wspace.list_projects(con)
+			self.test_BOM = BOM.new_project('dbtests', 'Databse Unit tests', '', self.wspace)
+			self.wspace.projects = self.wspace.list_projects()
 			
 			assert len(self.wspace.projects) == 1
 			assert 'dbtests' in self.wspace.projects
+			
+			self.test_part = Part('C1', self.test_BOM, '1uF', 'C-USC0603', 'C0603', 'CAPACITOR, American symbol', self.test_product, self.part_attribs)
 			
 			self.test_product.insert(self.wspace, con)
 			self.test_listing_ct.insert(self.wspace, con)
@@ -139,18 +144,19 @@ class EagleManagerTestCase(unittest.TestCase):
 	
 	def test_csv(self):
 		try:
+			self.wspace.create_tables()
+			con = self.wspace.connection()
 			other_wspace = Workspace('DB Tests 2', os.path.join(os.getcwd(), 'testfixtures', 'dbtests2.sqlite'))
 			other_wspace.create_tables()
-			self.wspace.create_tables()
 			from product import Product, Listing
 			from part import Part
 			from bom import BOM
 			
 			other_con = other_wspace.connection()
-			(con, cur) = self.wspace.con_cursor()
+			other_proj = BOM.new_project('other_proj', 'other', '', other_wspace, other_con)
 			test_c5_prod = Product('TDK Corporation', 'C1005X5R1V104K', 'general_B11.pdf', 'CAP CER 0.1UF 35V 10% X5R 0402', '0402 (1005 Metric)')
 			test_c5_prod.scrape(other_wspace, other_con)	# Don't want to add this to the main test DB
-			test_c5 = Part('C5', 'other_proj', '0.1uF', 'C-USC0402', 'C0402', 'CAPACITOR, American symbol', test_c5_prod)
+			test_c5 = Part('C5', other_proj, '0.1uF', 'C-USC0402', 'C0402', 'CAPACITOR, American symbol', test_c5_prod)
 			
 			test1_csv = os.path.join(os.getcwd(), 'testfixtures', "test1.csv")
 			test2_csv = os.path.join(os.getcwd(), 'testfixtures', "test2.csv")
@@ -172,8 +178,8 @@ class EagleManagerTestCase(unittest.TestCase):
 			test1_c5_query =  test1_bom.select_parts_by_name('C5', self.wspace, con)
 			assert len(test1_c5_query) == 1
 			test1_c5 = test1_c5_query[0]
-			assert test1_c5.equals(test_c5, True, False, True) == True
-			assert test1_c5.equals(test_c5, True, True, True) == False
+			assert test1_c5.equals(test_c5, True, True, False, True) == True
+			assert test1_c5.equals(test_c5, True, True, True, True) == False
 			assert test1_c5.product.equals(test_c5_prod)
 			
 			test2_bom.read_from_file(self.wspace, con)
@@ -181,8 +187,16 @@ class EagleManagerTestCase(unittest.TestCase):
 			test2_c5_query =  test2_bom.select_parts_by_name('C5', self.wspace, con)
 			assert len(test2_c5_query) == 1
 			test2_c5 = test2_c5_query[0]
-			assert test2_c5.equals(test_c5, True, False, True) == True
-			assert test2_c5.equals(test_c5, True, True, True) == False
+			assert test2_c5.project is test2_bom
+			#					Check:	Attribs, Name, Proj, Prod
+			#try:
+			assert test2_c5.equals(test_c5, False, True, False, True) == True
+			#except AssertionError:
+				#test2_c5.show()
+				#print '\n'
+				#test_c5.show()
+			assert test2_c5.equals(test_c5, True, True, False, True) == True
+			assert test2_c5.equals(test_c5, True, True, True, True) == False
 			assert test2_c5.product.equals(test_c5_prod)
 			
 			assert test1_bom.parts == test2_bom.parts
@@ -192,37 +206,54 @@ class EagleManagerTestCase(unittest.TestCase):
 			test3_c5_query =  test3_bom.select_parts_by_name('C5', self.wspace, con)
 			assert len(test3_c5_query) == 1
 			test3_c5 = test3_c5_query[0]
-			assert test3_c5.equals(test_c5, True, False, True) == True
-			assert test3_c5.equals(test_c5, True, True, True) == False
+			print 'test3_c5 1st check: \n', test3_c5.show()
+			assert test3_c5.equals(test_c5, True, True, False, True) == True
+			assert test3_c5.equals(test_c5, True, True, True, True) == False
 			assert test3_c5.product.equals(test_c5_prod)
 			
 			test3_c11_query =  test3_bom.select_parts_by_name('C11', self.wspace, con)
 			assert len(test3_c11_query) == 1
 			test3_c11 = test3_c11_query[0]
+			assert test3_c5.project is test3_bom
 			assert test3_c11.product.equals(test_c5_prod)
+			test3_c11.show()
 			
 			c5_prod_query = Product.select_by_pn('C1005X5R1V104K', self.wspace, con) 
 			assert len(c5_prod_query) == 1
 			c5_prod = c5_prod_query[0]
 			assert c5_prod.equals(test_c5_prod)
-			
-			test3_c63_query =  test3_bom.select_parts_by_name('C63', self.wspace, con)
+			print '\ntest3_c5 2nd check: \n', test3_c5.show()
+			test3_c63_query =  test3_bom.select_parts_by_name('C63', self.wspace, con) #DEMON LINE
+			print '\ntest3_c5 3rd check: \n', test3_c5.show()
 			assert len(test3_c63_query) == 1
 			test3_c63 = test3_c63_query[0]
 			# C63 has a VOLT = 25V attribute, which C5 does not.
 			assert test3_c63.product is None
+			attribs = []
+			cur = con.cursor()
+			cur.execute('SELECT * FROM part_attributes')
+			#params = ('C63', 'test3',)
+			#cur.execute('SELECT * FROM part_attributes WHERE part=? AND project=? ORDER BY id', params)
+			for row in cur.fetchall():
+				attribs.append((row[0], row[1], row[2], row[3], row[4]))
+			print 'ATTRIBUTES TABLE: \n', attribs
+			cur.close()
 			#						Check:	Attribs, Name, Proj, Prod
-			assert test3_c5.equals(test3_c63, True, False, True, False) == False
+			assert test3_c5.equals(test3_c63, True, False, True, False) == True
 			assert test3_c5.equals(test3_c63, False, False, False, False) == True
-			assert test3_c5.equals(test3_c63, False, False, False, True) == True
+			assert test3_c5.equals(test3_c63, False, False, False, True) == False
 			assert test3_c5.equals(test3_c63, False, False, True, False) == True
-			assert test3_c63.equals(test3_c5, True, False, True, False) == False
+			try:
+				assert test3_c63.equals(test3_c5, True, False, True, False) == False
+			except AssertionError:
+				test3_c63.show()
+				test3_c5.show()
+				raise AssertionError
 			assert test3_c63.equals(test3_c5, False, False, True, False) == False
 			assert test3_c63.equals(test3_c5, True, False, False, False) == False
 			assert test3_c63.equals(test3_c5, False, False, False, False) == False
 		
 		finally:
-			cur.close()
 			con.close()
 			other_con.close()
 			del other_wspace

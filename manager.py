@@ -71,14 +71,16 @@ class Workspace:
 			product TEXT REFERENCES products(manufacturer_pn) ON DELETE SET NULL ON UPDATE CASCADE, 
 			PRIMARY KEY(name, project))''')
 			
-			cur.execute('''CREATE TABLE IF NOT EXISTS part_attributes
-			(id INTEGER PRIMARY KEY,
+			cur.execute('''CREATE TABLE IF NOT EXISTS part_attributes 
+			(id INTEGER PRIMARY KEY, 
 			part TEXT NOT NULL, 
-			project TEXT NOT NULL, 
+			project TEXT NOT NULL REFERENCES projects(name) ON DELETE CASCADE ON UPDATE CASCADE, 
 			name TEXT NOT NULL, 
 			value TEXT NOT NULL, 
-			FOREIGN KEY(part, project) REFERENCES parts(name, project) ON DELETE CASCADE ON UPDATE CASCADE,
 			UNIQUE(part ASC, project ASC, name) ON CONFLICT REPLACE)''')
+			#FOREIGN KEY(part, project) REFERENCES parts(name, project) ON DELETE CASCADE ON UPDATE CASCADE, 
+			# REFERENCES parts(name) ON DELETE CASCADE ON UPDATE CASCADE
+			# REFERENCES projects(name) ON DELETE CASCADE ON UPDATE CASCADE
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS products
 			(manufacturer TEXT, 
@@ -192,7 +194,7 @@ class Manager(gobject.GObject):
 		self.active_project_name = model.get(row_iter,0)[0]
 		self.active_bom.parts = self.active_bom.read_parts_list_from_db(wspace, con)
 		input_file = model.get(row_iter,3)[0]
-		print self.active_bom, type(self.active_bom)
+		#print self.active_bom, type(self.active_bom)
 		#print 'Project name: ', self.active_project_name
 		#print 'Project CSV: ', input_file
 		if self.bom_group_name.get_active():
@@ -625,7 +627,7 @@ class Manager(gobject.GObject):
 			# Catch empty product string
 			if prod == ' ' or len(prod) == 0 or prod is None or prod == 'NULL': 
 				print "Caught empty product"
-				group = self.active_bom.select_parts_by_product('NULL', wspace, con)
+				group = self.active_bom.select_parts_by_product('NULL', wspace, con)	# TODO: Is this still right?
 			else:
 				group = self.active_bom.select_parts_by_product(prod, wspace, con)
 			print "Group: \n", group

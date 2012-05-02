@@ -7,7 +7,8 @@ class Part:
 	''' A self in the BOM exported from Eagle. '''
 	
 	@staticmethod
-	def new_from_row(row, wspace, connection=None):
+	def new_from_row(row, wspace, connection=None, known_project=None):
+		from bom import BOM
 		''' Given a part row from the DB, returns a Part object. '''
 		#print 'new_from_row: row param: ', row
 		if row[6] is None or row[6] == 'NULL' or row[6] == '':
@@ -16,9 +17,22 @@ class Part:
 		else:
 			product = Product.select_by_pn(row[6], wspace, connection)[0]
 			#print 'new_from_row: product results: ', product
-		part = Part(row[0], row[1], row[2], row[3], row[4], row[5], product)
+		if row[1] is None or row[1] == 'NULL':
+			project = None # TODO: Raise an exception here? This is a PK  violation
+			print 'row[1] is None/NULL!'
+		else:
+			if known_project is None:
+				projects = BOM.read_from_db(row[1], wspace, connection)
+				if len(projects) > 0:
+					project = projects[0]
+			else:
+				project = known_project
+		part = Part(row[0], project, row[2], row[3], row[4], row[5], product)
 		part.fetch_attributes(wspace, connection)
-		#print 'new_from_row returning part: ', part.show()
+		if project.name == 'test3':
+			#if row[0] == 'C5' or row[0] == 'C63':
+			print 'new_from_row returning part (row[0] = %s) ' % row[0]
+				#part.show()
 		return part
 	
 	@staticmethod
@@ -117,7 +131,7 @@ class Part:
 	
 	def __init__(self, name, project, value, device, package, description=None, product=None, attributes={}):
 		self.name = name
-		self.project = project
+		self.project = project	# A BOM object
 		self.value = value
 		self.device = device
 		self.package = package
@@ -128,7 +142,7 @@ class Part:
 	def show(self):
 		''' A simple print method. '''
 		print 'Name: ', self.name, type(self.name)
-		print 'Project', self.project, type(self.project)
+		print 'Project name: ', self.project.name, type(self.project)
 		print 'Value: ', self.value, type(self.value)
 		print 'Device: ', self.device, type(self.device)
 		print 'Package: ', self.package, type(self.package)
@@ -148,7 +162,7 @@ class Part:
 		eq = True
 		if same_name is True and self.name != p.name:
 			eq = False
-		elif same_project is True and self.project != p.project:
+		elif same_project is True and self.project.name != p.project.name:
 			eq = False
 		elif self.value != p.value:
 			eq = False
@@ -158,20 +172,30 @@ class Part:
 			eq = False
 		elif self.description != p.description:
 			eq = False
-		elif same_product is True and self.product.manufacturer_pn != p.product.manufacturer_pn:
-			eq = False
-		for k in self.attributes.keys():
-			if self.attributes[k] != "":
-				if k not in p.attributes.keys():
+		elif same_product is True:
+			if self.product is None or p.product is None:
+				if self.product is not p.product:
 					eq = False
-				else:
-					if self.attributes[k] != p.attributes[k]:
+			elif self.product.manufacturer_pn != p.product.manufacturer_pn:
+				eq = False
+		if self.attributes is not None:
+			for k in self.attributes.keys():
+				if self.attributes[k] != "":
+					if k not in p.attributes.keys():
 						eq = False
+					elif self.attributes[k] != p.attributes[k]:
+						eq = False
+					
 		if check_foreign_attribs is True:
-			for k in p.attributes.keys():
-				if p.attributes[k] != "":
-					if k not in self.attributes.keys():
-						eq = False
+			if p.attributes is None and self.attributes is not None:
+				eq = False
+			else:
+				for k in p.attributes.keys():
+					if p.attributes[k] != "":
+						if k not in self.attributes.keys():
+							eq = False
+						elif p.attributes[k] != self.attributes[k]:
+							eq = False
 		return eq
 		
 
@@ -193,6 +217,8 @@ class Part:
 		This allows for parts in different projects that incidentally have the same name to be added.
 		Only returns parts that have all of the non-empty attributes in self.attributes
 		(with equal values). This behavior is equivalent to self.equals(some_part, False). '''
+		if self.name == 'C5' and self.project.name == 'test2': # debug
+			print 'Entering %s.%s.find_similar_parts' % (self.project.name, self.name)
 		project_results = set()
 		workspace_results = set()
 		try:
@@ -201,49 +227,136 @@ class Part:
 			else:
 				con = connection
 				cur = con.cursor()
-			sql = """SELECT DISTINCT * FROM parts WHERE value=? AND project=? INTERSECT
-				SELECT * FROM parts WHERE device=? AND project=? INTERSECT
-				SELECT * FROM parts WHERE package=? AND project=?"""
-			params = (self.value, self.project, self.device, self.project, self.package, self.project,)
+			
+			if self.name == 'C5' and self.project.name == 'test2': # debug
+				print 'inserting an attrib'
+				self.attributes['test'] = 'testval'
+				self.write_attributes(wspace, con)
+				#params = ('test4', 'C898','VOLT','25V',)
+				#cur.execute('INSERT OR REPLACE INTO part_attributes VALUES (NULL,?,?,?,?)', params)
+				print 'selecting'
+				sql = 'SELECT * FROM part_attributes'
+				cur.execute(sql)
+				print 'selected'
+				rows = cur.fetchall()
+				for row in rows:
+					print row
+			view1 = 'CREATE VIEW self_attributes AS SELECT * FROM part_attributes WHERE part=? AND project=?'
+			view1_params = (self.name, self.project.name,)
+			if self.name == 'C5' and self.project.name == 'test2': # debug
+				print 'Executing view1 creation'
+			#cur.execute(view1, view1_params)
+			if self.name == 'C5' and self.project.name == 'test2': # debug
+				print 'Executed view1 creation'
+			#if self.name == 'C5' and self.project.name == 'test2': # debug
+			#	print 'selecting self_attributes view: '
+			#	cur.execute('SELECT * FROM self_attributes')
+			#	print 'self_attributes view: '
+			#	for row in cur.fetchall():
+			#		print row
+			
+			view2 = 'CREATE VIEW other_project_attributes AS SELECT * FROM part_attributes WHERE part!=? AND project=?'
+			view2_params = (self.name, self.project.name,)
+			#cur.execute(view2, view2_params)
+			if self.name == 'C5' and self.project.name == 'test2': # debug
+				print 'Executed view2 creation'
+			#if self.name == 'C5' and self.project.name == 'test2': # debug
+			#	print 'selecting other_project_attributes view: '
+			#	cur.execute('SELECT * FROM other_project_attributes')
+			#	print 'other_project_attributes view: '
+			#	for row in cur.fetchall():
+			#		print row
+			sql = '''SELECT * FROM parts WHERE value=? AND device=? AND package=? AND project=? AND name IN 
+			(SELECT part FROM part_attributes WHERE part!=? AND project=? AND name IN (SELECT name FROM part_attributes WHERE part=? AND project=?) OR NOT EXISTS (SELECT name FROM part_attributes WHERE part=? AND project=?) INTERSECT 
+			SELECT part FROM part_attributes WHERE part!=? AND project=? AND value IN (SELECT value FROM part_attributes WHERE part=? AND project=?) OR NOT EXISTS (SELECT value FROM part_attributes WHERE part=? AND project=?))''' 
+			params = (self.value, self.device, self.package, self.project.name, self.project.name, self.name, self.project.name, self.name, self.project.name, self.name, self.project.name, self.name, self.project.name, self.name, self.project.name, self.name, self.project.name,)
+			# CURRENT
+			#sql = '''SELECT * FROM parts WHERE value=? AND device=? AND package=? AND project=? AND name IN 
+			#(SELECT part FROM other_project_attributes WHERE name IN (SELECT name FROM self_attributes) OR NOT EXISTS (SELECT name FROM self_attributes) INTERSECT 
+			#SELECT part FROM other_project_attributes WHERE value IN (SELECT value FROM self_attributes) OR NOT EXISTS (SELECT value FROM self_attributes))''' 
+			#params = (self.value, self.device, self.package, self.project.name, self.project.name,)
+			
+			
+			# Original:
+			#sql = """SELECT DISTINCT * FROM parts WHERE value=? AND project=? INTERSECT
+			#	SELECT * FROM parts WHERE device=? AND project=? INTERSECT
+			#	SELECT * FROM parts WHERE package=? AND project=?"""
+			#params = (self.value, self.project.name, self.device, self.project.name, self.package, self.project.name,)
+			if self.name == 'C5' and self.project.name == 'test2': # debug
+				print 'Executing project query'
 			cur.execute(sql, params)
+			if self.name == 'C5' and self.project.name == 'test2': # debug
+				print 'Executed project query'
 			rows = cur.fetchall()
 			for row in rows:
+				if self.name == 'C5' and self.project.name == 'test2': # debug
+					print 'Found row in project: ', row
 				part = Part.new_from_row(row, wspace, con)
 				attribs_eq = True
-				for k in self.attributes.keys():
-					if self.attributes[k] != "":
-						if k not in part.attributes.keys():
-							attribs_eq = False
-						else:
-							if self.attributes[k] != part.attributes[k]:
-								attribs_eq = False
+				#for k in self.attributes.keys():
+				#	if self.attributes[k] != "":
+				#		if k not in part.attributes.keys():
+				#			attribs_eq = False
+				#		else:
+				#			if self.attributes[k] != part.attributes[k]:
+				#				attribs_eq = False
 				if attribs_eq is True:
 					project_results.add(part)
 					
 			if check_wspace:
-				for proj in wspace.list_projects():
-					if proj == self.project:
-						continue	# Do not re-check the passed project
-					sql = """SELECT DISTINCT * FROM parts WHERE value=? AND project!=? INTERSECT
-						SELECT * FROM parts WHERE device=? AND project!=? INTERSECT
-						SELECT * FROM parts WHERE package=? AND project!=?"""
-					params = (self.value, self.project, self.device, self.project, self.package, self.project,)
-					cur.execute(sql, params)
-					rows = cur.fetchall()
-					for row in rows:
-						part = Part.new_from_row(row, wspace, con)
-						attribs_eq = True
-						for k in self.attributes.keys():
-							if self.attributes[k] != "":
-								if k not in part.attributes.keys():
-									attribs_eq = False
-								else:
-									if self.attributes[k] != part.attributes[k]:
-										attribs_eq = False
-						if attribs_eq is True:
-							workspace_results.add(part)
+				view3 = 'CREATE VIEW other_wspace_attributes AS SELECT * FROM part_attributes WHERE project!=?'
+				view3_params = (self.project.name,)
+				cur.execute(view3, view3_params)
+				if self.name == 'C5' and self.project.name == 'test2': # debug
+					print 'Executed view3 creation'
+				if self.name == 'C5' and self.project.name == 'test2': # debug
+					print 'selecting other_wspace_attributes view: '
+					cur.execute('SELECT * FROM other_wspace_attributes')
+					print 'other_wspace_attributes view: '
+					for row in cur.fetchall():
+						print row
+				
+				sql = '''SELECT * FROM parts WHERE value=? AND device=? AND package=? AND project!=? AND name IN 
+				(SELECT part FROM other_wspace_attributes WHERE name IN (SELECT name FROM self_attributes) OR NOT EXISTS (SELECT name FROM self_attributes) INTERSECT 
+				SELECT part FROM other_wspace_attributes WHERE value IN (SELECT value FROM self_attributes) OR NOT EXISTS (SELECT value FROM self_attributes))''' 
+				params = (self.value, self.device, self.package, self.project.name,)
+				cur.execute(sql, params)
+				rows = cur.fetchall()
+				for row in rows:
+					if self.name == 'C5' and self.project.name == 'test2': # debug
+						print 'Found row in workspace: ', row
+					part = Part.new_from_row(row, wspace, con)
+					workspace_results.add(part)
+				#for proj in wspace.list_projects():
+				#	if proj == self.project.name:
+				#		continue	# Do not re-check the passed project
+					# Original:
+					#sql = """SELECT DISTINCT * FROM parts WHERE value=? AND project!=? INTERSECT
+					#	SELECT * FROM parts WHERE device=? AND project!=? INTERSECT
+					#	SELECT * FROM parts WHERE package=? AND project!=?"""
+					#params = (self.value, self.project.name, self.device, self.project.name, self.package, self.project.name,)
+					# First attempt:
+					#sql = 'SELECT DISTINCT * FROM parts WHERE value=? AND device=? AND package=? AND project!=?'
+					#params = (self.value, self.device, self.package, self.project.name)
+					#cur.execute(sql, params)
+					#rows = cur.fetchall()
+					#for row in rows:
+				#		part = Part.new_from_row(row, wspace, con)
+				#		attribs_eq = True
+						#for k in self.attributes.keys():
+						#	if self.attributes[k] != "":
+						#		if k not in part.attributes.keys():
+						#			attribs_eq = False
+						#		else:
+						#			if self.attributes[k] != part.attributes[k]:
+						#				attribs_eq = False
+				#		if attribs_eq is True:
+				#			workspace_results.add(part)
 							
 		finally:
+			cur.execute('DROP VIEW IF EXISTS self_attributes')
+			cur.execute('DROP VIEW IF EXISTS other_project_attributes')
+			cur.execute('DROP VIEW IF EXISTS other_wspace_attributes')
 			cur.close()
 			if connection is None:
 				con.close()
@@ -278,24 +391,27 @@ class Part:
 	
 	def is_in_db(self, wspace, connection=None):
 		''' Check if a BOM self of this name is in the project's database. '''
-		result = Part.select_by_name(self.name, wspace, self.project, connection)
+		result = Part.select_by_name(self.name, wspace, self.project.name, connection)
 		if len(result) == 0:
 			return False
 		else:
 			return True
 	
-	def product_updater(self, wspace, connection=None):
+	def product_updater(self, wspace, connection=None, check_wspace=True):
 		''' Checks if the Part is already in the DB. 
 		Inserts/updates self into DB depending on:
 		- The presence of a matching Part in the DB
 		- The value of self.product.manufacturer_pn
 		- The product of the matching Part in the DB
 		Passing an open connection to this method is recommended. '''
+		if self.name == 'C5' and self.project.name == 'test2': # debug
+			print 'Entering %s.%s.product_updater' % (self.project.name, self.name)
 		unset_pn = ('', 'NULL', 'none', None, [])
 		#self.show()
 		if(self.is_in_db(wspace, connection)):
-			#print "Part of same name already in DB"
-			old_part = Part.select_by_name(self.name, wspace, self.project, connection)[0]
+			if self.name == 'C5' and self.project.name == 'test2': # debug
+				print "Part of same name already in DB"
+			old_part = Part.select_by_name(self.name, wspace, self.project.name, connection)[0]
 			#old_part.show()
 			if(self.value == old_part.value and self.device == old_part.device and self.package == old_part.package):
 				if self.product is not None and self.product.manufacturer_pn not in unset_pn:
@@ -309,7 +425,11 @@ class Part:
 					if old_part.product is not None and old_part.product.manufacturer_pn not in unset_pn:
 						pass	# Do nothing in this case
 					elif old_part.product is None or old_part.product.manufacturer_pn in unset_pn:
-						(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, connection)
+						(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, check_wspace, connection)
+						if self.name == 'C5' and self.project.name == 'test2': # debug
+							print 'first find_similar_parts call'
+							print 'candidate_proj_parts: ', candidate_proj_parts
+							print 'candidate_wspace_parts: ', candidate_wspace_parts
 						candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts, connection)
 						if len(candidate_products) == 0:
 							#print 'No matching products found, nothing to do'
@@ -328,11 +448,16 @@ class Part:
 				if self.product is not None and self.product.manufacturer_pn not in unset_pn:
 					self.update(wspace, connection)
 				elif self.product is None or self.product.manufacturer_pn in unset_pn:
-					(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, connection)
+					(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, check_wspace, connection)
+					if self.name == 'C5' and self.project.name == 'test2': # debug
+						print 'second find_similar_parts call'
+						print 'candidate_proj_parts: ', candidate_proj_parts
+						print 'candidate_wspace_parts: ', candidate_wspace_parts
 					candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts, connection)
 					if len(candidate_products) == 0:
-						#print 'No matching products found, updating as-is'
-						pass
+						if self.name == 'C5' and self.project.name == 'test2': # debug
+							print 'No matching products found, updating as-is'
+						#pass
 					elif len(candidate_products) == 1:
 						self.product = candidate_products[0]
 						#print 'Found exactly one matching product, setting product and updating'#, self.show()
@@ -343,16 +468,23 @@ class Part:
 					self.update(wspace, connection)
 		
 		else:
-			#print 'Part not in DB'
+			if self.name == 'C5' and self.project.name == 'test2': # debug
+				print 'Part not in DB'
 			if self.product is None or self.product.manufacturer_pn in unset_pn:
-				(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, connection)
+				(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, check_wspace, connection)
+				if self.name == 'C5' and self.project.name == 'test2': # debug
+					print 'third find_similar_parts call'
+					print 'candidate_proj_parts: ', candidate_proj_parts
+					print 'candidate_wspace_parts: ', candidate_wspace_parts
 				candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts, connection)
 				if len(candidate_products) == 0:
-					#print 'No matching products found, inserting as-is'#, self.show()
+					if self.name == 'C5' and self.project.name == 'test2': # debug
+						print 'No matching products found, inserting as-is'#, self.show()
 					pass
 				elif len(candidate_products) == 1:
 					self.product = candidate_products[0]
-					#print 'Found exactly one matching product, setting product and inserting'#, self.show()
+					if self.name == 'C5' and self.project.name == 'test2': # debug
+						print 'Found exactly one matching product, setting product and inserting'#, self.show()
 				else:
 					#print 'Found multiple product matches, prompting for selection...'
 					# TODO: Currently going with first result, need to prompt for selection
@@ -379,8 +511,8 @@ class Part:
 				pn = self.product.manufacturer_pn
 			
 			sql = 'UPDATE parts SET name=?, project=?, value=?, device=?, package=?, description=?, product=? WHERE name=? AND project=?'
-			params = (self.name, self.project, self.value, self.device, self.package,  
-					self.description, pn, self.name, self.project,)
+			params = (self.name, self.project.name, self.value, self.device, self.package,  
+					self.description, pn, self.name, self.project.name,)
 			cur.execute(sql, params)
 			self.write_attributes(wspace, con)
 			
@@ -404,7 +536,7 @@ class Part:
 				pn = self.product.manufacturer_pn
 			
 			sql = 'INSERT OR REPLACE INTO parts VALUES (?,?,?,?,?,?,?)'
-			params = (self.name, self.project, self.value, self.device, self.package,  
+			params = (self.name, self.project.name, self.value, self.device, self.package,  
 					self.description, pn,)
 			cur.execute(sql, params)
 			self.write_attributes(wspace, con)
@@ -425,7 +557,7 @@ class Part:
 				cur = con.cursor()
 			
 			sql = 'DELETE FROM parts WHERE name=? AND project=?'
-			params = (self.name, self.project)
+			params = (self.name, self.project.name)
 			cur.execute(sql, params)
 			
 		finally:
@@ -444,9 +576,10 @@ class Part:
 				con = connection
 				cur = con.cursor()
 			
-			params = (self.name, self.project,)
-			cur.execute('''SELECT name, value FROM part_attributes WHERE part=? INTERSECT 
-			SELECT name, value FROM part_attributes WHERE project=?''', params)
+			params = (self.name, self.project.name,)
+			#cur.execute('''SELECT name, value FROM part_attributes WHERE part=? INTERSECT 
+			#SELECT name, value FROM part_attributes WHERE project=?''', params)
+			cur.execute('SELECT name, value FROM part_attributes WHERE part=? AND project=?', params)
 			for row in cur.fetchall():
 				self.attributes[row[0]] = row[1]
 			
@@ -466,7 +599,7 @@ class Part:
 				con = connection
 				cur = con.cursor()
 			
-			params = (self.name, self.project, attrib,)
+			params = (self.name, self.project.name, attrib,)
 			cur.execute('''SELECT name FROM part_attributes WHERE part=? INTERSECT 
 			SELECT name FROM part_attributes WHERE project=? INTERSECT 
 			SELECT name FROM part_attributes WHERE name=?''', params)
@@ -495,18 +628,22 @@ class Part:
 				con = connection
 				cur = con.cursor()
 			
-			params = (self.name, self.project,)
-			cur.execute('''SELECT name FROM part_attributes WHERE part=? INTERSECT 
-			SELECT name FROM part_attributes WHERE project=?''', params)
+			params = (self.name, self.project.name,)
+			#cur.execute('''SELECT name FROM part_attributes WHERE part=? INTERSECT 
+			#SELECT name FROM part_attributes WHERE project=?''', params)
+			cur.execute('SELECT name FROM part_attributes WHERE part=? AND project=?', params)
 			for row in cur.fetchall():
 				db_attribs.append(row[0])
 			for a in self.attributes.items():
 				if a[1] != "":
 					if a[0] in db_attribs:
-						old_attribs.append((a[1], self.name, self.project, a[0]))
+						old_attribs.append((a[1], self.name, self.project.name, a[0],))
 					else:
-						new_attribs.append((self.name, self.project, a[0], a[1]))
-			
+						new_attribs.append((self.name, self.project.name, a[0], a[1],))
+			if self.project.name == 'test2' and self.name == 'C5':
+				print 'db_attribs: ', db_attribs
+				print 'old_attribs: ', old_attribs
+				print 'new_attribs: ', new_attribs
 			cur.executemany('INSERT OR REPLACE INTO part_attributes VALUES (NULL,?,?,?,?)', new_attribs)
 			cur.executemany('UPDATE part_attributes SET value=? WHERE part=? AND project=? AND name=?', old_attribs)
 		

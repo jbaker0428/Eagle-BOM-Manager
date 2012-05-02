@@ -237,6 +237,7 @@ class BOM:
 	def read_from_file(self, wspace, connection=None):
 		''' Parses a BOM spreadsheet in CSV format and writes it to the DB.
 		Passing an open connection to this method is HIGHLY recommended.  '''
+		# TODO: product_updater calls are hardcoded to always check wspace
 		print "BOM.read_from_file"
 		# Clear self.parts
 		del self.parts[:]
@@ -281,19 +282,22 @@ class BOM:
 								bom_attribs[index] = col
 							index += 1
 					else:
-						#print 'Row: ', row
-						row_attribs = {}
+						print 'Row: ', row
+						#row_attribs = {}
+						row_attribs = dict({})
+						row_attribs.clear()
 						for attrib in bom_attribs.items():
-							row_attribs[attrib[1]] = row[attrib[0]]
+							if len(row[attrib[0]]) > 0:
+								row_attribs[attrib[1]] = row[attrib[0]]
 						#print 'Row attribs: ', row_attribs
 						if prod_col == -1:
-							part = Part(row[name_col], self.name, row[val_col], row[dev_col], row[pkg_col], row[desc_col], None, row_attribs)
+							part = Part(row[name_col], self, row[val_col], row[dev_col], row[pkg_col], row[desc_col], None, row_attribs)
 						else:
 							prod = Product.select_by_pn(row[prod_col], wspace, connection)
 							if prod is not None and len(prod) > 0:
-								part = Part(row[name_col], self.name, row[val_col], row[dev_col], row[pkg_col], row[desc_col], prod[0], row_attribs)
+								part = Part(row[name_col], self, row[val_col], row[dev_col], row[pkg_col], row[desc_col], prod[0], row_attribs)
 							else:
-								part = Part(row[name_col], self.name, row[val_col], row[dev_col], row[pkg_col], row[desc_col], None, row_attribs)
+								part = Part(row[name_col], self, row[val_col], row[dev_col], row[pkg_col], row[desc_col], None, row_attribs)
 						
 						part.product_updater(wspace, connection)
 						if part.product is None:
@@ -310,16 +314,16 @@ class BOM:
 						if len(row[5]) > 0:
 							prod = Product.select_by_pn(row[5], wspace, connection)
 							if prod is not None and len(prod) > 0:
-								part = Part(row[0], self.name, row[1], row[2], row[3], row[4], prod[0])
+								part = Part(row[0], self, row[1], row[2], row[3], row[4], prod[0])
 							else:
 								new_prod = Product('NULL', row[5])
 								new_prod.insert(wspace, connection)
 								new_prod.scrape(wspace, connection)
-								part = Part(row[0], self.name, row[1], row[2], row[3], row[4], new_prod)
+								part = Part(row[0], self, row[1], row[2], row[3], row[4], new_prod)
 						else:
-							part = Part(row[0], self.name, row[1], row[2], row[3], row[4], None)
+							part = Part(row[0], self, row[1], row[2], row[3], row[4], None)
 					else:
-						part = Part(row[0], self.name, row[1], row[2], row[3], row[4], None)
+						part = Part(row[0], self, row[1], row[2], row[3], row[4], None)
 					#print 'Got part from CSV: '
 					#part.show() 
 					part.product_updater(wspace, connection)
@@ -340,11 +344,12 @@ class BOM:
 				con = connection
 				cur = con.cursor()
 			
-			sql = 'SELECT * FROM parts WHERE name=? INTERSECT SELECT * FROM parts WHERE project=?'
+			#sql = 'SELECT * FROM parts WHERE name=? INTERSECT SELECT * FROM parts WHERE project=?'
+			sql = 'SELECT DISTINCT * FROM parts WHERE name=? AND project=?'
 			params = (name, self.name)
 			cur.execute(sql, params)
 			for row in cur.fetchall():
-				parts.append(Part.new_from_row(row, wspace, con))
+				parts.append(Part.new_from_row(row, wspace, con, self))
 			
 		finally:
 			cur.close()
@@ -366,7 +371,7 @@ class BOM:
 			params = (val, self.name)
 			cur.execute(sql, params)
 			for row in cur.fetchall():
-				parts.append(Part.new_from_row(row, wspace, con))
+				parts.append(Part.new_from_row(row, wspace, con, self))
 			
 		finally:
 			cur.close()
@@ -388,7 +393,7 @@ class BOM:
 			params = (prod, self.name)
 			cur.execute(sql, params)
 			for row in cur.fetchall():
-				parts.append(Part.new_from_row(row, wspace, con))
+				parts.append(Part.new_from_row(row, wspace, con, self))
 			
 		finally:
 			cur.close()
