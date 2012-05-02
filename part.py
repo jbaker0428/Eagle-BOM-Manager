@@ -227,20 +227,7 @@ class Part:
 			else:
 				con = connection
 				cur = con.cursor()
-			
-			if self.name == 'C5' and self.project.name == 'test2': # debug
-				print 'inserting an attrib'
-				self.attributes['test'] = 'testval'
-				self.write_attributes(wspace, con)
-				#params = ('test4', 'C898','VOLT','25V',)
-				#cur.execute('INSERT OR REPLACE INTO part_attributes VALUES (NULL,?,?,?,?)', params)
-				print 'selecting'
-				sql = 'SELECT * FROM part_attributes'
-				cur.execute(sql)
-				print 'selected'
-				rows = cur.fetchall()
-				for row in rows:
-					print row
+
 			view1 = 'CREATE VIEW self_attributes AS SELECT * FROM part_attributes WHERE part=? AND project=?'
 			view1_params = (self.name, self.project.name,)
 			if self.name == 'C5' and self.project.name == 'test2': # debug
