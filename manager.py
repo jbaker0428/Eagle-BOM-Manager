@@ -74,13 +74,11 @@ class Workspace:
 			cur.execute('''CREATE TABLE IF NOT EXISTS part_attributes 
 			(id INTEGER PRIMARY KEY, 
 			part TEXT NOT NULL, 
-			project TEXT NOT NULL REFERENCES projects(name) ON DELETE CASCADE ON UPDATE CASCADE, 
+			project TEXT NOT NULL, 
 			name TEXT NOT NULL, 
 			value TEXT NOT NULL, 
+			FOREIGN KEY(part, project) REFERENCES parts(name, project) ON DELETE CASCADE ON UPDATE CASCADE, 
 			UNIQUE(part ASC, project ASC, name) ON CONFLICT REPLACE)''')
-			#FOREIGN KEY(part, project) REFERENCES parts(name, project) ON DELETE CASCADE ON UPDATE CASCADE, 
-			# REFERENCES parts(name) ON DELETE CASCADE ON UPDATE CASCADE
-			# REFERENCES projects(name) ON DELETE CASCADE ON UPDATE CASCADE
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS products
 			(manufacturer TEXT, 
