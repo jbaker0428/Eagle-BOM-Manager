@@ -601,10 +601,52 @@ class Part:
 				return False
 			else:
 				return True
+	
+	def add_attribute(self, name, value, wspace, connection=None):
+		''' Add a single attribute to this Part.
+		Adds the new attribute to the self.attributes dictionary in memory.
+		Writes the new attribute to the DB immediately. '''
+		try:
+			if connection is None:
+				(con, cur) = wspace.con_cursor()
+			else:
+				con = connection
+				cur = con.cursor()
+			
+			self.attributes[name] = value
+			params = (self.name, self.project.name, name, value,)
+			cur.execute('INSERT OR REPLACE INTO part_attributes VALUES (NULL,?,?,?,?)', params)
+
+		finally:
+			cur.close()
+			if connection is None:
+				con.close()
+				
+	def remove_attribute(self, name, wspace, connection=None):
+		''' Removes a single attribute from this Part.
+		Deletes the attribute from the self.attributes dictionary in memory.
+		Deletes the attribute from the DB immediately. '''
+		try:
+			if connection is None:
+				(con, cur) = wspace.con_cursor()
+			else:
+				con = connection
+				cur = con.cursor()
+			
+			if name in self.attributes:
+				del self.attributes[name]
+			params = (self.name, self.project.name, name,)
+			cur.execute('DELETE FROM part_attributes WHERE part=? AND project=? AND name=?', params)
+
+		finally:
+			cur.close()
+			if connection is None:
+				con.close()
 
 	def write_attributes(self, wspace, connection=None):
 		''' Write all of this Part's attributes to the DB.
 		Checks attributes currently in DB and updates/inserts as appropriate. '''
+		# TODO: This does not remove any old attribs from the DB that are not in solf.attributes
 		db_attribs = []
 		old_attribs = []
 		new_attribs = []
