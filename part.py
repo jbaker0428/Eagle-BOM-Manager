@@ -149,6 +149,7 @@ class Part:
 		print 'Description: ', self.description, type(self.description)
 		if self.product is not None:
 			print 'Product PN: ', self.product.manufacturer_pn, type(self.product.manufacturer_pn)
+		print 'Attributes: '
 		for attrib in self.attributes.items():
 			print attrib[0], ': ', attrib[1]
 		
