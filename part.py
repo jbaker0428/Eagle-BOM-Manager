@@ -305,9 +305,6 @@ class Part:
 				#			workspace_results.add(part)
 							
 		finally:
-			cur.execute('DROP VIEW IF EXISTS self_attributes')
-			cur.execute('DROP VIEW IF EXISTS other_project_attributes')
-			cur.execute('DROP VIEW IF EXISTS other_wspace_attributes')
 			cur.close()
 			if connection is None:
 				con.close()
