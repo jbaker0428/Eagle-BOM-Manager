@@ -231,7 +231,9 @@ class Part:
 			sql = '''SELECT * FROM parts WHERE value=? AND device=? AND package=? AND project=? AND name IN 
 			(SELECT part FROM part_attributes WHERE part!=? AND project=? AND name IN (SELECT name FROM part_attributes WHERE part=? AND project=?) OR NOT EXISTS (SELECT name FROM part_attributes WHERE part=? AND project=?) INTERSECT 
 			SELECT part FROM part_attributes WHERE part!=? AND project=? AND value IN (SELECT value FROM part_attributes WHERE part=? AND project=?) OR NOT EXISTS (SELECT value FROM part_attributes WHERE part=? AND project=?))''' 
-			params = (self.value, self.device, self.package, self.project.name, self.name, self.project.name, self.name, self.project.name, self.name, self.project.name, self.name, self.project.name, self.name, self.project.name, self.name, self.project.name,)
+			params = (self.value, self.device, self.package, self.project.name, \
+					self.name, self.project.name, self.name, self.project.name, self.name, self.project.name, \
+					self.name, self.project.name, self.name, self.project.name, self.name, self.project.name,)
 
 			if self.name == 'C5' and self.project.name == 'test2': # debug
 				print 'Executing project query'
@@ -255,23 +257,21 @@ class Part:
 					project_results.add(part)
 					
 			if check_wspace:
-				view3 = 'CREATE VIEW other_wspace_attributes AS SELECT * FROM part_attributes WHERE project!=?'
-				view3_params = (self.project.name,)
-				cur.execute(view3, view3_params)
-				if self.name == 'C5' and self.project.name == 'test2': # debug
-					print 'Executed view3 creation'
-				if self.name == 'C5' and self.project.name == 'test2': # debug
-					print 'selecting other_wspace_attributes view: '
-					cur.execute('SELECT * FROM other_wspace_attributes')
-					print 'other_wspace_attributes view: '
-					for row in cur.fetchall():
-						print row
-				
+				#view3 = 'CREATE VIEW other_wspace_attributes AS SELECT * FROM part_attributes WHERE project!=?'
 				sql = '''SELECT * FROM parts WHERE value=? AND device=? AND package=? AND project!=? AND name IN 
-				(SELECT part FROM other_wspace_attributes WHERE name IN (SELECT name FROM self_attributes) OR NOT EXISTS (SELECT name FROM self_attributes) INTERSECT 
-				SELECT part FROM other_wspace_attributes WHERE value IN (SELECT value FROM self_attributes) OR NOT EXISTS (SELECT value FROM self_attributes))''' 
-				params = (self.value, self.device, self.package, self.project.name,)
+				(SELECT part FROM part_attributes WHERE project!=? AND name IN 
+				(SELECT name FROM part_attributes WHERE part=? AND project=?) OR NOT EXISTS (SELECT name FROM part_attributes WHERE part=? AND project=?) 
+				INTERSECT 
+				SELECT part FROM part_attributes WHERE project!=? AND value IN 
+				(SELECT value FROM part_attributes WHERE part=? AND project=?) OR NOT EXISTS (SELECT value FROM part_attributes WHERE part=? AND project=?))''' 
+				params = (self.value, self.device, self.package, self.project.name, \
+						self.project.name, self.name, self.project.name, self.name, self.project.name, \
+						self.project.name, self.name, self.project.name, self.name, self.project.name,)
+				if self.name == 'C5' and self.project.name == 'test2': # debug
+					print 'selecting other_wspace_attributes'
 				cur.execute(sql, params)
+				if self.name == 'C5' and self.project.name == 'test2': # debug
+					print 'selected other_wspace_attributes'
 				rows = cur.fetchall()
 				for row in rows:
 					if self.name == 'C5' and self.project.name == 'test2': # debug
