@@ -252,16 +252,7 @@ class Part:
 				if self.name == 'C5' and self.project.name == 'test2': # debug
 					print 'Found row in project: ', row
 				part = Part.new_from_row(row, wspace, con)
-				attribs_eq = True
-				#for k in self.attributes.keys():
-				#	if self.attributes[k] != "":
-				#		if k not in part.attributes.keys():
-				#			attribs_eq = False
-				#		else:
-				#			if self.attributes[k] != part.attributes[k]:
-				#				attribs_eq = False
-				if attribs_eq is True:
-					project_results.add(part)
+				project_results.add(part)
 					
 			if check_wspace:
 				#view3 = 'CREATE VIEW other_wspace_attributes AS SELECT * FROM part_attributes WHERE project!=?'
@@ -289,31 +280,6 @@ class Part:
 						print 'Found row in workspace: ', row
 					part = Part.new_from_row(row, wspace, con)
 					workspace_results.add(part)
-				#for proj in wspace.list_projects():
-				#	if proj == self.project.name:
-				#		continue	# Do not re-check the passed project
-					# Original:
-					#sql = """SELECT DISTINCT * FROM parts WHERE value=? AND project!=? INTERSECT
-					#	SELECT * FROM parts WHERE device=? AND project!=? INTERSECT
-					#	SELECT * FROM parts WHERE package=? AND project!=?"""
-					#params = (self.value, self.project.name, self.device, self.project.name, self.package, self.project.name,)
-					# First attempt:
-					#sql = 'SELECT DISTINCT * FROM parts WHERE value=? AND device=? AND package=? AND project!=?'
-					#params = (self.value, self.device, self.package, self.project.name)
-					#cur.execute(sql, params)
-					#rows = cur.fetchall()
-					#for row in rows:
-				#		part = Part.new_from_row(row, wspace, con)
-				#		attribs_eq = True
-						#for k in self.attributes.keys():
-						#	if self.attributes[k] != "":
-						#		if k not in part.attributes.keys():
-						#			attribs_eq = False
-						#		else:
-						#			if self.attributes[k] != part.attributes[k]:
-						#				attribs_eq = False
-				#		if attribs_eq is True:
-				#			workspace_results.add(part)
 							
 		finally:
 			cur.close()
