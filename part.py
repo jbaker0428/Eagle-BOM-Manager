@@ -229,15 +229,15 @@ class Part:
 				cur = con.cursor()
 
 			sql = '''SELECT * FROM parts WHERE value=? AND device=? AND package=? AND project=? AND name IN 
-			(SELECT part FROM part_attributes WHERE part!=? AND project=? AND name IN 
+			(SELECT part FROM part_attributes WHERE part!=? AND project=? AND (name IN 
 				(SELECT name FROM part_attributes WHERE part=? AND project=?) 
 				OR NOT EXISTS 
-				(SELECT name FROM part_attributes WHERE part=? AND project=?) 
+				(SELECT name FROM part_attributes WHERE part=? AND project=?)) 
 			INTERSECT 
-			SELECT part FROM part_attributes WHERE part!=? AND project=? AND value IN 
+			SELECT part FROM part_attributes WHERE part!=? AND project=? AND (value IN 
 				(SELECT value FROM part_attributes WHERE part=? AND project=?) 
 				OR NOT EXISTS 
-				(SELECT value FROM part_attributes WHERE part=? AND project=?))''' 
+				(SELECT value FROM part_attributes WHERE part=? AND project=?)))''' 
 			params = (self.value, self.device, self.package, self.project.name, \
 					self.name, self.project.name, self.name, self.project.name, self.name, self.project.name, \
 					self.name, self.project.name, self.name, self.project.name, self.name, self.project.name,)
@@ -257,15 +257,15 @@ class Part:
 			if check_wspace:
 				#view3 = 'CREATE VIEW other_wspace_attributes AS SELECT * FROM part_attributes WHERE project!=?'
 				sql = '''SELECT * FROM parts WHERE value=? AND device=? AND package=? AND project!=? AND name IN 
-				(SELECT part FROM part_attributes WHERE project!=? AND name IN 
+				(SELECT part FROM part_attributes WHERE project!=? AND (name IN 
 					(SELECT name FROM part_attributes WHERE part=? AND project=?) 
 					OR NOT EXISTS 
-					(SELECT name FROM part_attributes WHERE part=? AND project=?) 
+					(SELECT name FROM part_attributes WHERE part=? AND project=?)) 
 				INTERSECT 
-				SELECT part FROM part_attributes WHERE project!=? AND value IN 
+				SELECT part FROM part_attributes WHERE project!=? AND (value IN 
 					(SELECT value FROM part_attributes WHERE part=? AND project=?) 
 					OR NOT EXISTS 
-					(SELECT value FROM part_attributes WHERE part=? AND project=?))''' 
+					(SELECT value FROM part_attributes WHERE part=? AND project=?)))''' 
 				params = (self.value, self.device, self.package, self.project.name, \
 						self.project.name, self.name, self.project.name, self.name, self.project.name, \
 						self.project.name, self.name, self.project.name, self.name, self.project.name,)
