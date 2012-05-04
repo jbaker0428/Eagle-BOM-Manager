@@ -189,12 +189,7 @@ class EagleManagerTestCase(unittest.TestCase):
 			test2_c5 = test2_c5_query[0]
 			assert test2_c5.project is test2_bom
 			#					Check:	Attribs, Name, Proj, Prod
-			#try:
 			assert test2_c5.equals(test_c5, False, True, False, True) == True
-			#except AssertionError:
-				#test2_c5.show()
-				#print '\n'
-				#test_c5.show()
 			assert test2_c5.equals(test_c5, True, True, False, True) == True
 			assert test2_c5.equals(test_c5, True, True, True, True) == False
 			assert test2_c5.product.equals(test_c5_prod)

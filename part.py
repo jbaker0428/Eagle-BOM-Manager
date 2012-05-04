@@ -217,8 +217,6 @@ class Part:
 		This allows for parts in different projects that incidentally have the same name to be added.
 		Only returns parts that have all of the non-empty attributes in self.attributes
 		(with equal values). This behavior is equivalent to self.equals(some_part, False). '''
-		if self.name == 'C5' and self.project.name == 'test2': # debug
-			print 'Entering %s.%s.find_similar_parts' % (self.project.name, self.name)
 		project_results = set()
 		workspace_results = set()
 		try:
@@ -256,20 +254,13 @@ class Part:
 					self.name, self.project.name, self.name, self.project.name, self.name, self.project.name, \
 					self.name, self.project.name, self.name, self.project.name, self.name, self.project.name,)
 
-			if self.name == 'C5' and self.project.name == 'test2': # debug
-				print 'Executing project query'
 			cur.execute(sql, params)
-			if self.name == 'C5' and self.project.name == 'test2': # debug
-				print 'Executed project query'
 			rows = cur.fetchall()
 			for row in rows:
-				if self.name == 'C5' and self.project.name == 'test2': # debug
-					print 'Found row in project: ', row
 				part = Part.new_from_row(row, wspace, con)
 				project_results.add(part)
 					
 			if check_wspace:
-				#view3 = 'CREATE VIEW other_wspace_attributes AS SELECT * FROM part_attributes WHERE project!=?'
 				sql = '''SELECT * FROM parts WHERE value=? AND device=? AND package=? AND project!=? AND (name IN 
 				(SELECT part FROM part_attributes WHERE project!=? AND (name IN 
 					(SELECT name FROM part_attributes WHERE part=? AND project=?) 
@@ -297,15 +288,9 @@ class Part:
 						self.project.name, self.name, self.project.name, self.name, self.project.name, \
 						self.project.name, self.name, self.project.name, self.name, self.project.name, \
 						self.project.name, self.name, self.project.name, self.name, self.project.name,)
-				if self.name == 'C5' and self.project.name == 'test2': # debug
-					print 'selecting other_wspace_attributes'
 				cur.execute(sql, params)
-				if self.name == 'C5' and self.project.name == 'test2': # debug
-					print 'selected other_wspace_attributes'
 				rows = cur.fetchall()
 				for row in rows:
-					if self.name == 'C5' and self.project.name == 'test2': # debug
-						print 'Found row in workspace: ', row
 					part = Part.new_from_row(row, wspace, con)
 					workspace_results.add(part)
 							
