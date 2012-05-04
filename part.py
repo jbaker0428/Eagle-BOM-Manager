@@ -228,47 +228,11 @@ class Part:
 				con = connection
 				cur = con.cursor()
 
-			view1 = 'CREATE VIEW self_attributes AS SELECT * FROM part_attributes WHERE part=? AND project=?'
-			view1_params = (self.name, self.project.name,)
-			if self.name == 'C5' and self.project.name == 'test2': # debug
-				print 'Executing view1 creation'
-			#cur.execute(view1, view1_params)
-			if self.name == 'C5' and self.project.name == 'test2': # debug
-				print 'Executed view1 creation'
-			#if self.name == 'C5' and self.project.name == 'test2': # debug
-			#	print 'selecting self_attributes view: '
-			#	cur.execute('SELECT * FROM self_attributes')
-			#	print 'self_attributes view: '
-			#	for row in cur.fetchall():
-			#		print row
-			
-			view2 = 'CREATE VIEW other_project_attributes AS SELECT * FROM part_attributes WHERE part!=? AND project=?'
-			view2_params = (self.name, self.project.name,)
-			#cur.execute(view2, view2_params)
-			if self.name == 'C5' and self.project.name == 'test2': # debug
-				print 'Executed view2 creation'
-			#if self.name == 'C5' and self.project.name == 'test2': # debug
-			#	print 'selecting other_project_attributes view: '
-			#	cur.execute('SELECT * FROM other_project_attributes')
-			#	print 'other_project_attributes view: '
-			#	for row in cur.fetchall():
-			#		print row
 			sql = '''SELECT * FROM parts WHERE value=? AND device=? AND package=? AND project=? AND name IN 
 			(SELECT part FROM part_attributes WHERE part!=? AND project=? AND name IN (SELECT name FROM part_attributes WHERE part=? AND project=?) OR NOT EXISTS (SELECT name FROM part_attributes WHERE part=? AND project=?) INTERSECT 
 			SELECT part FROM part_attributes WHERE part!=? AND project=? AND value IN (SELECT value FROM part_attributes WHERE part=? AND project=?) OR NOT EXISTS (SELECT value FROM part_attributes WHERE part=? AND project=?))''' 
-			params = (self.value, self.device, self.package, self.project.name, self.project.name, self.name, self.project.name, self.name, self.project.name, self.name, self.project.name, self.name, self.project.name, self.name, self.project.name, self.name, self.project.name,)
-			# CURRENT
-			#sql = '''SELECT * FROM parts WHERE value=? AND device=? AND package=? AND project=? AND name IN 
-			#(SELECT part FROM other_project_attributes WHERE name IN (SELECT name FROM self_attributes) OR NOT EXISTS (SELECT name FROM self_attributes) INTERSECT 
-			#SELECT part FROM other_project_attributes WHERE value IN (SELECT value FROM self_attributes) OR NOT EXISTS (SELECT value FROM self_attributes))''' 
-			#params = (self.value, self.device, self.package, self.project.name, self.project.name,)
-			
-			
-			# Original:
-			#sql = """SELECT DISTINCT * FROM parts WHERE value=? AND project=? INTERSECT
-			#	SELECT * FROM parts WHERE device=? AND project=? INTERSECT
-			#	SELECT * FROM parts WHERE package=? AND project=?"""
-			#params = (self.value, self.project.name, self.device, self.project.name, self.package, self.project.name,)
+			params = (self.value, self.device, self.package, self.project.name, self.name, self.project.name, self.name, self.project.name, self.name, self.project.name, self.name, self.project.name, self.name, self.project.name, self.name, self.project.name,)
+
 			if self.name == 'C5' and self.project.name == 'test2': # debug
 				print 'Executing project query'
 			cur.execute(sql, params)
