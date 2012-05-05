@@ -354,12 +354,12 @@ class Part:
 		- The value of self.product.manufacturer_pn
 		- The product of the matching Part in the DB
 		Passing an open connection to this method is recommended. '''
-		if self.name == 'C63': # debug
+		if self.name == 'C58' or self.name == 'C63': # debug
 			print 'Entering %s.%s.product_updater' % (self.project.name, self.name)
 		unset_pn = ('', 'NULL', 'none', None, [])
 		#self.show()
 		if(self.is_in_db(wspace, connection)):
-			if self.name == 'C63': # debug
+			if self.name == 'C58' or self.name == 'C63': # debug
 				print "Part of same name already in DB"
 			old_part = Part.select_by_name(self.name, wspace, self.project.name, connection)[0]
 			#old_part.show()
@@ -376,7 +376,7 @@ class Part:
 						pass	# Do nothing in this case
 					elif old_part.product is None or old_part.product.manufacturer_pn in unset_pn:
 						(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, check_wspace, connection)
-						if self.name == 'C63': # debug
+						if self.name == 'C58' or self.name == 'C63': # debug
 							print 'first find_similar_parts call'
 							print 'candidate_proj_parts: ' 
 							for p in candidate_proj_parts:
@@ -403,7 +403,7 @@ class Part:
 					self.update(wspace, connection)
 				elif self.product is None or self.product.manufacturer_pn in unset_pn:
 					(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, check_wspace, connection)
-					if self.name == 'C63': # debug
+					if self.name == 'C58' or self.name == 'C63': # debug
 						print 'second find_similar_parts call'
 						print 'candidate_proj_parts: ' 
 						for p in candidate_proj_parts:
@@ -413,7 +413,7 @@ class Part:
 							print p
 					candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts, connection)
 					if len(candidate_products) == 0:
-						if self.name == 'C63': # debug
+						if self.name == 'C58' or self.name == 'C63': # debug
 							print 'No matching products found, updating as-is'
 						#pass
 					elif len(candidate_products) == 1:
@@ -426,11 +426,11 @@ class Part:
 					self.update(wspace, connection)
 		
 		else:
-			if self.name == 'C63': # debug
+			if self.name == 'C58' or self.name == 'C63': # debug
 				print 'Part not in DB'
 			if self.product is None or self.product.manufacturer_pn in unset_pn:
 				(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, check_wspace, connection)
-				if self.name == 'C63': # debug
+				if self.name == 'C58' or self.name == 'C63': # debug
 					print 'third find_similar_parts call'
 					print 'candidate_proj_parts: ' 
 					for p in candidate_proj_parts:
@@ -440,12 +440,12 @@ class Part:
 						print p
 				candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts, connection)
 				if len(candidate_products) == 0:
-					if self.name == 'C63': # debug
+					if self.name == 'C58' or self.name == 'C63': # debug
 						print 'No matching products found, inserting as-is'#, self.show()
 					pass
 				elif len(candidate_products) == 1:
 					self.product = candidate_products[0]
-					if self.name == 'C63': # debug
+					if self.name == 'C58' or self.name == 'C63': # debug
 						print 'Found exactly one matching product, setting product and inserting'#, self.show()
 				else:
 					#print 'Found multiple product matches, prompting for selection...'
