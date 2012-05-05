@@ -201,7 +201,7 @@ class EagleManagerTestCase(unittest.TestCase):
 			test3_c5_query =  test3_bom.select_parts_by_name('C5', self.wspace, con)
 			assert len(test3_c5_query) == 1
 			test3_c5 = test3_c5_query[0]
-			print 'test3_c5 1st check: \n', test3_c5.show()
+			#print 'test3_c5 1st check: \n', test3_c5.show()
 			assert test3_c5.equals(test_c5, True, True, False, True) == True
 			assert test3_c5.equals(test_c5, True, True, True, True) == False
 			assert test3_c5.product.equals(test_c5_prod)
@@ -211,28 +211,50 @@ class EagleManagerTestCase(unittest.TestCase):
 			test3_c11 = test3_c11_query[0]
 			assert test3_c5.project is test3_bom
 			assert test3_c11.product.equals(test_c5_prod)
-			test3_c11.show()
 			
 			c5_prod_query = Product.select_by_pn('C1005X5R1V104K', self.wspace, con) 
 			assert len(c5_prod_query) == 1
 			c5_prod = c5_prod_query[0]
 			assert c5_prod.equals(test_c5_prod)
-			print '\ntest3_c5 2nd check: \n', test3_c5.show()
-			test3_c63_query =  test3_bom.select_parts_by_name('C63', self.wspace, con) #DEMON LINE
-			print '\ntest3_c5 3rd check: \n', test3_c5.show()
-			assert len(test3_c63_query) == 1
+			print '\ntest3_c5 2nd check: \n', test3_c5
+			test3_c63_query =  test3_bom.select_parts_by_name('C63', self.wspace, con) # Problem line
+			# At this point, test3_c5 is somehow inheriting the attributes dict of test3_c65
+			print '\ntest3_c5 3rd check: \n', test3_c5
+			# Mystery 'None' printout here... huh?
+			try:
+				print 'Trying assertion: assert len(test3_c63_query) == 1'
+				assert len(test3_c63_query) == 1
+			except AssertionError:
+				print 'Assertion failed: assert len(test3_c63_query) == 1'
+				print 'len(test3_c63_query): ', len(test3_c63_query)
+				for p in test3_c63_query:
+					print 'test3_c63_query contains this part: ', p
+				raise AssertionError
+			print 'Setting test3_c63'
 			test3_c63 = test3_c63_query[0]
+			print 'Set test3_c63'
+			#print '\ntest3_c63: \n', test3_c63.show()	VOLT attribute is being preserved OK
 			# C63 has a VOLT = 25V attribute, which C5 does not.
-			assert test3_c63.product is None
-			attribs = []
-			cur = con.cursor()
-			cur.execute('SELECT * FROM part_attributes')
-			#params = ('C63', 'test3',)
-			#cur.execute('SELECT * FROM part_attributes WHERE part=? AND project=? ORDER BY id', params)
-			for row in cur.fetchall():
-				attribs.append((row[0], row[1], row[2], row[3], row[4]))
-			print 'ATTRIBUTES TABLE: \n', attribs
-			cur.close()
+			# Therefore, C63's product should remain unset.
+			try:
+				print 'Trying assertion: assert test3_c63.product is None'
+				assert test3_c63.product is None
+			except AssertionError:
+				print 'Assertion failed: assert test3_c63.product is None'
+				attribs = []
+				print test3_c63
+				print test3_c5
+				cur = con.cursor()
+				cur.execute('SELECT * FROM part_attributes')
+				#params = ('C63', 'test3',)
+				#cur.execute('SELECT * FROM part_attributes WHERE part=? AND project=? ORDER BY id', params)
+				for row in cur.fetchall():
+					attribs.append((row[0], row[1], row[2], row[3], row[4]))
+				print 'ATTRIBUTES TABLE: \n', attribs
+				cur.close()
+				raise AssertionError
+			
+			
 			#						Check:	Attribs, Name, Proj, Prod
 			assert test3_c5.equals(test3_c63, True, False, True, False) == True
 			assert test3_c5.equals(test3_c63, False, False, False, False) == True
@@ -241,8 +263,9 @@ class EagleManagerTestCase(unittest.TestCase):
 			try:
 				assert test3_c63.equals(test3_c5, True, False, True, False) == False
 			except AssertionError:
-				test3_c63.show()
-				test3_c5.show()
+				print 'Assertion failed: assert test3_c63.equals(test3_c5, True, False, True, False) == False'
+				print test3_c63
+				print test3_c5
 				raise AssertionError
 			assert test3_c63.equals(test3_c5, False, False, True, False) == False
 			assert test3_c63.equals(test3_c5, True, False, False, False) == False
