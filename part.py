@@ -144,6 +144,7 @@ class Part:
 
 	def show(self):
 		''' A simple print method. '''
+		print '============================'
 		print 'Name: ', self.name, type(self.name)
 		print 'Project name: ', self.project.name, type(self.project)
 		print 'Value: ', self.value, type(self.value)
@@ -155,6 +156,7 @@ class Part:
 		print 'Attributes: '
 		for attrib in self.attributes.items():
 			print attrib[0], ': ', attrib[1]
+		print '============================'
 		
 	def equals(self, p, check_foreign_attribs=True, same_name=True, same_project=True, same_product=True):
 		''' Compares the Part to another Part.
