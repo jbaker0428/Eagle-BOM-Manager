@@ -345,7 +345,7 @@ class BOM:
 				cur = con.cursor()
 			
 			#sql = 'SELECT * FROM parts WHERE name=? INTERSECT SELECT * FROM parts WHERE project=?'
-			sql = 'SELECT DISTINCT * FROM parts WHERE name=? AND project=?'
+			sql = 'SELECT * FROM parts WHERE name=? AND project=?'
 			params = (name, self.name)
 			cur.execute(sql, params)
 			for row in cur.fetchall():
