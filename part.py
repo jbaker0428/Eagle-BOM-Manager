@@ -8,8 +8,11 @@ class Part:
 	
 	@staticmethod
 	def new_from_row(row, wspace, connection=None, known_project=None):
-		from bom import BOM
 		''' Given a part row from the DB, returns a Part object. '''
+		from bom import BOM
+		if row[0] == 'C63':
+			print 'Part.new_from_row passed row: ', row
+		
 		#print 'new_from_row: row param: ', row
 		if row[6] is None or row[6] == 'NULL' or row[6] == '':
 			product = None
@@ -29,10 +32,10 @@ class Part:
 				project = known_project
 		part = Part(row[0], project, row[2], row[3], row[4], row[5], product)
 		part.fetch_attributes(wspace, connection)
-		if project.name == 'test3':
-			#if row[0] == 'C5' or row[0] == 'C63':
+		#if project.name == 'test3' and (row[0] == 'C5' or row[0] == 'C63'):
+		if row[0] == 'C63':
 			print 'new_from_row returning part (row[0] = %s) ' % row[0]
-				#part.show()
+			part.show()
 		return part
 	
 	@staticmethod
@@ -520,6 +523,8 @@ class Part:
 			#SELECT name, value FROM part_attributes WHERE project=?''', params)
 			cur.execute('SELECT name, value FROM part_attributes WHERE part=? AND project=?', params)
 			for row in cur.fetchall():
+				if self.name == 'C63':
+					print '%s.fetch_attributes found row: %s' % (self.name, row)
 				self.attributes[row[0]] = row[1]
 			
 		finally:
