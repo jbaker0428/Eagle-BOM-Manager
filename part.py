@@ -142,6 +142,12 @@ class Part:
 		self.product = product	# A Product object
 		self.attributes = attributes
 
+	def __str__(self):
+		if self.product is None:
+			return '%s.%s (%s, %s, %s): No product, Attribs: %s' % (self.project.name, self.name, self.value, self.device, self.package, self.attributes)
+		else:
+			return '%s.%s (%s, %s, %s): PN: %s, Attribs: %s' % (self.project.name, self.name, self.value, self.device, self.package, self.product.manufacturer_pn, self.attributes)
+
 	def show(self):
 		''' A simple print method. '''
 		print '============================'
@@ -372,8 +378,12 @@ class Part:
 						(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, check_wspace, connection)
 						if self.name == 'C63': # debug
 							print 'first find_similar_parts call'
-							print 'candidate_proj_parts: ', candidate_proj_parts
-							print 'candidate_wspace_parts: ', candidate_wspace_parts
+							print 'candidate_proj_parts: ' 
+							for p in candidate_proj_parts:
+								print p
+							print 'candidate_wspace_parts: '
+							for p in candidate_wspace_parts:
+								print p
 						candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts, connection)
 						if len(candidate_products) == 0:
 							#print 'No matching products found, nothing to do'
@@ -395,8 +405,12 @@ class Part:
 					(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, check_wspace, connection)
 					if self.name == 'C63': # debug
 						print 'second find_similar_parts call'
-						print 'candidate_proj_parts: ', candidate_proj_parts
-						print 'candidate_wspace_parts: ', candidate_wspace_parts
+						print 'candidate_proj_parts: ' 
+						for p in candidate_proj_parts:
+							print p
+						print 'candidate_wspace_parts: '
+						for p in candidate_wspace_parts:
+							print p
 					candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts, connection)
 					if len(candidate_products) == 0:
 						if self.name == 'C63': # debug
@@ -418,8 +432,12 @@ class Part:
 				(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, check_wspace, connection)
 				if self.name == 'C63': # debug
 					print 'third find_similar_parts call'
-					print 'candidate_proj_parts: ', candidate_proj_parts
-					print 'candidate_wspace_parts: ', candidate_wspace_parts
+					print 'candidate_proj_parts: ' 
+					for p in candidate_proj_parts:
+						print p
+					print 'candidate_wspace_parts: '
+					for p in candidate_wspace_parts:
+						print p
 				candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts, connection)
 				if len(candidate_products) == 0:
 					if self.name == 'C63': # debug
