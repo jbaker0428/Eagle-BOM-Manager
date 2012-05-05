@@ -10,7 +10,7 @@ class Part:
 	def new_from_row(row, wspace, connection=None, known_project=None):
 		''' Given a part row from the DB, returns a Part object. '''
 		from bom import BOM
-		if row[0] == 'C63':
+		if row[0] == 'C63' or row[0] == 'C58':
 			print 'Part.new_from_row passed row: ', row
 		
 		#print 'new_from_row: row param: ', row
@@ -33,9 +33,9 @@ class Part:
 		part = Part(row[0], project, row[2], row[3], row[4], row[5], product)
 		part.fetch_attributes(wspace, connection)
 		#if project.name == 'test3' and (row[0] == 'C5' or row[0] == 'C63'):
-		if row[0] == 'C63':
+		if row[0] == 'C63' or row[0] == 'C58':
 			print 'new_from_row returning part (row[0] = %s) ' % row[0]
-			part.show()
+			print part
 		return part
 	
 	@staticmethod
@@ -132,7 +132,7 @@ class Part:
 				con.close()
 			return parts
 	
-	def __init__(self, name, project, value, device, package, description=None, product=None, attributes={}):
+	def __init__(self, name, project, value, device, package, description=None, product=None, attributes=None):
 		self.name = name
 		self.project = project	# A BOM object
 		self.value = value
@@ -140,7 +140,10 @@ class Part:
 		self.package = package
 		self.description = description
 		self.product = product	# A Product object
-		self.attributes = attributes
+		if attributes is None:
+			self.attributes = dict()
+		else:
+			self.attributes = attributes
 
 	def __str__(self):
 		if self.product is None:
@@ -229,8 +232,8 @@ class Part:
 		This allows for parts in different projects that incidentally have the same name to be added.
 		Only returns parts that have all of the non-empty attributes in self.attributes
 		(with equal values). This behavior is equivalent to self.equals(some_part, False). '''
-		project_results = set()
-		workspace_results = set()
+		project_results = []
+		workspace_results = []
 		try:
 			if connection is None:
 				(con, cur) = wspace.con_cursor()
@@ -270,7 +273,9 @@ class Part:
 			rows = cur.fetchall()
 			for row in rows:
 				part = Part.new_from_row(row, wspace, con)
-				project_results.add(part)
+				if self.name == 'C58' or self.name == 'C63': # debug
+					print 'Project query found part: ', part
+				project_results.append(part)
 					
 			if check_wspace:
 				sql = '''SELECT * FROM parts WHERE value=? AND device=? AND package=? AND project!=? AND (name IN 
@@ -304,16 +309,25 @@ class Part:
 				rows = cur.fetchall()
 				for row in rows:
 					part = Part.new_from_row(row, wspace, con)
-					workspace_results.add(part)
+					if self.name == 'C58' or self.name == 'C63': # debug
+						print 'Workspace query found part: ', part
+					workspace_results.append(part)
 							
 		finally:
 			cur.close()
 			if connection is None:
 				con.close()
+			if self.name == 'C58' or self.name == 'C63': # debug
+				print 'Project results list: '
+				for p in project_results:
+					print p
+				print 'Workspace results list: '
+				for p in workspace_results:
+					print p
 			if check_wspace:
-				return (list(project_results), list(workspace_results))
+				return (project_results, workspace_results)
 			else:
-				return (list(project_results), [])
+				return (project_results, [])
 	
 	def find_matching_products(self, wspace, proj_parts, wspace_parts, connection=None):
 		''' Takes in the output of self.find_similar_parts. 
@@ -357,13 +371,14 @@ class Part:
 		if self.name == 'C58' or self.name == 'C63': # debug
 			print 'Entering %s.%s.product_updater' % (self.project.name, self.name)
 		unset_pn = ('', 'NULL', 'none', None, [])
-		#self.show()
 		if(self.is_in_db(wspace, connection)):
 			if self.name == 'C58' or self.name == 'C63': # debug
 				print "Part of same name already in DB"
 			old_part = Part.select_by_name(self.name, wspace, self.project.name, connection)[0]
 			#old_part.show()
-			if(self.value == old_part.value and self.device == old_part.device and self.package == old_part.package):
+			
+			#if(self.value == old_part.value and self.device == old_part.device and self.package == old_part.package):
+			if self.equals(old_part, True, True, True, False):
 				if self.product is not None and self.product.manufacturer_pn not in unset_pn:
 					if old_part.product is not None and old_part.product.manufacturer_pn not in unset_pn:
 						# TODO: prompt? Defaulting to old_part.product for now (aka do nothing)
@@ -398,9 +413,10 @@ class Part:
 							self.product = candidate_products[0]
 							self.update(wspace, connection)
 						
-			else:	# Value/device/package mismatch
+			else:	# Value/device/package/attribs mismatch
+				self.update(wspace, connection)
 				if self.product is not None and self.product.manufacturer_pn not in unset_pn:
-					self.update(wspace, connection)
+					pass
 				elif self.product is None or self.product.manufacturer_pn in unset_pn:
 					(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, check_wspace, connection)
 					if self.name == 'C58' or self.name == 'C63': # debug
@@ -428,6 +444,7 @@ class Part:
 		else:
 			if self.name == 'C58' or self.name == 'C63': # debug
 				print 'Part not in DB'
+			self.insert(wspace, connection)
 			if self.product is None or self.product.manufacturer_pn in unset_pn:
 				(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, check_wspace, connection)
 				if self.name == 'C58' or self.name == 'C63': # debug
@@ -456,7 +473,7 @@ class Part:
 					newprod = Product('NULL', self.product.manufacturer_pn)
 					newprod.insert(wspace, connection)
 					newprod.scrape(wspace, connection)
-			self.insert(wspace, connection)
+			self.update(wspace, connection)
 		
 	def update(self, wspace, connection=None):
 		''' Update an existing Part record in the DB. '''
@@ -530,7 +547,12 @@ class Part:
 	def fetch_attributes(self, wspace, connection=None):
 		''' Fetch attributes dictionary for this Part. 
 		Clears and sets the self.attributes dictionary directly. '''
+		if self.name == 'C58' or self.name == 'C63': # debug
+			print 'Entered %s.%s.fetch_attributes()' % (self.project.name, self.name)
+			print 'Old self.attributes: ', self.attributes
 		self.attributes.clear()
+		if self.name == 'C58' or self.name == 'C63': # debug
+			print 'Cleared self.attributes: ', self.attributes
 		try:
 			if connection is None:
 				(con, cur) = wspace.con_cursor()
@@ -541,11 +563,17 @@ class Part:
 			params = (self.name, self.project.name,)
 			#cur.execute('''SELECT name, value FROM part_attributes WHERE part=? INTERSECT 
 			#SELECT name, value FROM part_attributes WHERE project=?''', params)
+			#if self.name == 'C58' or self.name == 'C63': # debug
+			#	print '%s.fetch_attributes executing query' % self.name
 			cur.execute('SELECT name, value FROM part_attributes WHERE part=? AND project=?', params)
+			#if self.name == 'C58' or self.name == 'C63': # debug
+			#	print '%s.fetch_attributes executed query OK' % self.name
 			for row in cur.fetchall():
-				if self.name == 'C63':
+				if self.name == 'C58' or self.name == 'C63': # debug
 					print '%s.fetch_attributes found row: %s' % (self.name, row)
 				self.attributes[row[0]] = row[1]
+			if self.name == 'C58' or self.name == 'C63': # debug
+				print 'New self.attributes: ', self.attributes
 			
 		finally:
 			cur.close()
@@ -623,7 +651,7 @@ class Part:
 	def write_attributes(self, wspace, connection=None):
 		''' Write all of this Part's attributes to the DB.
 		Checks attributes currently in DB and updates/inserts as appropriate. '''
-		# TODO: This does not remove any old attribs from the DB that are not in solf.attributes
+		# TODO: This does not remove any old attribs from the DB that are not in self.attributes
 		db_attribs = []
 		old_attribs = []
 		new_attribs = []
@@ -646,7 +674,8 @@ class Part:
 						old_attribs.append((a[1], self.name, self.project.name, a[0],))
 					else:
 						new_attribs.append((self.name, self.project.name, a[0], a[1],))
-			if self.project.name == 'test2' and self.name == 'C5':
+			if self.name == 'C58' or self.name == 'C63': # debug
+				print 'self.attributes', self.attributes
 				print 'db_attribs: ', db_attribs
 				print 'old_attribs: ', old_attribs
 				print 'new_attribs: ', new_attribs
