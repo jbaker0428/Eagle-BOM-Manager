@@ -223,13 +223,10 @@ class EagleManagerTestCase(unittest.TestCase):
 			assert len(c5_prod_query) == 1
 			c5_prod = c5_prod_query[0]
 			assert c5_prod.equals(test_c5_prod)
-			print '\ntest3_c5 2nd check: \n', test3_c5
-			test3_c63_query =  test3_bom.select_parts_by_name('C63', self.wspace, con) # Problem line
-			# At this point, test3_c5 is somehow inheriting the attributes dict of test3_c65
-			print '\ntest3_c5 3rd check: \n', test3_c5
+			test3_c63_query =  test3_bom.select_parts_by_name('C63', self.wspace, con)
 			# Mystery 'None' printout here... huh?
 			try:
-				print 'Trying assertion: assert len(test3_c63_query) == 1'
+				#print 'Trying assertion: assert len(test3_c63_query) == 1'
 				assert len(test3_c63_query) == 1
 			except AssertionError:
 				print 'Assertion failed: assert len(test3_c63_query) == 1'
@@ -237,14 +234,12 @@ class EagleManagerTestCase(unittest.TestCase):
 				for p in test3_c63_query:
 					print 'test3_c63_query contains this part: ', p
 				raise AssertionError
-			print 'Setting test3_c63'
 			test3_c63 = test3_c63_query[0]
-			print 'Set test3_c63'
 			#print '\ntest3_c63: \n', test3_c63.show()	VOLT attribute is being preserved OK
 			# C63 has a VOLT = 25V attribute, which C5 does not.
 			# Therefore, C63's product should remain unset.
 			try:
-				print 'Trying assertion: assert test3_c63.product is None'
+				#print 'Trying assertion: assert test3_c63.product is None'
 				assert test3_c63.product is None
 			except AssertionError:
 				print 'Assertion failed: assert test3_c63.product is None'
