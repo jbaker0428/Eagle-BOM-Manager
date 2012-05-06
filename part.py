@@ -225,6 +225,92 @@ class Part:
 				rownum = rownum + 1
 			return -1
 	
+	def part_query_constructor(self, wspace_scope):
+		''' Helper method to construct the SQL queries for find_similar_parts.
+		If wspace_scope == False, queries within the project scope.
+		If wspace_scope == True, queries other projects in the workspace. 
+		Returns a pair: The query string and the parameters tuple. '''
+		
+		if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
+			print 'Entering %s.%s.part_query_constructor' % (self.project.name, self.name)
+		
+		def project_attribute_expr(attrib_name, attrib_value, name_param_number, value_param_number):
+			''' Generates an SQL expression to match a single attribute for the project query. '''
+			
+			# self.name is always ?1, self.project.name is always ?2
+			name_expr = '?%s IN (SELECT name FROM part_attributes WHERE part!=?1 AND project=?2)' % name_param_number
+			value_expr = '?%s IN (SELECT value FROM part_attributes WHERE part!=?1 AND project=?2 AND name=?%s)' % (value_param_number, name_param_number)
+			return '(' + name_expr + ' AND ' + value_expr + ')'
+		
+		def workspace_attribute_expr(attrib_name, attrib_value, name_param_number, value_param_number):
+			''' Generates an SQL expression to match a single attribute for the workspace query. '''
+			
+			# self.name is always ?1, self.project.name is always ?2
+			name_expr = '?%s IN (SELECT name FROM part_attributes WHERE project!=?2)' % name_param_number
+			value_expr = '?%s IN (SELECT value FROM part_attributes WHERE project=!?2 AND name=?%s)' % (value_param_number, name_param_number)
+			return '(' + name_expr + ' AND ' + value_expr + ')'
+		
+		if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
+			print '%s.%s.part_query_constructor got past function defines OK' % (self.project.name, self.name)
+		
+		params_dict = {1 : self.name, 2 : self.project.name, 3 : self.value, 4 : self.device, 5 : self.package}
+		if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
+			print '%s.%s.part_query_constructor declared params_dict OK' % (self.project.name, self.name)
+		if len(self.attributes.keys()) > 0:
+			if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
+				print 'Part has attributes to check'
+			attribute_exprs = []
+			for attr in self.attributes.items():
+				greatest_param = max(params_dict.keys())
+				name_key = greatest_param + 1
+				val_key = greatest_param + 2
+				params_dict[name_key] = attr[0]
+				params_dict[val_key] = attr[1]
+				if wspace_scope == True:
+					attribute_exprs.append(workspace_attribute_expr(attr[0], attr[1], name_key, val_key))
+				else:
+					attribute_exprs.append(project_attribute_expr(attr[0], attr[1], name_key, val_key))
+			
+			full_attribs_expr = ' AND ' + ' AND '.join(attribute_exprs)
+		else:
+			if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
+				print 'Part does not have attributes to check'
+			full_attribs_expr = ''
+			
+		if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
+			print '%s.%s.part_query_constructor set full_attribs_expr: ' % (self.project.name, self.name)
+			print full_attribs_expr
+		
+		if wspace_scope == True:
+			if len(full_attribs_expr) > 0:
+				attributes_clause = 'SELECT DISTINCT part FROM part_attributes WHERE project!=?2' + full_attribs_expr
+				query = 'SELECT * FROM parts WHERE value=?3 AND device=?4 AND package=?5 AND project!=?2 AND name IN (%s)' % attributes_clause
+			else:
+				query = 'SELECT * FROM parts WHERE value=?3 AND device=?4 AND package=?5 AND project!=?2'
+		else:
+			if len(full_attribs_expr) > 0:
+				attributes_clause = 'SELECT DISTINCT part FROM part_attributes WHERE part!=?1 AND project=?2' + full_attribs_expr
+				query = 'SELECT * FROM parts WHERE value=?3 AND device=?4 AND package=?5 AND project=?2 AND name IN (%s)' % attributes_clause
+			else:
+				query = 'SELECT * FROM parts WHERE value=?3 AND device=?4 AND package=?5 AND project=?2'
+		
+		if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
+			print '%s.%s.part_query_constructor set query: ' % (self.project.name, self.name)
+			print query
+		# Make the params tuple to pass to the cursor 
+		params = []
+		if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
+			print '%s.%s.part_query_constructor declared params tuple OK' % (self.project.name, self.name)
+		for key in sorted(params_dict.keys()):
+			params.append(params_dict[key])
+		
+		if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
+			print '%s.%s.part_query_constructor returning' % (self.project.name, self.name)
+			print 'Query: ', query
+			print 'Parameters: ', params
+			
+		return query, tuple(params)
+	
 	def find_similar_parts(self, wspace, check_wspace=True, connection=None):
 		''' Search the project and optionally workspace for parts of matching value/device/package/attributes.
 		If check_wspace = True, returns a pair of lists: (project_results, workspace_results).
@@ -232,6 +318,8 @@ class Part:
 		This allows for parts in different projects that incidentally have the same name to be added.
 		Only returns parts that have all of the non-empty attributes in self.attributes
 		(with equal values). This behavior is equivalent to self.equals(some_part, False). '''
+		if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
+			print 'Entering %s.%s.find_similar_parts' % (self.project.name, self.name)
 		project_results = []
 		workspace_results = []
 		try:
@@ -240,76 +328,26 @@ class Part:
 			else:
 				con = connection
 				cur = con.cursor()
-
-			sql = '''SELECT * FROM parts WHERE value=? AND device=? AND package=? AND project=? AND (name IN 
-			(SELECT part FROM part_attributes WHERE part!=? AND project=? AND (name IN 
-				(SELECT name FROM part_attributes WHERE part=? AND project=?) 
-				OR NOT EXISTS 
-				(SELECT name FROM part_attributes WHERE part=? AND project=?)) 
-			INTERSECT 
-			SELECT part FROM part_attributes WHERE part!=? AND project=? AND (value IN 
-				(SELECT value FROM part_attributes WHERE part=? AND project=?) 
-				OR NOT EXISTS 
-				(SELECT value FROM part_attributes WHERE part=? AND project=?))
-			) 
-			OR NOT EXISTS 
-			(SELECT part FROM part_attributes WHERE part!=? AND project=? AND (name IN 
-				(SELECT name FROM part_attributes WHERE part=? AND project=?) 
-				OR NOT EXISTS 
-				(SELECT name FROM part_attributes WHERE part=? AND project=?)) 
-			INTERSECT 
-			SELECT part FROM part_attributes WHERE part!=? AND project=? AND (value IN 
-				(SELECT value FROM part_attributes WHERE part=? AND project=?) 
-				OR NOT EXISTS 
-				(SELECT value FROM part_attributes WHERE part=? AND project=?))
-			))'''
-			params = (self.value, self.device, self.package, self.project.name, \
-					self.name, self.project.name, self.name, self.project.name, self.name, self.project.name, \
-					self.name, self.project.name, self.name, self.project.name, self.name, self.project.name, \
-					self.name, self.project.name, self.name, self.project.name, self.name, self.project.name, \
-					self.name, self.project.name, self.name, self.project.name, self.name, self.project.name,)
-
-			cur.execute(sql, params)
+			
+			project_query, project_params = self.part_query_constructor(False)
+			cur.execute(project_query, project_params)
 			rows = cur.fetchall()
 			for row in rows:
 				part = Part.new_from_row(row, wspace, con)
-				if self.name == 'C58' or self.name == 'C63': # debug
+				if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
 					print 'Project query found part: ', part
 				project_results.append(part)
 					
 			if check_wspace:
-				sql = '''SELECT * FROM parts WHERE value=? AND device=? AND package=? AND project!=? AND (name IN 
-				(SELECT part FROM part_attributes WHERE project!=? AND (name IN 
-					(SELECT name FROM part_attributes WHERE part=? AND project=?) 
-					OR NOT EXISTS 
-					(SELECT name FROM part_attributes WHERE part=? AND project=?)) 
-				INTERSECT 
-				SELECT part FROM part_attributes WHERE project!=? AND (value IN 
-					(SELECT value FROM part_attributes WHERE part=? AND project=?) 
-					OR NOT EXISTS 
-					(SELECT value FROM part_attributes WHERE part=? AND project=?))
-				) 
-				OR NOT EXISTS 
-				(SELECT part FROM part_attributes WHERE project!=? AND (name IN 
-					(SELECT name FROM part_attributes WHERE part=? AND project=?) 
-					OR NOT EXISTS 
-					(SELECT name FROM part_attributes WHERE part=? AND project=?)) 
-				INTERSECT 
-				SELECT part FROM part_attributes WHERE project!=? AND (value IN 
-					(SELECT value FROM part_attributes WHERE part=? AND project=?) 
-					OR NOT EXISTS 
-					(SELECT value FROM part_attributes WHERE part=? AND project=?))
-				))'''
-				params = (self.value, self.device, self.package, self.project.name, \
-						self.project.name, self.name, self.project.name, self.name, self.project.name, \
-						self.project.name, self.name, self.project.name, self.name, self.project.name, \
-						self.project.name, self.name, self.project.name, self.name, self.project.name, \
-						self.project.name, self.name, self.project.name, self.name, self.project.name,)
-				cur.execute(sql, params)
+				if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
+					print 'checking workspace'
+				
+				workspace_query, workspace_params = self.part_query_constructor(True)
+				cur.execute(workspace_query, workspace_params)
 				rows = cur.fetchall()
 				for row in rows:
 					part = Part.new_from_row(row, wspace, con)
-					if self.name == 'C58' or self.name == 'C63': # debug
+					if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
 						print 'Workspace query found part: ', part
 					workspace_results.append(part)
 							
@@ -317,7 +355,7 @@ class Part:
 			cur.close()
 			if connection is None:
 				con.close()
-			if self.name == 'C58' or self.name == 'C63': # debug
+			if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
 				print 'Project results list: '
 				for p in project_results:
 					print p
@@ -368,16 +406,15 @@ class Part:
 		- The value of self.product.manufacturer_pn
 		- The product of the matching Part in the DB
 		Passing an open connection to this method is recommended. '''
-		if self.name == 'C58' or self.name == 'C63': # debug
+		if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
 			print 'Entering %s.%s.product_updater' % (self.project.name, self.name)
 		unset_pn = ('', 'NULL', 'none', None, [])
 		if(self.is_in_db(wspace, connection)):
-			if self.name == 'C58' or self.name == 'C63': # debug
+			if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
 				print "Part of same name already in DB"
 			old_part = Part.select_by_name(self.name, wspace, self.project.name, connection)[0]
 			#old_part.show()
 			
-			#if(self.value == old_part.value and self.device == old_part.device and self.package == old_part.package):
 			if self.equals(old_part, True, True, True, False):
 				if self.product is not None and self.product.manufacturer_pn not in unset_pn:
 					if old_part.product is not None and old_part.product.manufacturer_pn not in unset_pn:
@@ -391,7 +428,7 @@ class Part:
 						pass	# Do nothing in this case
 					elif old_part.product is None or old_part.product.manufacturer_pn in unset_pn:
 						(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, check_wspace, connection)
-						if self.name == 'C58' or self.name == 'C63': # debug
+						if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
 							print 'first find_similar_parts call'
 							print 'candidate_proj_parts: ' 
 							for p in candidate_proj_parts:
@@ -414,12 +451,11 @@ class Part:
 							self.update(wspace, connection)
 						
 			else:	# Value/device/package/attribs mismatch
-				self.update(wspace, connection)
 				if self.product is not None and self.product.manufacturer_pn not in unset_pn:
-					pass
+					self.update(wspace, connection)
 				elif self.product is None or self.product.manufacturer_pn in unset_pn:
 					(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, check_wspace, connection)
-					if self.name == 'C58' or self.name == 'C63': # debug
+					if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
 						print 'second find_similar_parts call'
 						print 'candidate_proj_parts: ' 
 						for p in candidate_proj_parts:
@@ -429,7 +465,7 @@ class Part:
 							print p
 					candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts, connection)
 					if len(candidate_products) == 0:
-						if self.name == 'C58' or self.name == 'C63': # debug
+						if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
 							print 'No matching products found, updating as-is'
 						#pass
 					elif len(candidate_products) == 1:
@@ -442,12 +478,11 @@ class Part:
 					self.update(wspace, connection)
 		
 		else:
-			if self.name == 'C58' or self.name == 'C63': # debug
+			if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
 				print 'Part not in DB'
-			self.insert(wspace, connection)
 			if self.product is None or self.product.manufacturer_pn in unset_pn:
 				(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, check_wspace, connection)
-				if self.name == 'C58' or self.name == 'C63': # debug
+				if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
 					print 'third find_similar_parts call'
 					print 'candidate_proj_parts: ' 
 					for p in candidate_proj_parts:
@@ -457,12 +492,12 @@ class Part:
 						print p
 				candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts, connection)
 				if len(candidate_products) == 0:
-					if self.name == 'C58' or self.name == 'C63': # debug
+					if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
 						print 'No matching products found, inserting as-is'#, self.show()
 					pass
 				elif len(candidate_products) == 1:
 					self.product = candidate_products[0]
-					if self.name == 'C58' or self.name == 'C63': # debug
+					if self.name == 'C58' or self.name == 'C63' or (self.project.name == 'test2' and self.name == 'C5'): # debug
 						print 'Found exactly one matching product, setting product and inserting'#, self.show()
 				else:
 					#print 'Found multiple product matches, prompting for selection...'
@@ -473,7 +508,7 @@ class Part:
 					newprod = Product('NULL', self.product.manufacturer_pn)
 					newprod.insert(wspace, connection)
 					newprod.scrape(wspace, connection)
-			self.update(wspace, connection)
+			self.insert(wspace, connection)
 		
 	def update(self, wspace, connection=None):
 		''' Update an existing Part record in the DB. '''

@@ -189,7 +189,14 @@ class EagleManagerTestCase(unittest.TestCase):
 			test2_c5 = test2_c5_query[0]
 			assert test2_c5.project is test2_bom
 			#					Check:	Attribs, Name, Proj, Prod
-			assert test2_c5.equals(test_c5, False, True, False, True) == True
+			try:
+				assert test2_c5.equals(test_c5, False, True, False, True) == True
+			except AssertionError:
+				print 'Assertion failed: assert test2_c5.equals(test_c5, False, True, False, True) == True'
+				print 'Reference C5: ', test_c5
+				print 'Test 1 C5: ', test1_c5
+				print 'Test 2 C5: ', test2_c5
+				raise AssertionError
 			assert test2_c5.equals(test_c5, True, True, False, True) == True
 			assert test2_c5.equals(test_c5, True, True, True, True) == False
 			assert test2_c5.product.equals(test_c5_prod)
@@ -256,7 +263,7 @@ class EagleManagerTestCase(unittest.TestCase):
 			
 			
 			#						Check:	Attribs, Name, Proj, Prod
-			assert test3_c5.equals(test3_c63, True, False, True, False) == True
+			assert test3_c5.equals(test3_c63, True, False, True, False) == False
 			assert test3_c5.equals(test3_c63, False, False, False, False) == True
 			assert test3_c5.equals(test3_c63, False, False, False, True) == False
 			assert test3_c5.equals(test3_c63, False, False, True, False) == True
