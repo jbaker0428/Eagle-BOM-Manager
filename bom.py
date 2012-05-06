@@ -265,21 +265,22 @@ class BOM:
 						desc_col = -1
 						prod_col = -1
 						bom_attribs = {}	# Key = column index, value = name of attribute
-						for col in header:
-							if 'Part' in col or 'Name' in col:
+						for column in header:
+							col = column.lower()
+							if 'part' in col or 'name' in col:
 								name_col = index
-							elif 'Value' in col:
+							elif 'value' in col:
 								val_col = index
-							elif 'Device' in col:
+							elif 'device' in col:
 								dev_col = index
-							elif 'Package' in col:
+							elif 'package' in col:
 								pkg_col = index
-							elif 'Description' in col:
+							elif 'description' in col:
 								desc_col = index
-							elif 'PARTNO' in col or 'Part Number' in col or 'PART#' in col or ('PN' in col and 'Vendor' not in col):
+							elif 'partno' in col or 'partnum' in col or 'part number' in col or 'part#' in col or ('pn' in col and 'vendor' not in col):
 								prod_col = index
 							else:
-								bom_attribs[index] = col
+								bom_attribs[index] = column
 							index += 1
 					else:
 						print 'Row: ', row
