@@ -12,10 +12,19 @@ Beautiful Soup: http://www.crummy.com/software/BeautifulSoup/
 PyGTK: http://www.pygtk.org/
 
 Importing data:
-Export a CSV file from either BOM script with the following columns:
+Export a CSV file from one of the BOM scripts with the following columns:
 Name, Value, Device, Package, Description
 
+A manufacturer part number attribute can be optionally added as a 6th column without adding a column header row.
+
 Other part attributes from Eagle can be placed in additional columns. A column header row is required in this case.
+
+When using a column header row, the manufacturer part number column does not need to be the 6th row. The header label for this row should contain one of the following (not case sensitive):
+'partno'
+'partnum'
+'part number'
+'part#'
+'pn'
 
 The file should have one component per line -- do not group components by value in the ULP.
 
