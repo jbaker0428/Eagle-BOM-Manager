@@ -4,3 +4,6 @@
 *.sqlite
 desktop.ini
 ~$*.*x
+.*project
+*.exe
+*.txt
