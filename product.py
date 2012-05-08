@@ -3,7 +3,7 @@ from BeautifulSoup import BeautifulSoup, Tag, NavigableString
 import shutil
 import os
 import urlparse
-import sqlite3
+import apsw
 from manager import Workspace
 
 def get_filename(url,openUrl):
@@ -80,54 +80,40 @@ class Listing:
 	''' A distributor's listing for a Product object. '''
 	
 	@staticmethod
-	def new_from_row(row, wspace, connection=None):
+	def new_from_row(row, connection):
 		''' Given a listing row from the DB, returns a Listing object. '''
 		listing = Listing(row[0], row[1], row[2], {}, row[3], row[4], row[5], row[6], row[7], row[8])
-		listing.fetch_price_breaks(wspace, connection)
+		listing.fetch_price_breaks(connection)
 		return listing
 		
 	@staticmethod
-	def select_by_vendor_pn(pn, wspace, connection=None):
+	def select_by_vendor_pn(pn, connection):
 		''' Return the Listing(s) of given source part number in a list. '''
 		listings = []
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			params = (pn,)
-			cur.execute('SELECT * FROM listings WHERE vendor_pn=?', params)
-			for row in cur.fetchall():
-				listings.append(Listing.new_from_row(row, wspace, con))
+			for row in cur.execute('SELECT * FROM listings WHERE vendor_pn=?', params):
+				listings.append(Listing.new_from_row(row, connection))
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 			return listings
 	
 	@staticmethod
-	def select_by_manufacturer_pn(pn, wspace, connection=None):
+	def select_by_manufacturer_pn(pn, connection):
 		''' Return the Listing(s) of given manufacturer part number in a list. '''
 		listings = []
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			params = (pn,)
-			cur.execute('SELECT * FROM listings WHERE manufacturer_pn=?', params)
-			for row in cur.fetchall():
-				listings.append(Listing.new_from_row(row, wspace, con))
+			for row in cur.execute('SELECT * FROM listings WHERE manufacturer_pn=?', params):
+				listings.append(Listing.new_from_row(row, connection))
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 			return listings
 	
 	def __init__(self, vend, vendor_pn, manufacturer_pn, prices_dict, inv, pkg, reel=0, cat='NULL', fam='NULL', ser='NULL'):
@@ -194,14 +180,10 @@ class Listing:
 		key = self.source + ': ' + self.vendor_pn + ' (' + self.packaging + ')'
 		return key
 	
-	def update(self, wspace, connection=None):
+	def update(self, connection):
 		''' Update an existing Listing record in the DB. '''
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			cur.execute('DELETE FROM pricebreaks WHERE pn=?', (self.vendor_pn,))
 			for pb in self.prices.items():
@@ -217,17 +199,11 @@ class Listing:
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 	
-	def insert(self, wspace, connection=None):
+	def insert(self, connection):
 		''' Write the Listing to the DB. '''
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			params = (self.source, self.vendor_pn, self.manufacturer_pn, self.inventory, self.packaging,
 					self.reel_fee, self.category, self.family, self.series,)
@@ -239,55 +215,40 @@ class Listing:
 				cur.execute('INSERT OR REPLACE INTO pricebreaks VALUES (NULL,?,?,?)', params)
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 	
-	def delete(self, wspace, connection=None):
+	def delete(self, connection):
 		''' Delete the Listing from the DB. '''
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			params = (self.vendor_pn,)
 			cur.execute('DELETE FROM listings WHERE vendor_pn=?', params)
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 	
-	def is_in_db(self, wspace, connection=None):
+	def is_in_db(self, connection):
 		''' Check if this Listing is in the database. '''
-		result = Listing.select_by_vendor_pn(self.vendor_pn, wspace, connection)
+		result = Listing.select_by_vendor_pn(self.vendor_pn, connection)
 		if len(result) == 0:
 			return False
 		else:
 			return True
 	
-	def fetch_price_breaks(self, wspace, connection=None):
+	def fetch_price_breaks(self, connection):
 		''' Fetch price breaks dictionary for this Listing. 
 		Clears and sets the self.prices dictionary directly. '''
 		#print 'self.prices: ', type(self.prices), self.prices
 		self.prices.clear()
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			params = (self.vendor_pn,)
-			cur.execute('SELECT qty, unit FROM pricebreaks WHERE pn=? ORDER BY qty', params)
-			for row in cur.fetchall():
+			for row in cur.execute('SELECT qty, unit FROM pricebreaks WHERE pn=? ORDER BY qty', params):
 				self.prices[row[0]] = row[1]
 
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 		
 	def get_price_break(self, qty):
 		''' Returns the (price break, unit price) list pair for the given purchase quantity.
@@ -313,56 +274,42 @@ class Product:
 	The primary identifying key is the manufacturer PN. '''
 	
 	@staticmethod
-	def new_from_row(row, wspace, connection=None):
+	def new_from_row(row, connection):
 		''' Given a product row from the DB, returns a Product object. '''
 		prod = Product(row[0], row[1], row[2], row[3], row[4])
-		prod.fetch_listings(wspace, connection)
+		prod.fetch_listings(connection)
 		return prod
 	
 	@staticmethod
-	def select_all(wspace, connection=None):
+	def select_all(connection):
 		''' Return the entire product table except the 'NULL' placeholder row. '''
 		prods = []
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
-			cur.execute('SELECT * FROM products')
-			for row in cur.fetchall():
+			for row in cur.execute('SELECT * FROM products'):
 				if row[1] == 'NULL':
 					continue
 				else:
-					prods.append(Product.new_from_row(row, wspace, con))
+					prods.append(Product.new_from_row(row, connection))
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 			return prods
 	
 	@staticmethod
-	def select_by_pn(pn, wspace, connection=None):
+	def select_by_pn(pn, connection):
 		''' Return the Product(s) of given part number in a list. '''
 		prods = []
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			params = (pn,)
-			cur.execute('SELECT * FROM products WHERE manufacturer_pn=?', params)
-			for row in cur.fetchall():
-				prods.append(Product.new_from_row(row, wspace, con))
+			for row in cur.execute('SELECT * FROM products WHERE manufacturer_pn=?', params):
+				prods.append(Product.new_from_row(row, connection))
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 			return prods
 		
 	def __init__(self, mfg, manufacturer_pn, dsheet='NULL', desc='NULL', pkg='NULL'):
@@ -412,14 +359,10 @@ class Product:
 				eq = False
 		return eq
 	
-	def update(self, wspace, connection=None):
+	def update(self, connection):
 		''' Update an existing Product record in the DB. '''
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			params = (self.manufacturer, self.manufacturer_pn, self.datasheet, self.description, 
 					self.package, self.manufacturer_pn,)
@@ -429,66 +372,45 @@ class Product:
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 	
-	def insert(self, wspace, connection=None):
+	def insert(self, connection):
 		''' Write the Product to the DB. '''
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			params = (self.manufacturer, self.manufacturer_pn, self.datasheet, self.description, self.package,)
 			cur.execute('INSERT OR REPLACE INTO products VALUES (?,?,?,?,?)', params)
 				
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 	
-	def delete(self, wspace, connection=None):
+	def delete(self, connection):
 		''' Delete the Product from the DB. '''
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			params = (self.manufacturer_pn,)
 			cur.execute('DELETE FROM products WHERE manufacturer_pn=?', params)
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 	
-	def fetch_listings(self, wspace, connection=None):
+	def fetch_listings(self, connection):
 		''' Fetch listings dictionary for this Product. 
 		Clears and sets the self.listings dictionary directly. '''
 		self.listings.clear()
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			params = (self.manufacturer_pn,)
-			cur.execute('SELECT * FROM listings WHERE manufacturer_pn=? ORDER BY vendor', params)
-			for row in cur.fetchall():
-				listing = Listing.new_from_row(row, wspace, con)
+			for row in cur.execute('SELECT * FROM listings WHERE manufacturer_pn=? ORDER BY vendor', params):
+				listing = Listing.new_from_row(row, connection)
 				self.listings[listing.key()] = listing
 				#print 'Setting listings[%s] = ' % listing.key()
 				#listing.show()
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 		
 	def best_listing(self, qty):
 		''' Return the Listing with the best price for the given order quantity. 
@@ -513,36 +435,26 @@ class Product:
 					print 'Set best listing: ', best.show_brief()
 		return best
 	
-	def get_preferred_listing(self, project, wspace, connection=None):
+	def get_preferred_listing(self, project, connection):
 		'''Get a project's preferred Listing for this Product. '''
 		try:
 			listing = None
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
+			
 			params = (project.name, self.manufacturer_pn,)
-			cur.execute('SELECT listing FROM preferred_listings WHERE project=? AND product=?', params)
-			row = cur.fetchone()
-			if row is not None:
-				listing = Listing.select_by_vendor_pn(row[0], wspace, con)[0]
+			rows = list(cur.execute('SELECT listing FROM preferred_listings WHERE project=? AND product=?', params))
+			if len(rows) > 0:
+				listing = Listing.select_by_vendor_pn(rows[0][0], connection)[0]
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 			return listing
 	
-	def set_preferred_listing(self, project, listing, wspace, connection=None):
+	def set_preferred_listing(self, project, listing, connection):
 		'''Set a project's preferred Listing for this Product. '''
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
-			current_listing = self.get_preferred_listing(project, wspace, con)
+			cur = connection.cursor()
+			current_listing = self.get_preferred_listing(project, connection)
 			if current_listing is None:
 				params = (project.name, self.manufacturer_pn, listing.vendor_pn,)
 				cur.execute('INSERT INTO preferred_listings VALUES (NULL,?,?,?)', params) 
@@ -552,8 +464,6 @@ class Product:
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 	
 	def in_stock(self):
 		''' Returns true if any Listings have inventory > 0. '''
@@ -740,7 +650,7 @@ class Product:
 		page = urllib2.urlopen(url)
 		soup = BeautifulSoup(page)
 			
-	def scrape(self, wspace, connection=None):
+	def scrape(self, connection):
 		''' Scrape each source page to refresh product pricing info. '''
 		if no_vendors_enabled() == True:
 			if VENDOR_WARN_IF_NONE_EN == True:
@@ -770,15 +680,15 @@ class Product:
 			
 			#print 'Writing the following Product to DB: \n'
 			#self.show()
-			if self.is_in_db(wspace, connection):
-				self.update(wspace, connection)
+			if self.is_in_db(connection):
+				self.update(connection)
 			else:
-				self.insert(wspace, connection)
+				self.insert(connection)
 			for listing in self.listings.values():
-				if listing.is_in_db(wspace, connection):
-					listing.update(wspace, connection)
+				if listing.is_in_db(connection):
+					listing.update(connection)
 				else:
-					listing.insert(wspace, connection)
+					listing.insert(connection)
 			if len(self.listings.values()) == 0:
 				raise ScrapeException(self.scrape.__name__, self.manufacturer_pn, 1)
 			if self.in_stock() == False:
@@ -786,25 +696,25 @@ class Product:
 			
 				
 
-	def is_in_db(self, wspace, connection=None):
+	def is_in_db(self, connection):
 		''' Check if this Product is in the database. '''
-		result = Product.select_by_pn(self.manufacturer_pn, wspace, connection)
+		result = Product.select_by_pn(self.manufacturer_pn, connection)
 		if len(result) == 0:
 			return False
 		else:
 			return True
 
-	def select_or_scrape(self, wspace, connection=None):
+	def select_or_scrape(self, connection):
 		''' Sets the product fields, pulling from the local DB if possible.
 		Passing an open connection to this method is recommended. '''	
-		if(self.is_in_db(wspace, connection)):
-			temp = Product.select_by_pn(self.manufacturer_pn, wspace, connection)[0]
+		if(self.is_in_db(connection)):
+			temp = Product.select_by_pn(self.manufacturer_pn, connection)[0]
 			self.manufacturer = temp.manufacturer
 			self.manufacturer_pn = temp.manufacturer_pn
 			self.datasheet = temp.datasheet
 			self.description = temp.description
 			self.package = temp.package
-			self.fetch_listings(wspace, connection)
+			self.fetch_listings(connection)
 		elif self.manufacturer_pn != 'none' and self.manufacturer_pn != 'NULL':
-			self.scrape(wspace, connection)
+			self.scrape(connection)
 

@@ -4,7 +4,7 @@ pygtk.require('2.0')
 import gtk
 import shutil
 import os
-import sqlite3
+import apsw
 import types
 import gobject
 
@@ -12,53 +12,55 @@ class Workspace:
 	''' Each Workspace has its own persistent database file. '''
 	db0 = os.path.join(os.getcwd(), 'workspace.sqlite')
 	
-	def __init__(self, name='Workspace', db=db0):
+	def __init__(self, name='Workspace', db_file=db0):
 		self.name = name
-		self.db = db
+		self.disk_db = db_file
 		self.projects = []
+		self.memory = self.connect(":memory:")
 	
-	def connection(self):
+	def connect(self, db):
 		''' Connect to the DB, enable foreign keys, set autocommit mode,  
 		and return the open connection object. '''
-		con = sqlite3.connect(self.db)
-		con.isolation_level = None
-		con.execute('PRAGMA foreign_keys = ON')
-		return con
-	
-	def con_cursor(self):
-		''' Connect to the DB, enable foreign keys, set autocommit mode,  
-		and return a (connection, cursor) pair. '''
-		con = self.connection()
+		con = apsw.Connection(db)
 		cur = con.cursor()
-		return (con, cur)
+		cur.execute('PRAGMA foreign_keys = ON')
+		cur.close()
+		return con
 		
-	def list_projects(self, connection=None):
+	def list_projects(self):
 		''' Returns a list of BOM project tables in the DB. '''
 		projects = []
 		try:
-			if connection is None:
-				(con, cur) = self.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = self.memory.cursor()
 			cur.execute('SELECT name FROM projects ORDER BY name')
 			for row in cur.fetchall():
 				projects.append(row[0])
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 			return projects
 	
-	def create_tables(self, connection=None):
+	def open(self):
+		''' Loads the workspace into memory from disk. '''	
+		bkup = self.memory.backup("main", self.connect(self.disk_db), "main")
+		try:
+			while not bkup.done:
+				bkup.step()
+				#print bkup.remaining, bkup.pagecount, "\r",
+		
+		finally:
+			bkup.finish()
+				
+	def save(self):
+		''' Saves the in-memory workspace to disk. '''
+		with self.connect(self.disk_db).backup("main", self.memory, "main") as bkup:
+			while not bkup.done:
+				bkup.step(100)
+	
+	def create_tables(self):
 		''' Create the workspace-wide database tables. '''		
 		try:
-			if connection is None:
-				(con, cur) = self.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = self.memory.cursor()
 			cur.execute('CREATE TABLE IF NOT EXISTS projects(name TEXT PRIMARY KEY, description TEXT, infile TEXT)')
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS parts 
@@ -116,12 +118,8 @@ class Workspace:
 						
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 
 wspace = Workspace()
-wspace.create_tables()
-wspace.projects = wspace.list_projects()
 
 #active_project_name = 'test1'
 input_file = os.path.join(os.getcwd(), "test.csv")	# TODO: Test dummy
@@ -153,8 +151,12 @@ class Manager(gobject.GObject):
 		gtk.main_quit()
 
 	# -------- CALLBACK METHODS --------
-	''' Callback for the input file Open dialog in the New Project dialog. '''
+	def file_save_callback(self, widget):
+		''' Callback for the Save button in the File menu. '''
+		wspace.save()
+	
 	def new_project_input_file_callback(self, widget, data=None):
+		''' Callback for the input file Open dialog in the New Project dialog. '''
 		self.input_file_dialog.run()
 		self.input_file_dialog.hide()
 		if self.input_file_dialog.get_filename() is None:
@@ -162,13 +164,12 @@ class Manager(gobject.GObject):
 		else:
 			self.new_project_input_file_entry.set_text(self.input_file_dialog.get_filename())
 	
-	'''Callback for the New Project button. '''
 	def project_new_callback(self, widget, data=None):
-		con = wspace.connection()
+		'''Callback for the New Project button. '''
 		response = self.new_project_dialog.run()
 		self.new_project_dialog.hide()
 		new_name = self.new_project_name_entry.get_text()
-		curProjects = wspace.list_projects(con)
+		curProjects = wspace.list_projects(wspace.memory)
 		if new_name in curProjects:
 			print 'Error: Name in use!'
 			self.project_name_taken_dialog.run()
@@ -176,74 +177,65 @@ class Manager(gobject.GObject):
 		elif response == gtk.RESPONSE_ACCEPT: 
 			# Create project
 			print 'Creating new project'
-			new = BOM.new_project(new_name, self.new_project_description_entry.get_text(), self.new_project_input_file_entry.get_text(), wspace, con)
+			new = BOM.new_project(new_name, self.new_project_description_entry.get_text(), self.new_project_input_file_entry.get_text(), wspace.memory)
 			self.project_store_populate()
 		self.new_project_name_entry.set_text('')
 		self.new_project_description_entry.set_text('')
 		#self.new_project_workspace_entry.set_text('')
 		self.new_project_input_file_entry.set_text('')
-		con.close()
 		
 	def project_open_callback(self, widget, data=None):
 		''' Callback for the Open Project button. '''
 		(model, row_iter) = self.project_tree_view.get_selection().get_selected()
-		con = wspace.connection()
-		self.active_bom = BOM.read_from_db(model.get(row_iter,0)[0], wspace, con)[0]
+		self.active_bom = BOM.read_from_db(model.get(row_iter,0)[0], wspace.memory)[0]
 		self.active_project_name = model.get(row_iter,0)[0]
-		self.active_bom.parts = self.active_bom.read_parts_list_from_db(wspace, con)
+		self.active_bom.parts = self.active_bom.read_parts_list_from_db(wspace.memory)
 		input_file = model.get(row_iter,3)[0]
 		#print self.active_bom, type(self.active_bom)
 		#print 'Project name: ', self.active_project_name
 		#print 'Project CSV: ', input_file
 		if self.bom_group_name.get_active():
-			self.bom_store_populate_by_name(con)
+			self.bom_store_populate_by_name()
 		elif self.bom_group_value.get_active():
-			self.bom_store_populate_by_value(con)
+			self.bom_store_populate_by_value()
 		elif self.bom_group_product.get_active():
-			self.bom_store_populate_by_product(con)
+			self.bom_store_populate_by_product()
 			
 		self.bom_tree_view.columns_autosize()
 		# TODO: Uncomment this when spin is working
 		#self.order_size_spin_callback(self.run_size_spin)
-		con.close()
 		self.window.show_all()
 	
 	def project_delete_callback(self, widget, data=None):
 		''' Callback for the Delete Project button. '''
 		(model, row_iter) = self.project_tree_view.get_selection().get_selected()
-		con = wspace.connection()
-		selected_bom = BOM.read_from_db(model.get(row_iter,0)[0], wspace, con)[0]
+		selected_bom = BOM.read_from_db(model.get(row_iter,0)[0], wspace.memory)[0]
 		if selected_bom.name == self.active_bom.name:
 			self.bom_store.clear()
-		selected_bom.delete(wspace, con)
-		self.project_store_populate(con)
-		con.close()
+		selected_bom.delete(wspace.memory)
+		self.project_store_populate(wspace.memory)
 		
 	'''Callback for the "Read CSV" button on the BOM tab.'''
 	def read_input_callback(self, widget, data=None):
-		con = wspace.connection()
-		self.active_bom.read_from_file(wspace, con)
+		self.active_bom.read_from_file(wspace.memory)
 		if self.bom_group_name.get_active():
-			self.bom_store_populate_by_name(con)
+			self.bom_store_populate_by_name()
 		elif self.bom_group_value.get_active():
-			self.bom_store_populate_by_value(con)
+			self.bom_store_populate_by_value()
 		elif self.bom_group_product.get_active():
-			self.bom_store_populate_by_product(con)
-		con.close()
+			self.bom_store_populate_by_product()
 		self.window.show_all()
 	
 	'''Callback for the "Read DB" button on the BOM tab.'''
 	def bom_read_db_callback(self, widget, data=None):
-		con = wspace.connection()
 		#print "BOM Read DB callback"
 		#print 'Parts list = ', self.active_bom.parts
 		if self.bom_group_name.get_active():
-			self.bom_store_populate_by_name(con)
+			self.bom_store_populate_by_name()
 		elif self.bom_group_value.get_active():
-			self.bom_store_populate_by_value(con)
+			self.bom_store_populate_by_value()
 		elif self.bom_group_product.get_active():
-			self.bom_store_populate_by_product(con)
-		con.close()
+			self.bom_store_populate_by_product()
 		self.window.show_all()
 	
 	'''Callback method triggered when a BOM line item is selected.'''
@@ -252,8 +244,7 @@ class Manager(gobject.GObject):
 		(model, row_iter) = self.bom_tree_view.get_selection().get_selected()
 		#print 'row_iter is: ', row_iter, '\n'
 		#print 'model.get(row_iter,0)[0] is: ', model.get(row_iter,0)[0]
-		con = wspace.connection()
-		self.selected_bom_part = self.active_bom.select_parts_by_name(model.get(row_iter,0)[0], wspace, con)[0]
+		self.selected_bom_part = self.active_bom.select_parts_by_name(model.get(row_iter,0)[0], wspace.memory)[0]
 		# Grab the vendor part number for the selected item from the label text
 		selected_pn = model.get(row_iter,5)[0]
 		#print "selected_pn is: %s" % selected_pn
@@ -263,7 +254,7 @@ class Manager(gobject.GObject):
 			# Set class field for currently selected product
 			#rint "Querying with selected_pn: %s" % selected_pn
 			if len(self.selected_bom_part.product.listings) == 0:
-				self.selected_bom_part.product.scrape(wspace, con)
+				self.selected_bom_part.product.scrape(wspace.memory)
 			#self.selected_bom_part.product.show()
 			self.set_part_info_labels(self.selected_bom_part.product)
 			self.set_part_info_listing_combo(self.selected_bom_part.product)
@@ -272,7 +263,7 @@ class Manager(gobject.GObject):
 			if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
 				#Set the active Listing selection if one has been set
 				assert len(self.selected_bom_part.product.listings.keys()) > 0
-				preferred_listing = self.selected_bom_part.product.get_preferred_listing(self.active_bom, wspace, con)
+				preferred_listing = self.selected_bom_part.product.get_preferred_listing(self.active_bom, wspace.memory)
 				if preferred_listing is not None:
 					set_combo(self.part_info_listing_combo, preferred_listing.key())
 				self.set_part_price_labels(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()])
@@ -282,7 +273,6 @@ class Manager(gobject.GObject):
 			self.set_part_info_listing_combo()
 			self.destroy_part_price_labels()
 			self.clear_part_info_labels()
-		con.close()
 	
 	'''Callback method activated by the BOM grouping radio buttons.
 	Redraws the BOM TreeView with the approporiate goruping for the selected radio.'''
@@ -290,17 +280,15 @@ class Manager(gobject.GObject):
 		#print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
 		# Figure out which button is now selected
 		if widget.get_active():
-			con = wspace.connection()
 			if 'name' in data:
-				self.bom_store_populate_by_name(con)
+				self.bom_store_populate_by_name()
 				
 			elif 'value' in data:
-				self.bom_store_populate_by_value(con)
+				self.bom_store_populate_by_value()
 					
 			elif 'product' in data:
-				self.bom_store_populate_by_product(con)
+				self.bom_store_populate_by_product()
 			
-			con.close()		
 			self.window.show_all()
 	
 	'''Callback method activated by clicking a BOM column header.
@@ -405,7 +393,6 @@ class Manager(gobject.GObject):
 		edit_part_dialog.hide()
 		
 		if response == gtk.RESPONSE_ACCEPT:
-			con = wspace.connection()
 			# If the product text entry field is left blank, set the product to 'NULL'
 			if type(self.edit_part_product_entry.get_text()) is types.NoneType or len(self.edit_part_product_entry.get_text()) == 0:
 				self.product_entry_text = ''
@@ -415,16 +402,16 @@ class Manager(gobject.GObject):
 				if self.selected_bom_part.product is not None and self.selected_bom_part.product.manufacturer_pn == self.product_entry_text:
 					pass	# Nothing to do here
 				else:
-					prod = Product.select_by_pn(self.product_entry_text, wspace, con)
+					prod = Product.select_by_pn(self.product_entry_text, wspace.memory)
 					if len(prod) > 0:
 						self.selected_bom_part.product = prod[0]
 					else:
 						newprod = Product('NULL', self.product_entry_text)
-						newprod.insert(wspace, con)
-						newprod.scrape(wspace, con)
+						newprod.insert(wspace.memory)
+						newprod.scrape(wspace.memory)
 						self.selected_bom_part.product = newprod
 				if len(self.selected_bom_part.product.listings) == 0:
-					self.selected_bom_part.product.scrape(wspace, con)
+					self.selected_bom_part.product.scrape(wspace.memory)
 			
 			# Set selected_bom_part
 			# TODO: If grouping by value or PN, what to do? Grey out the name field?
@@ -439,46 +426,41 @@ class Manager(gobject.GObject):
 			# for it if necessary, before updating selected_bom_part in the DB.
 			
 			
-			self.selected_bom_part.update(wspace,con)
+			self.selected_bom_part.update(wspace.memory)
 			self.active_bom.update_parts_list(self.selected_bom_part)
 			
 			if self.bom_group_name.get_active():
-				self.bom_store_populate_by_name(con)
+				self.bom_store_populate_by_name()
 			elif self.bom_group_value.get_active():
-				self.bom_store_populate_by_value(con)
+				self.bom_store_populate_by_value()
 			elif self.bom_group_product.get_active():
-				self.bom_store_populate_by_product(con)
+				self.bom_store_populate_by_product()
 					
 			self.set_part_info_listing_combo(self.selected_bom_part.product)
 			if self.selected_bom_part.product is None or self.selected_bom_part.product.manufacturer_pn == 'NULL' or self.selected_bom_part.product.manufacturer_pn == '':
 				self.clear_part_info_labels()
 			else:
 				self.set_part_info_labels(self.selected_bom_part.product)
-			con.close()
 			
 	def bom_find_prod_callback(self, widget, data=None):
 		''' Calls bom.product_updater on selected part. '''
-		con = wspace.connection()
-		self.selected_bom_part.product_updater(wspace, con)
+		self.selected_bom_part.product_updater(wspace.memory)
 		if self.bom_group_name.get_active():
-			self.bom_store_populate_by_name(con)
+			self.bom_store_populate_by_name()
 		elif self.bom_group_value.get_active():
-			self.bom_store_populate_by_value(con)
+			self.bom_store_populate_by_value()
 		elif self.bom_group_product.get_active():
-			self.bom_store_populate_by_product(con)
-		con.close()
+			self.bom_store_populate_by_product()
 	
 	def part_info_scrape_button_callback(self, widget):
 		''' Part info frame "Refresh" button callback. '''
-		con = wspace.connection()
-		self.selected_bom_part.product.scrape(wspace, con)
+		self.selected_bom_part.product.scrape(wspace.memory)
 		if self.bom_group_name.get_active():
-			self.bom_store_populate_by_name(con)
+			self.bom_store_populate_by_name()
 		elif self.bom_group_value.get_active():
-			self.bom_store_populate_by_value(con)
+			self.bom_store_populate_by_value()
 		elif self.bom_group_product.get_active():
-			self.bom_store_populate_by_product(con)
-		con.close()
+			self.bom_store_populate_by_product()
 		self.window.show_all()
 	
 	def part_info_listing_combo_callback(self, widget, data=None):
@@ -490,26 +472,22 @@ class Manager(gobject.GObject):
 	def part_info_set_listing_button_callback(self, widget, data=None):
 		print 'Set preferred listing callback'
 		if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
-			self.selected_bom_part.product.set_preferred_listing(self.active_bom, self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()], wspace)
+			self.selected_bom_part.product.set_preferred_listing(self.active_bom, self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()], wspace.memory)
 	
 	def order_size_spin_callback(self, widget):
 		''' Update the per-unit and total order prices when the order size
 		spin button is changed. '''
 		qty = self.run_size_spin.get_value_as_int()
-		con = wspace.connection()
-		(unit_price, total_cost) = self.active_bom.get_cost(wspace, qty, con)
+		(unit_price, total_cost) = self.active_bom.get_cost(wspace.memory, qty)
 		self.run_unit_price_content_label.set_text('$'+str(unit_price))
 		self.run_total_cost_content_label.set_text('$'+str(total_cost))
-		con.close()
 	
 	def db_store_populate(self):
 		''' Clear self.db_product_store and repopulate it. '''
-		con = wspace.connection()
 		self.db_product_store.clear()
-		prods = Product.select_all(wspace, con)
+		prods = Product.select_all(wspace.memory)
 		for p in prods:
 			iter = self.db_product_store.append([p.manufacturer, p.manufacturer_pn, p.description, p.datasheet, p.package])
-		con.close()
 		self.db_tree_view.columns_autosize()
 	
 	def db_read_database_callback(self, widget, data=None):
@@ -521,9 +499,7 @@ class Manager(gobject.GObject):
 		'''Callback method triggered when a product DB item is selected.'''
 		# Set class fields for currently selected item
 		(model, row_iter) = self.db_tree_view.get_selection().get_selected()
-		con = wspace.connection()
-		self.db_selected_product = Product.select_by_pn(model.get(row_iter,1)[0], wspace, con)[0]
-		con.close()
+		self.db_selected_product = Product.select_by_pn(model.get(row_iter,1)[0], wspace.memory)[0]
 	
 	def db_sort_callback(self, widget):
 		'''Callback method activated by clicking a DB column header.
@@ -531,68 +507,52 @@ class Manager(gobject.GObject):
 		widget.set_sort_column_id(0)
 	 
 	# -------- HELPER METHODS --------
-	def project_store_populate(self, connection=None):
+	def project_store_populate(self):
 		self.project_store.clear()
-		if connection is None:
-			con = wspace.connection()
-		else:
-			con = connection
 		# Columns: Name, Description, Database, Input File
-		projects_list = wspace.list_projects(con)
+		projects_list = wspace.list_projects()
 		#print 'projects_list: ', projects_list
 		for p in projects_list:
 			if type(p) is types.NoneType:
 				print 'NoneType caught in projects_list'
 			elif p != 'dummy':
 				#print 'p = ', p
-				bom = BOM.read_from_db(p, wspace, con)[0]
+				bom = BOM.read_from_db(p, wspace.memory)[0]
 				#print 'Returned BOM: ', bom, type(bom)
 				iter = self.project_store.append([bom.name, bom.description, wspace.name, bom.input])
-		if connection is None:
-			con.close()
 		self.project_tree_view.columns_autosize()
 	
-	def bom_store_populate_by_name(self, connection=None):
+	def bom_store_populate_by_name(self):
 		''' Clear self.bom_store and repopulate it, grouped by name. '''
 		self.bom_store.clear()
-		if connection is None:
-			con = wspace.connection()
-		else:
-			con = connection
 		for p in self.active_bom.parts:
 			try:
-				temp = self.active_bom.select_parts_by_name(p[0], wspace, con)[0]
+				temp = self.active_bom.select_parts_by_name(p[0], wspace.memory)[0]
 			except IndexError:
 				print 'IndexError:'
 				print 'bom.parts: ', self.active_bom.parts
 				print 'p: ', p
 				print 'p[0]:', p[0]
-				#print 'Trying Part.select_all():', Part.select_all(wspace, con)
+				#print 'Trying Part.select_all():', Part.select_all(wspace.memory)
 			#print 'Temp: ', type(temp), temp
 			if temp.product is None:
 				iter = self.bom_store.append([temp.name, temp.value, temp.device, temp.package, temp.description, '', 1])
 			else:
 				iter = self.bom_store.append([temp.name, temp.value, temp.device, temp.package, temp.description, temp.product.manufacturer_pn, 1])
 		
-		if connection is None:
-			con.close()
 		self.bom_tree_view.columns_autosize()
 	
-	def bom_store_populate_by_value(self, connection=None):
+	def bom_store_populate_by_value(self):
 		''' Clear self.bom_store and repopulate it, grouped by value. '''
 		self.bom_store.clear()
-		if connection is None:
-			con = wspace.connection()
-		else:
-			con = connection
 		self.active_bom.sort_by_val()
-		self.active_bom.set_val_counts(wspace, con)
+		self.active_bom.set_val_counts(wspace.memory)
 		
 		for val in self.active_bom.val_counts.keys():
 			group_name = "\t"	# Clear group_name and prepend a tab
 			# TODO: Does this split up parts of the same value but different package?
 			# If not, the "part number" column will be bad
-			group = self.active_bom.select_parts_by_value(val, wspace, con)
+			group = self.active_bom.select_parts_by_value(val, wspace.memory)
 			for part in group:
 				group_name += part.name + ", "
 			
@@ -604,20 +564,14 @@ class Manager(gobject.GObject):
 			else:
 				iter = self.bom_store.append([group_name, temp.value, temp.device, temp.package, temp.description, temp.product.manufacturer_pn, self.active_bom.val_counts[val]])
 		
-		if connection is None:
-			con.close()
 		self.bom_tree_view.columns_autosize()
 	
-	def bom_store_populate_by_product(self, connection=None):
+	def bom_store_populate_by_product(self):
 		''' Clear self.bom_store and repopulate it, grouped by part number. '''	
 		self.bom_store.clear()
-		if connection is None:
-			con = wspace.connection()
-		else:
-			con = connection
 		
 		self.active_bom.sort_by_prod()
-		self.active_bom.set_prod_counts(wspace, con)
+		self.active_bom.set_prod_counts(wspace.memory)
 		
 		for prod in self.active_bom.prod_counts.keys():
 			group_name = "\t"	# Clear group_name and prepend a tab
@@ -625,9 +579,9 @@ class Manager(gobject.GObject):
 			# Catch empty product string
 			if prod == ' ' or len(prod) == 0 or prod is None or prod == 'NULL': 
 				print "Caught empty product"
-				group = self.active_bom.select_parts_by_product('NULL', wspace, con)	# TODO: Is this still right?
+				group = self.active_bom.select_parts_by_product('NULL', wspace.memory)	# TODO: Is this still right?
 			else:
-				group = self.active_bom.select_parts_by_product(prod, wspace, con)
+				group = self.active_bom.select_parts_by_product(prod, wspace.memory)
 			print "Group: \n", group
 			for part in group:	# TODO: Ensure this data is what we expect
 				group_name += part.name + ", "
@@ -641,8 +595,6 @@ class Manager(gobject.GObject):
 			else:
 				iter = self.bom_store.append([group_name, temp.value, temp.device, temp.package, temp.description, temp.product.manufacturer_pn, self.active_bom.prod_counts[prod]])
 		
-		if connection is None:
-			con.close()
 		self.bom_tree_view.columns_autosize()
 	
 	def set_part_info_labels(self, prod):
@@ -738,6 +690,12 @@ class Manager(gobject.GObject):
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
 		self.main_box = gtk.VBox(False, 0)
 		self.menu_bar = gtk.MenuBar()
+		self.file_item = gtk.MenuItem("File")
+		self.file_menu = gtk.Menu()
+		self.new_item = gtk.MenuItem("New")
+		self.open_item = gtk.MenuItem("Open")
+		self.save_item = gtk.MenuItem("Save")
+		self.quit_item = gtk.MenuItem("Quit")
 		self.notebook = gtk.Notebook()
 		self.project_tab_label = gtk.Label("Projects")
 		self.bom_tab_label = gtk.Label("BOM Editor")
@@ -924,6 +882,10 @@ class Manager(gobject.GObject):
 		# TODO: Add project name to window title on file open
 		self.window.connect("delete_event", self.delete_event)
 		self.window.connect("destroy", self.destroy)
+		
+		self.file_item.set_submenu(self.file_menu)
+		self.save_item.connect("activate", self.file_save_callback)
+		self.quit_item.connect("activate", self.destroy)
 		
 		self.notebook.set_tab_pos(gtk.POS_TOP)
 		self.notebook.append_page(self.project_box, self.project_tab_label)
@@ -1168,6 +1130,11 @@ class Manager(gobject.GObject):
 		
 		# -------- PACKING AND ADDING --------
 		self.main_box.pack_start(self.menu_bar, False)
+		self.menu_bar.append(self.file_item)
+		self.file_menu.append(self.new_item)
+		self.file_menu.append(self.open_item)
+		self.file_menu.append(self.save_item)
+		self.file_menu.append(self.quit_item)
 		self.main_box.pack_start(self.notebook)
 		self.window.add(self.main_box)
 		
@@ -1301,5 +1268,8 @@ if __name__ == "__main__":
 	from product import *
 	from part import Part
 	from bom import BOM
+	wspace.open()
+	wspace.create_tables()
+	wspace.projects = wspace.list_projects()
 	Manager()
 	main()

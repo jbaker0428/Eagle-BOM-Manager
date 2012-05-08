@@ -3,7 +3,7 @@ import shutil
 import os
 import urlparse
 from operator import itemgetter
-import sqlite3
+import apsw
 from manager import Workspace
 from part import Part
 from product import Product
@@ -22,48 +22,35 @@ class BOM:
 	'''For determining the name of a project's Part table.'''
 	
 	@staticmethod
-	def read_from_db(name, wspace, connection=None):
+	def read_from_db(name, connection):
 		''' Return any BOM object from a DB based on its table name. '''
 		boms = []
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			params = (name,)
-			cur.execute('SELECT * FROM projects WHERE name=?', params)
-			for row in cur.fetchall():
+			for row in cur.execute('SELECT * FROM projects WHERE name=?', params):
 				bom = BOM(row[0], row[1], row[2])
 				boms.append(bom)
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 			return boms
 	
 	@staticmethod
-	def new_project(name, desc, infile, wspace, connection=None):
+	def new_project(name, desc, infile, connection):
 		''' Create a new BOM object and its part table.
 		Add the BOM to the Workspace's projects table.
 		Returns the created BOM object. '''
 		new = BOM(name, desc, infile)
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			params = (name, desc, infile,)
 			cur.execute('INSERT INTO projects VALUES (?,?,?)', params)
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 			return new
 	
 	def __init__(self, name, desc, input_file="bom.csv"):
@@ -75,39 +62,27 @@ class BOM:
 		self.val_counts = {}
 		self.prod_counts = {}
 	
-	def delete(self, wspace, connection=None):
+	def delete(self, connection):
 		''' Delete the BOM table for a project from the given Workspace. '''
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			params = (self.name,)
 			cur.execute('DELETE FROM projects WHERE name=?', params)
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 	
-	def rename(self, new_name, wspace, connection=None):
+	def rename(self, new_name, connection):
 		''' Rename the project. '''
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			params = (new_name, self.name,)
 			cur.execute('UPDATE projects SET name=? WHERE name=?', params)
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 	
 	def sort_by_name(self):
 		self.parts.sort(key=itemgetter(0))
@@ -118,49 +93,37 @@ class BOM:
 	def sort_by_prod(self):
 		self.parts.sort(key=itemgetter(2))
 	
-	def set_val_counts(self, wspace, connection=None):
+	def set_val_counts(self, connection):
 		print "BOM.set_val_counts"
 		self.val_counts.clear()
 		vals = set()
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			params = (self.name,)
 			sql = 'SELECT DISTINCT value FROM parts WHERE project=?'
-			cur.execute(sql, params)
-			for row in cur.fetchall():
+			for row in cur.execute(sql, params):
 				vals.add(row[0])
 			for v in vals:
-				sql = 'SELECT name FROM parts WHERE value=? INTERSECT SELECT name FROM parts WHERE project=?'
+				sql = 'SELECT name FROM parts WHERE value=? AND project=?'
 				params = (v, self.name,)
 				cur.execute(sql, params)
 				self.val_counts[v] = len(cur.fetchall())
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 
-	def set_prod_counts(self, wspace, connection=None):
+	def set_prod_counts(self, connection):
 		print "BOM.set_prod_counts"
 		self.prod_counts.clear()
 		
 		prods = set()
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			params = (self.name,)
 			sql = 'SELECT DISTINCT product FROM parts WHERE project=?'
-			cur.execute(sql, params)
-			for row in cur.fetchall():
+			for row in cur.execute(sql, params):
 				prods.add(row[0])
 			for p in prods:
 				sql = 'SELECT name FROM parts WHERE product=? INTERSECT SELECT name FROM parts WHERE project=?'
@@ -170,13 +133,11 @@ class BOM:
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 	
-	def get_cost(self, wspace, run_size=1, connection=None):
+	def get_cost(self, connection, run_size=1):
 		''' Get the total project BOM cost and unit price for a given production run size.
 		Returns a pair (unit_price, total_cost).'''
-		self.set_prod_counts(wspace, connection)
+		self.set_prod_counts(connection)
 		project_prod_counts = self.prod_counts.copy()
 		unit_price = 0
 		total_cost = 0
@@ -191,7 +152,7 @@ class BOM:
 			if x[0] == 'NULL':
 				pass
 			else:
-				prod = Product.select_by_pn(x[0], wspace, connection)[0]
+				prod = Product.select_by_pn(x[0], connection)[0]
 				listing = prod.best_listing(project_prod_counts[x[0]])
 				price_break = listing.get_price_break(x[1])
 				unit_price += (price_break[1] * self.prod_counts[x[0]]) + listing.reel_fee
@@ -211,30 +172,23 @@ class BOM:
 		# TODO : If inline addition of parts is added later (as in, not from a
 		# CSV file), a check needs to be added here to make sure part is in self.parts
 	
-	def read_parts_list_from_db(self, wspace, connection=None):
+	def read_parts_list_from_db(self, connection):
 		print "BOM.read_parts_list_from_db"
 		new_parts = []	# List of 3-element lists of part name, value, and product
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			sql = 'SELECT name, value, product FROM parts WHERE project=?'
 			params = (self.name,)
-			cur.execute(sql, params)
-			for row in cur.fetchall():
+			for row in cur.execute(sql, params):
 				new_parts.append([row[0], row[1], row[2]])
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 			#print 'read_parts_list_from_db: new_parts = ', new_parts
 			return new_parts
 		
-	def read_from_file(self, wspace, connection=None):
+	def read_from_file(self, connection):
 		''' Parses a BOM spreadsheet in CSV format and writes it to the DB.
 		Passing an open connection to this method is HIGHLY recommended.  '''
 		# TODO: product_updater calls are hardcoded to always check wspace
@@ -294,13 +248,13 @@ class BOM:
 						if prod_col == -1:
 							part = Part(row[name_col], self, row[val_col], row[dev_col], row[pkg_col], row[desc_col], None, row_attribs)
 						else:
-							prod = Product.select_by_pn(row[prod_col], wspace, connection)
+							prod = Product.select_by_pn(row[prod_col], connection)
 							if prod is not None and len(prod) > 0:
 								part = Part(row[name_col], self, row[val_col], row[dev_col], row[pkg_col], row[desc_col], prod[0], row_attribs)
 							else:
 								part = Part(row[name_col], self, row[val_col], row[dev_col], row[pkg_col], row[desc_col], None, row_attribs)
 						
-						part.product_updater(wspace, connection)
+						part.product_updater(connection)
 						if part.product is None:
 							self.parts.append([part.name, part.value, ''])
 						else:
@@ -313,13 +267,13 @@ class BOM:
 					# Check for optional product column
 					if len(row) == 6:
 						if len(row[5]) > 0:
-							prod = Product.select_by_pn(row[5], wspace, connection)
+							prod = Product.select_by_pn(row[5], connection)
 							if prod is not None and len(prod) > 0:
 								part = Part(row[0], self, row[1], row[2], row[3], row[4], prod[0])
 							else:
 								new_prod = Product('NULL', row[5])
-								new_prod.insert(wspace, connection)
-								new_prod.scrape(wspace, connection)
+								new_prod.insert(connection)
+								new_prod.scrape(connection)
 								part = Part(row[0], self, row[1], row[2], row[3], row[4], new_prod)
 						else:
 							part = Part(row[0], self, row[1], row[2], row[3], row[4], None)
@@ -327,7 +281,7 @@ class BOM:
 						part = Part(row[0], self, row[1], row[2], row[3], row[4], None)
 					#print 'Got part from CSV: '
 					#part.show() 
-					part.product_updater(wspace, connection)
+					part.product_updater(connection)
 					if part.product is None:
 						self.parts.append([part.name, part.value, ''])
 					else:
@@ -335,70 +289,49 @@ class BOM:
 				
 		#print "Parts list: ", self.parts
 	
-	def select_parts_by_name(self, name, wspace, connection=None):
+	def select_parts_by_name(self, name, connection):
 		''' Return the Part(s) of given name. '''
 		parts = []
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			#sql = 'SELECT * FROM parts WHERE name=? INTERSECT SELECT * FROM parts WHERE project=?'
 			sql = 'SELECT * FROM parts WHERE name=? AND project=?'
 			params = (name, self.name)
-			cur.execute(sql, params)
-			for row in cur.fetchall():
-				parts.append(Part.new_from_row(row, wspace, con, self))
+			for row in cur.execute(sql, params):
+				parts.append(Part.new_from_row(row, connection, self))
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 			return parts
 	
-	def select_parts_by_value(self, val, wspace, connection=None):
+	def select_parts_by_value(self, val, connection):
 		''' Return the Part(s) of given value in a list. '''
 		parts = []
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			sql = 'SELECT * FROM parts WHERE value=? INTERSECT SELECT * FROM parts WHERE project=?'
 			params = (val, self.name)
-			cur.execute(sql, params)
-			for row in cur.fetchall():
-				parts.append(Part.new_from_row(row, wspace, con, self))
+			for row in cur.execute(sql, params):
+				parts.append(Part.new_from_row(row, connection, self))
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 			return parts
 	
-	def select_parts_by_product(self, prod, wspace, connection=None):
+	def select_parts_by_product(self, prod, connection):
 		''' Return the Part(s) of given product in a list. '''
 		parts = []
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			sql = 'SELECT * FROM parts WHERE product=? INTERSECT SELECT * FROM parts WHERE project=?'
 			params = (prod, self.name)
-			cur.execute(sql, params)
-			for row in cur.fetchall():
-				parts.append(Part.new_from_row(row, wspace, con, self))
+			for row in cur.execute(sql, params):
+				parts.append(Part.new_from_row(row, connection, self))
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 			return parts
 		

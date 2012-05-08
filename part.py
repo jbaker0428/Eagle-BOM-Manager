@@ -1,5 +1,5 @@
 import types
-import sqlite3
+import apsw
 from manager import Workspace
 from product import Product
 
@@ -7,7 +7,7 @@ class Part:
 	''' A self in the BOM exported from Eagle. '''
 	
 	@staticmethod
-	def new_from_row(row, wspace, connection=None, known_project=None):
+	def new_from_row(row, connection, known_project=None):
 		''' Given a part row from the DB, returns a Part object. '''
 		from bom import BOM
 		#print 'new_from_row: row param: ', row
@@ -15,114 +15,96 @@ class Part:
 			product = None
 			#print 'new_from_row: setting no product'
 		else:
-			product = Product.select_by_pn(row[6], wspace, connection)[0]
+			product = Product.select_by_pn(row[6], connection)[0]
 			#print 'new_from_row: product results: ', product
 		if row[1] is None or row[1] == 'NULL':
 			project = None # TODO: Raise an exception here? This is a PK  violation
 			print 'row[1] is None/NULL!'
 		else:
 			if known_project is None:
-				projects = BOM.read_from_db(row[1], wspace, connection)
+				projects = BOM.read_from_db(row[1], connection)
 				if len(projects) > 0:
 					project = projects[0]
 			else:
 				project = known_project
 		part = Part(row[0], project, row[2], row[3], row[4], row[5], product)
-		part.fetch_attributes(wspace, connection)
+		part.fetch_attributes(connection)
 		return part
 	
 	@staticmethod
-	def select_all(wspace, connection=None):
+	def select_all(connection):
 		''' Returns the entire parts table. '''
 		print 'Entered Part.select_all'
 		parts = []
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
-			cur.execute('SELECT * FROM parts')
-			rows = cur.fetchall()
-			print 'Rows: ', type(rows), rows
-			for row in rows:
-				part = Part.new_from_row(row, wspace, con)
+			cur = connection.cursor()
+			for row in cur.execute('SELECT * FROM parts'):
+				part = Part.new_from_row(row, connection)
 				#print 'Appending part: ', part.show()
 				parts.append(part)
 		
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 			return parts
 	
 	@staticmethod
-	def select_by_name(name, wspace, project='*', connection=None):
+	def select_by_name(name, connection, project=None):
 		''' Return the Part(s) of given name. '''
 		parts = []
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
-			sql = "SELECT * FROM parts WHERE name=? and project='%s'" % project
-			params = (name,)
-			cur.execute(sql, params)
-			for row in cur.fetchall():
-				parts.append(Part.new_from_row(row, wspace, con))
+			if project is None:
+				sql = "SELECT * FROM parts WHERE name=?"
+				params = (name,)
+			else:
+				sql = "SELECT * FROM parts WHERE name=? AND project=?"
+				params = (name, project.name,)
+			for row in cur.execute(sql, params):
+				parts.append(Part.new_from_row(row, connection))
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 			return parts
 	
 	@staticmethod
-	def select_by_value(val, wspace, project='*', connection=None):
+	def select_by_value(val, connection, project=None):
 		''' Return the Part(s) of given value in a list. '''
 		parts = []
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
-			sql = "SELECT * FROM parts WHERE value=? and project='%s'" % project
-			params = (val,)
-			cur.execute(sql, params)
-			for row in cur.fetchall():
-				parts.append(Part.new_from_row(row, wspace, con))
+			if project is None:
+				sql = "SELECT * FROM parts WHERE value=?"
+				params = (val,)
+			else:
+				sql = "SELECT * FROM parts WHERE value=? AND project=?"
+				params = (val, project.name,)
+			for row in cur.execute(sql, params):
+				parts.append(Part.new_from_row(row, connection))
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 			return parts
 		
 	@staticmethod
-	def select_by_product(prod, wspace, project='*', connection=None):
+	def select_by_product(prod, connection, project=None):
 		''' Return the Part(s) of given product in a list. '''
 		parts = []
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
-			sql = "SELECT * FROM parts WHERE product=? and project='%s'" % project
-			params = (prod,)
-			cur.execute(sql, params)
-			for row in cur.fetchall():
-				parts.append(Part.new_from_row(row, wspace, con))
+			if project is None:
+				sql = "SELECT * FROM parts WHERE product=?"
+				params = (prod,)
+			else:
+				sql = "SELECT * FROM parts WHERE product=? AND project=?"
+				params = (prod, project.name,)
+			for row in cur.execute(sql, params):
+				parts.append(Part.new_from_row(row, connection))
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 			return parts
 	
 	def __init__(self, name, project, value, device, package, description=None, product=None, attributes=None):
@@ -275,7 +257,7 @@ class Part:
 		
 		return query, tuple(params)
 	
-	def find_similar_parts(self, wspace, check_wspace=True, connection=None):
+	def find_similar_parts(self, connection, check_wspace=True):
 		''' Search the project and optionally workspace for parts of matching value/device/package/attributes.
 		If check_wspace = True, returns a pair of lists: (project_results, workspace_results).
 		If check_wspace = False, only returns the project_results list. 
@@ -285,37 +267,24 @@ class Part:
 		project_results = []
 		workspace_results = []
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			project_query, project_params = self.part_query_constructor(False)
-			cur.execute(project_query, project_params)
-			rows = cur.fetchall()
-			for row in rows:
-				part = Part.new_from_row(row, wspace, con)
+			for row in cur.execute(project_query, project_params):
+				part = Part.new_from_row(row, connection)
 				project_results.append(part)
 					
 			if check_wspace:
 				workspace_query, workspace_params = self.part_query_constructor(True)
-				cur.execute(workspace_query, workspace_params)
-				rows = cur.fetchall()
-				for row in rows:
-					part = Part.new_from_row(row, wspace, con)
+				for row in cur.execute(workspace_query, workspace_params):
+					part = Part.new_from_row(row, connection)
 					workspace_results.append(part)
 							
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
-			if check_wspace:
-				return (project_results, workspace_results)
-			else:
-				return (project_results, [])
+			return (project_results, workspace_results)
 	
-	def find_matching_products(self, wspace, proj_parts, wspace_parts, connection=None):
+	def find_matching_products(self, proj_parts, wspace_parts, connection):
 		''' Takes in the output of self.find_similar_parts. 
 		Returns a list of Product objects.'''
 		# TODO : Find more results by searching the product_attributes table
@@ -323,7 +292,7 @@ class Part:
 		part_nums = set()
 		for part in proj_parts:
 			if part.product is not None:
-				db_prods = Product.select_by_pn(part.product.manufacturer_pn, wspace, connection)
+				db_prods = Product.select_by_pn(part.product.manufacturer_pn, connection)
 				for prod in db_prods:
 					if prod.manufacturer_pn not in part_nums:
 						part_nums.add(prod.manufacturer_pn)
@@ -331,7 +300,7 @@ class Part:
 		
 		for part in wspace_parts:
 			if part.product is not None:
-				db_prods = Product.select_by_pn(part.product.manufacturer_pn, wspace, connection)
+				db_prods = Product.select_by_pn(part.product.manufacturer_pn, connection)
 				for prod in db_prods:
 					if prod.manufacturer_pn not in part_nums:
 						part_nums.add(prod.manufacturer_pn)
@@ -339,15 +308,15 @@ class Part:
 	
 		return list(products)
 	
-	def is_in_db(self, wspace, connection=None):
+	def is_in_db(self, connection):
 		''' Check if a BOM self of this name is in the project's database. '''
-		result = Part.select_by_name(self.name, wspace, self.project.name, connection)
+		result = Part.select_by_name(self.name, connection, self.project)
 		if len(result) == 0:
 			return False
 		else:
 			return True
 	
-	def product_updater(self, wspace, connection=None, check_wspace=True):
+	def product_updater(self, connection, check_wspace=True):
 		''' Checks if the Part is already in the DB. 
 		Inserts/updates self into DB depending on:
 		- The presence of a matching Part in the DB
@@ -355,10 +324,9 @@ class Part:
 		- The product of the matching Part in the DB
 		Passing an open connection to this method is recommended. '''
 		unset_pn = ('', 'NULL', 'none', None, [])
-		if(self.is_in_db(wspace, connection)):
+		if(self.is_in_db(connection)):
 			#print "Part of same name already in DB"
-			old_part = Part.select_by_name(self.name, wspace, self.project.name, connection)[0]
-			
+			old_part = Part.select_by_name(self.name, connection, self.project)[0]
 			if self.equals(old_part, True, True, True, False):
 				if self.product is not None and self.product.manufacturer_pn not in unset_pn:
 					if old_part.product is not None and old_part.product.manufacturer_pn not in unset_pn:
@@ -366,34 +334,34 @@ class Part:
 						#print 'Matching CSV and DB parts with non-NULL product mismatch, keeping DB version...'
 						pass
 					elif old_part.product is None or old_part.product.manufacturer_pn in unset_pn:
-						self.update(wspace, connection)
+						self.update(connection)
 				elif self.product is None or self.product.manufacturer_pn in unset_pn:
 					if old_part.product is not None and old_part.product.manufacturer_pn not in unset_pn:
 						pass	# Do nothing in this case
 					elif old_part.product is None or old_part.product.manufacturer_pn in unset_pn:
-						(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, check_wspace, connection)
+						(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(connection, check_wspace)
 						#print 'first find_similar_parts call'
-						candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts, connection)
+						candidate_products = self.find_matching_products(candidate_proj_parts, candidate_wspace_parts, connection)
 						if len(candidate_products) == 0:
 							#print 'No matching products found, nothing to do'
 							pass
 						elif len(candidate_products) == 1:
 							self.product = candidate_products[0]
 							#print 'Found exactly one matching product, setting product and updating', #self.show()
-							self.update(wspace, connection)
+							self.update(connection)
 						else:
 							#print 'Found multiple product matches, prompting for selection...'
 							# TODO: Currently going with first result, need to prompt for selection
 							self.product = candidate_products[0]
-							self.update(wspace, connection)
+							self.update(connection)
 						
 			else:	# Value/device/package/attribs mismatch
 				if self.product is not None and self.product.manufacturer_pn not in unset_pn:
-					self.update(wspace, connection)
+					self.update(connection)
 				elif self.product is None or self.product.manufacturer_pn in unset_pn:
-					(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, check_wspace, connection)
+					(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(connection, check_wspace)
 					#print 'second find_similar_parts call'
-					candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts, connection)
+					candidate_products = self.find_matching_products(candidate_proj_parts, candidate_wspace_parts, connection)
 					if len(candidate_products) == 0:
 						#print 'No matching products found, updating as-is'
 						pass
@@ -404,14 +372,14 @@ class Part:
 						#print 'Found multiple product matches, prompting for selection...'
 						# TODO: Currently going with first result, need to prompt for selection
 						self.product = candidate_products[0]
-					self.update(wspace, connection)
+					self.update(connection)
 		
 		else:
 			#print 'Part not in DB'
 			if self.product is None or self.product.manufacturer_pn in unset_pn:
-				(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(wspace, check_wspace, connection)
+				(candidate_proj_parts, candidate_wspace_parts) = self.find_similar_parts(connection, check_wspace)
 				#print 'third find_similar_parts call'
-				candidate_products = self.find_matching_products(wspace, candidate_proj_parts, candidate_wspace_parts, connection)
+				candidate_products = self.find_matching_products(candidate_proj_parts, candidate_wspace_parts, connection)
 				if len(candidate_products) == 0:
 					#print 'No matching products found, inserting as-is'#, self.show()
 					pass
@@ -423,20 +391,16 @@ class Part:
 					# TODO: Currently going with first result, need to prompt for selection
 					self.product = candidate_products[0]
 			else:
-				if self.product.is_in_db(wspace, connection) == False:
+				if self.product.is_in_db(connection) == False:
 					newprod = Product('NULL', self.product.manufacturer_pn)
-					newprod.insert(wspace, connection)
-					newprod.scrape(wspace, connection)
-			self.insert(wspace, connection)
+					newprod.insert(connection)
+					newprod.scrape(connection)
+			self.insert(connection)
 		
-	def update(self, wspace, connection=None):
+	def update(self, connection):
 		''' Update an existing Part record in the DB. '''
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			if self.product is None:
 				pn = 'NULL'
@@ -447,21 +411,15 @@ class Part:
 			params = (self.name, self.project.name, self.value, self.device, self.package,  
 					self.description, pn, self.name, self.project.name,)
 			cur.execute(sql, params)
-			self.write_attributes(wspace, con)
+			self.write_attributes(connection)
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 	
-	def insert(self, wspace, connection=None):
+	def insert(self, connection):
 		''' Write the Part to the DB. '''
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			if self.product is None:
 				pn = 'NULL'
@@ -472,22 +430,16 @@ class Part:
 			params = (self.name, self.project.name, self.value, self.device, self.package,  
 					self.description, pn,)
 			cur.execute(sql, params)
-			self.write_attributes(wspace, con)
+			self.write_attributes(connection)
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 	
-	def delete(self, wspace, connection=None):
+	def delete(self, connection):
 		''' Delete the Part from the DB. 
 		Part attributes are deleted via foreign key constraint cascading. '''
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			sql = 'DELETE FROM parts WHERE name=? AND project=?'
 			params = (self.name, self.project.name)
@@ -495,69 +447,47 @@ class Part:
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 	
-	def fetch_attributes(self, wspace, connection=None):
+	def fetch_attributes(self, connection):
 		''' Fetch attributes dictionary for this Part. 
 		Clears and sets the self.attributes dictionary directly. '''
 		self.attributes.clear()
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			params = (self.name, self.project.name,)
 			#cur.execute('''SELECT name, value FROM part_attributes WHERE part=? INTERSECT 
 			#SELECT name, value FROM part_attributes WHERE project=?''', params)
-			cur.execute('SELECT name, value FROM part_attributes WHERE part=? AND project=?', params)
-			for row in cur.fetchall():
+			for row in cur.execute('SELECT name, value FROM part_attributes WHERE part=? AND project=?', params):
 				self.attributes[row[0]] = row[1]
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 	
-	def has_attribute(self, attrib, wspace, connection=None):
+	def has_attribute(self, attrib, connection):
 		'''Check if this Part has an attribute of given name in the DB. 
 		Ignores value of the attribute. '''
 		results = []
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
-			
+			cur = connection.cursor()
+			sql = 'SELECT name FROM part_attributes WHERE part=? AND project=? AND name=?'
 			params = (self.name, self.project.name, attrib,)
-			cur.execute('''SELECT name FROM part_attributes WHERE part=? INTERSECT 
-			SELECT name FROM part_attributes WHERE project=? INTERSECT 
-			SELECT name FROM part_attributes WHERE name=?''', params)
-			for row in cur.fetchall():
+			for row in cur.execute(sql, params):
 				results.append(row[0])
 			
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 			if len(results) == 0:
 				return False
 			else:
 				return True
 	
-	def add_attribute(self, name, value, wspace, connection=None):
+	def add_attribute(self, name, value, connection):
 		''' Add a single attribute to this Part.
 		Adds the new attribute to the self.attributes dictionary in memory.
 		Writes the new attribute to the DB immediately. '''
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			self.attributes[name] = value
 			params = (self.name, self.project.name, name, value,)
@@ -565,19 +495,13 @@ class Part:
 
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 				
-	def remove_attribute(self, name, wspace, connection=None):
+	def remove_attribute(self, name, connection):
 		''' Removes a single attribute from this Part.
 		Deletes the attribute from the self.attributes dictionary in memory.
 		Deletes the attribute from the DB immediately. '''
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			if name in self.attributes:
 				del self.attributes[name]
@@ -586,10 +510,8 @@ class Part:
 
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()
 
-	def write_attributes(self, wspace, connection=None):
+	def write_attributes(self, connection):
 		''' Write all of this Part's attributes to the DB.
 		Checks attributes currently in DB and updates/inserts as appropriate. '''
 		# TODO: This does not remove any old attribs from the DB that are not in self.attributes
@@ -597,17 +519,12 @@ class Part:
 		old_attribs = []
 		new_attribs = []
 		try:
-			if connection is None:
-				(con, cur) = wspace.con_cursor()
-			else:
-				con = connection
-				cur = con.cursor()
+			cur = connection.cursor()
 			
 			params = (self.name, self.project.name,)
 			#cur.execute('''SELECT name FROM part_attributes WHERE part=? INTERSECT 
 			#SELECT name FROM part_attributes WHERE project=?''', params)
-			cur.execute('SELECT name FROM part_attributes WHERE part=? AND project=?', params)
-			for row in cur.fetchall():
+			for row in cur.execute('SELECT name FROM part_attributes WHERE part=? AND project=?', params):
 				db_attribs.append(row[0])
 			for a in self.attributes.items():
 				if a[1] != "":
@@ -620,5 +537,3 @@ class Part:
 		
 		finally:
 			cur.close()
-			if connection is None:
-				con.close()

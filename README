@@ -10,6 +10,7 @@ Note that while the basic bom.ulp script bundled with Eagle is not supported at 
 Required third-party Python (2.7) modules:
 Beautiful Soup: http://www.crummy.com/software/BeautifulSoup/
 PyGTK: http://www.pygtk.org/
+APSW: http://code.google.com/p/apsw/
 
 Importing data:
 Export a CSV file from one of the BOM scripts with the following columns:
