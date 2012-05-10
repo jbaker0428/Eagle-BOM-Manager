@@ -536,18 +536,17 @@ class Manager(gobject.GObject):
 		self.bom_store.clear()
 		for p in self.active_bom.parts:
 			try:
-				temp = self.active_bom.select_parts_by_name(p[0], wspace.memory)[0]
+				part = self.active_bom.select_parts_by_name(p[0], wspace.memory)[0]
 			except IndexError:
 				print 'IndexError:'
 				print 'bom.parts: ', self.active_bom.parts
 				print 'p: ', p
 				print 'p[0]:', p[0]
 				#print 'Trying Part.select_all():', Part.select_all(wspace.memory)
-			#print 'Temp: ', type(temp), temp
-			if temp.product is None:
-				iter = self.bom_store.append(None, [temp.name, temp.value, temp.device, temp.package, temp.description, '', 1])
+			if part.product is None:
+				iter = self.bom_store.append(None, [part.name, part.value, part.device, part.package, part.description, '', ''])
 			else:
-				iter = self.bom_store.append(None, [temp.name, temp.value, temp.device, temp.package, temp.description, temp.product.manufacturer_pn, 1])
+				iter = self.bom_store.append(None, [part.name, part.value, part.device, part.package, part.description, part.product.manufacturer_pn, ''])
 		
 		self.bom_tree_view.columns_autosize()
 	
@@ -560,16 +559,16 @@ class Manager(gobject.GObject):
 		for val in self.active_bom.val_counts.keys():
 			# Make a row in the model for this value
 			if val == '':
-				group_iter = self.bom_store.append(None, ['', 'None', '', '', '', '', self.active_bom.val_counts[val]])
+				group_iter = self.bom_store.append(None, ['', 'None', '', '', '', '', str(self.active_bom.val_counts[val])])
 			else:
-				group_iter = self.bom_store.append(None, ['', val, '', '', '', '', self.active_bom.val_counts[val]])
+				group_iter = self.bom_store.append(None, ['', val, '', '', '', '', str(self.active_bom.val_counts[val])])
 			
 			group = self.active_bom.select_parts_by_value(val, wspace.memory)
 			for part in group:
 				if part.product is None:
-					iter = self.bom_store.append(group_iter, [part.name, part.value, part.device, part.package, part.description, '', self.active_bom.val_counts[val]])
+					iter = self.bom_store.append(group_iter, [part.name, part.value, part.device, part.package, part.description, '', ''])
 				else:
-					iter = self.bom_store.append(group_iter, [part.name, part.value, part.device, part.package, part.description, part.product.manufacturer_pn, self.active_bom.val_counts[val]])
+					iter = self.bom_store.append(group_iter, [part.name, part.value, part.device, part.package, part.description, part.product.manufacturer_pn, ''])
 		
 		self.bom_tree_view.columns_autosize()
 	
@@ -582,16 +581,16 @@ class Manager(gobject.GObject):
 		for prod in self.active_bom.prod_counts.keys():
 			# Make a row in the model for this product
 			if prod is None or prod == '' or len(prod) == 0 or prod == 'NULL':
-				group_iter = self.bom_store.append(None, ['', '', '', '', '', 'None', self.active_bom.prod_counts[prod]])
+				group_iter = self.bom_store.append(None, ['', '', '', '', '', 'None', str(self.active_bom.prod_counts[prod])])
 			else:
-				group_iter = self.bom_store.append(None, ['', '', '', '', '', prod, self.active_bom.prod_counts[prod]])
+				group_iter = self.bom_store.append(None, ['', '', '', '', '', prod, str(self.active_bom.prod_counts[prod])])
 			
 			group = self.active_bom.select_parts_by_product(prod, wspace.memory)
 			for part in group:
 				if part.product is None:
-					iter = self.bom_store.append(group_iter, [part.name, part.value, part.device, part.package, part.description, '', self.active_bom.prod_counts[prod]])
+					iter = self.bom_store.append(group_iter, [part.name, part.value, part.device, part.package, part.description, '', ''])
 				else:
-					iter = self.bom_store.append(group_iter, [part.name, part.value, part.device, part.package, part.description, part.product.manufacturer_pn, self.active_bom.prod_counts[prod]])
+					iter = self.bom_store.append(group_iter, [part.name, part.value, part.device, part.package, part.description, part.product.manufacturer_pn, ''])
 		
 		self.bom_tree_view.columns_autosize()
 	
@@ -777,7 +776,7 @@ class Manager(gobject.GObject):
 		self.bom_scroll_win = gtk.ScrolledWindow() # Holds bomTable
 		
 		# Columns: Name, Value, Device, Package, Description, MFG PN, Quantity
-		self.bom_store = gtk.TreeStore(str, str, str, str, str, str, int)
+		self.bom_store = gtk.TreeStore(str, str, str, str, str, str, str)
 									
 		self.bom_name_cell = gtk.CellRendererText()
 		self.bom_name_column = gtk.TreeViewColumn('Name', self.bom_name_cell)
