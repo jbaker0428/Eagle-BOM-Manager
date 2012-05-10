@@ -441,6 +441,8 @@ class Manager(gobject.GObject):
 				self.clear_part_info_labels()
 			else:
 				self.set_part_info_labels(self.selected_bom_part.product)
+				self.part_info_datasheet_button.set_sensitive(True)
+				self.part_info_scrape_button.set_sensitive(True)
 			
 	def bom_find_prod_callback(self, widget, data=None):
 		''' Calls bom.product_updater on selected part. '''
@@ -453,8 +455,9 @@ class Manager(gobject.GObject):
 			self.bom_store_populate_by_product()
 	
 	def part_info_scrape_button_callback(self, widget):
-		''' Part info frame "Refresh" button callback. '''
+		''' Part info frame "Scrape" button callback. '''
 		self.selected_bom_part.product.scrape(wspace.memory)
+		
 		self.window.show_all()
 	
 	def part_info_listing_combo_callback(self, widget, data=None):
