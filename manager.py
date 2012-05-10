@@ -461,6 +461,9 @@ class Manager(gobject.GObject):
 		if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
 			self.set_part_price_labels(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()])
 			self.part_info_inventory_content_label.set_text(str(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()].inventory))
+			self.part_info_set_listing_button.set_sensitive(True)
+		else:
+			self.part_info_set_listing_button.set_sensitive(False)
 		
 		self.window.show_all()
 	
@@ -469,6 +472,9 @@ class Manager(gobject.GObject):
 		if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
 			self.set_part_price_labels(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()])
 			self.part_info_inventory_content_label.set_text(str(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()].inventory))
+			self.part_info_set_listing_button.set_sensitive(True)
+		else:
+			self.part_info_set_listing_button.set_sensitive(False)
 	
 	def part_info_set_listing_button_callback(self, widget, data=None):
 		print 'Set preferred listing callback'
