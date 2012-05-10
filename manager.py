@@ -257,7 +257,7 @@ class Manager(gobject.GObject):
 				self.selected_bom_part.product.scrape(wspace.memory)
 			#self.selected_bom_part.product.show()
 			self.set_part_info_labels(self.selected_bom_part.product)
-			self.set_part_info_listing_combo(self.selected_bom_part.product)
+			self.populate_part_info_listing_combo(self.selected_bom_part.product)
 			self.destroy_part_price_labels()
 			#print 'self.selected_bom_part.product.listings: \n', self.selected_bom_part.product.listings
 			if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
@@ -270,7 +270,7 @@ class Manager(gobject.GObject):
 		else:
 			self.part_info_datasheet_button.set_sensitive(False)
 			self.part_info_scrape_button.set_sensitive(False)
-			self.set_part_info_listing_combo()
+			self.populate_part_info_listing_combo()
 			self.destroy_part_price_labels()
 			self.clear_part_info_labels()
 	
@@ -436,7 +436,7 @@ class Manager(gobject.GObject):
 			elif self.bom_group_product.get_active():
 				self.bom_store_populate_by_product()
 					
-			self.set_part_info_listing_combo(self.selected_bom_part.product)
+			self.populate_part_info_listing_combo(self.selected_bom_part.product)
 			if self.selected_bom_part.product is None or self.selected_bom_part.product.manufacturer_pn == 'NULL' or self.selected_bom_part.product.manufacturer_pn == '':
 				self.clear_part_info_labels()
 			else:
@@ -458,6 +458,7 @@ class Manager(gobject.GObject):
 		''' Part info frame "Scrape" button callback. '''
 		self.selected_bom_part.product.scrape(wspace.memory)
 		self.set_part_info_labels(self.selected_bom_part.product)
+		self.populate_part_info_listing_combo(self.selected_bom_part.product)
 		if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
 			self.set_part_price_labels(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()])
 			self.part_info_inventory_content_label.set_text(str(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()].inventory))
@@ -623,7 +624,18 @@ class Manager(gobject.GObject):
 		self.part_info_package_content_label.set_text("\t")
 		self.part_info_inventory_content_label.set_text("\t")
 	
-	def set_part_info_listing_combo(self, prod=None):
+	def set_part_info_listing_combo_to_preferred(self, prod):
+		'''Sets the active selection of self.part_info_listing_combo to a 
+		preferred listing for the active project (if one exists). '''
+		preferred_listing = None
+		if type(prod) is not types.NoneType and prod.manufacturer_pn != 'NULL':
+			preferred_listing = prod.get_preferred_listing(self.active_bom, wspace.memory)
+		if preferred_listing is not None:
+			set_combo(self.part_info_listing_combo, preferred_listing.key())
+		else:
+			self.part_info_listing_combo.set_active(0)
+	
+	def populate_part_info_listing_combo(self, prod=None):
 		''' Populates self.part_info_listing_combo with listings
 		for the selected Product. '''
 		#print 'Setting Listing combo...'
@@ -635,10 +647,10 @@ class Manager(gobject.GObject):
 				title = listing
 				#print 'Appending combo title: ', title
 				self.part_info_listing_combo.append_text(title)
+			
 		
-		# TODO: Set default active to user-selected listing
-		# If the user has not chosen one, that defaults to prod.best_listing
-		self.part_info_listing_combo.set_active(0)
+		self.set_part_info_listing_combo_to_preferred(prod)
+		
 		self.part_info_vbox.show_all()
 	
 	def destroy_part_price_labels(self):
