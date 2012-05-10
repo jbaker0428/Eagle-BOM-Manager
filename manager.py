@@ -614,6 +614,7 @@ class Manager(gobject.GObject):
 		self.part_info_description_content_label.set_text("\t")
 		self.part_info_datasheet_content_label.set_text("\t")
 		self.part_info_package_content_label.set_text("\t")
+		self.part_info_inventory_content_label.set_text("\t")
 	
 	def set_part_info_listing_combo(self, prod=None):
 		''' Populates self.part_info_listing_combo with listings
