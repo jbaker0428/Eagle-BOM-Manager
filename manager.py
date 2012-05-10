@@ -496,7 +496,7 @@ class Manager(gobject.GObject):
 		self.db_product_store.clear()
 		prods = Product.select_all(wspace.memory)
 		for p in prods:
-			iter = self.db_product_store.append([p.manufacturer, p.manufacturer_pn, p.description, p.datasheet, p.package])
+			iter = self.db_product_store.append(None, [p.manufacturer, p.manufacturer_pn, p.description, p.datasheet, p.package])
 		self.db_tree_view.columns_autosize()
 	
 	def db_read_database_callback(self, widget, data=None):
@@ -860,7 +860,7 @@ class Manager(gobject.GObject):
 		self.db_scroll_win = gtk.ScrolledWindow()
 		
 		#self.db_product_store = gtk.ListStore(str, str, int, str, str, str, str, str, str, str, str)
-		self.db_product_store = gtk.ListStore(str, str, str, str, str)
+		self.db_product_store = gtk.TreeStore(str, str, str, str, str)
 									
 		#self.dbVendorCell = gtk.CellRendererText()
 		#self.dbVendorColumn = gtk.TreeViewColumn('Vendor', self.dbVendorCell)
