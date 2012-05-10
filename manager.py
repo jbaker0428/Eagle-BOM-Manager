@@ -455,12 +455,6 @@ class Manager(gobject.GObject):
 	def part_info_scrape_button_callback(self, widget):
 		''' Part info frame "Refresh" button callback. '''
 		self.selected_bom_part.product.scrape(wspace.memory)
-		if self.bom_group_name.get_active():
-			self.bom_store_populate_by_name()
-		elif self.bom_group_value.get_active():
-			self.bom_store_populate_by_value()
-		elif self.bom_group_product.get_active():
-			self.bom_store_populate_by_product()
 		self.window.show_all()
 	
 	def part_info_listing_combo_callback(self, widget, data=None):
