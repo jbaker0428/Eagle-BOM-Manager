@@ -457,6 +457,10 @@ class Manager(gobject.GObject):
 	def part_info_scrape_button_callback(self, widget):
 		''' Part info frame "Scrape" button callback. '''
 		self.selected_bom_part.product.scrape(wspace.memory)
+		self.set_part_info_labels(self.selected_bom_part.product)
+		if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
+			self.set_part_price_labels(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()])
+			self.part_info_inventory_content_label.set_text(str(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()].inventory))
 		
 		self.window.show_all()
 	
