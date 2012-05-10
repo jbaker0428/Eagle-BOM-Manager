@@ -94,7 +94,6 @@ class BOM:
 		self.parts.sort(key=itemgetter(2))
 	
 	def set_val_counts(self, connection):
-		print "BOM.set_val_counts"
 		self.val_counts.clear()
 		vals = set()
 		try:
@@ -114,7 +113,6 @@ class BOM:
 			cur.close()
 
 	def set_prod_counts(self, connection):
-		print "BOM.set_prod_counts"
 		self.prod_counts.clear()
 		
 		prods = set()
@@ -126,8 +124,13 @@ class BOM:
 			for row in cur.execute(sql, params):
 				prods.add(row[0])
 			for p in prods:
-				sql = 'SELECT name FROM parts WHERE product=? INTERSECT SELECT name FROM parts WHERE project=?'
-				params = (p, self.name,)
+				
+				if p is None:
+					sql = 'SELECT name FROM parts WHERE product IS NULL AND project=?'
+					params = (self.name,)
+				else:
+					sql = 'SELECT name FROM parts WHERE product=? AND project=?'
+					params = (p, self.name,)
 				cur.execute(sql, params)
 				self.prod_counts[p] = len(cur.fetchall())
 			
@@ -325,9 +328,12 @@ class BOM:
 		parts = []
 		try:
 			cur = connection.cursor()
-			
-			sql = 'SELECT * FROM parts WHERE product=? INTERSECT SELECT * FROM parts WHERE project=?'
-			params = (prod, self.name)
+			if prod is None or prod == '' or len(prod) == 0 or prod == 'NULL':
+				sql = 'SELECT * FROM parts WHERE project=? AND product IS NULL'
+				params = (self.name,)
+			else:
+				sql = 'SELECT * FROM parts WHERE product=? AND project=?'
+				params = (prod, self.name,)
 			for row in cur.execute(sql, params):
 				parts.append(Part.new_from_row(row, connection, self))
 			

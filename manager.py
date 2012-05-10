@@ -244,29 +244,30 @@ class Manager(gobject.GObject):
 		(model, row_iter) = self.bom_tree_view.get_selection().get_selected()
 		#print 'row_iter is: ', row_iter, '\n'
 		#print 'model.get(row_iter,0)[0] is: ', model.get(row_iter,0)[0]
-		self.selected_bom_part = self.active_bom.select_parts_by_name(model.get(row_iter,0)[0], wspace.memory)[0]
-		# Grab the vendor part number for the selected item from the label text
-		selected_pn = model.get(row_iter,5)[0]
-		#print "selected_pn is: %s" % selected_pn
-		if selected_pn is not None and selected_pn != 'NULL' and selected_pn != '': # Look up part in DB
-			self.part_info_datasheet_button.set_sensitive(True)
-			self.part_info_scrape_button.set_sensitive(True)
-			# Set class field for currently selected product
-			#rint "Querying with selected_pn: %s" % selected_pn
-			if len(self.selected_bom_part.product.listings) == 0:
-				self.selected_bom_part.product.scrape(wspace.memory)
-			#self.selected_bom_part.product.show()
-			self.set_part_info_labels(self.selected_bom_part.product)
-			self.populate_part_info_listing_combo(self.selected_bom_part.product)
-			self.destroy_part_price_labels()
-			#print 'self.selected_bom_part.product.listings: \n', self.selected_bom_part.product.listings
-			if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
-				#Set the active Listing selection if one has been set
-				assert len(self.selected_bom_part.product.listings.keys()) > 0
-				preferred_listing = self.selected_bom_part.product.get_preferred_listing(self.active_bom, wspace.memory)
-				if preferred_listing is not None:
-					set_combo(self.part_info_listing_combo, preferred_listing.key())
-				self.set_part_price_labels(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()])
+		if model.get(row_iter,0)[0] is not None and len(model.get(row_iter,0)[0]) != 0 and model.get(row_iter,0)[0] != '':
+			self.selected_bom_part = self.active_bom.select_parts_by_name(model.get(row_iter,0)[0], wspace.memory)[0]
+			# Grab the vendor part number for the selected item from the label text
+			selected_pn = model.get(row_iter,5)[0]
+			#print "selected_pn is: %s" % selected_pn
+			if selected_pn is not None and selected_pn != 'NULL' and selected_pn != '': # Look up part in DB
+				self.part_info_datasheet_button.set_sensitive(True)
+				self.part_info_scrape_button.set_sensitive(True)
+				# Set class field for currently selected product
+				#rint "Querying with selected_pn: %s" % selected_pn
+				if len(self.selected_bom_part.product.listings) == 0:
+					self.selected_bom_part.product.scrape(wspace.memory)
+				#self.selected_bom_part.product.show()
+				self.set_part_info_labels(self.selected_bom_part.product)
+				self.populate_part_info_listing_combo(self.selected_bom_part.product)
+				self.destroy_part_price_labels()
+				#print 'self.selected_bom_part.product.listings: \n', self.selected_bom_part.product.listings
+				if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
+					#Set the active Listing selection if one has been set
+					assert len(self.selected_bom_part.product.listings.keys()) > 0
+					preferred_listing = self.selected_bom_part.product.get_preferred_listing(self.active_bom, wspace.memory)
+					if preferred_listing is not None:
+						set_combo(self.part_info_listing_combo, preferred_listing.key())
+					self.set_part_price_labels(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()])
 		else:
 			self.part_info_datasheet_button.set_sensitive(False)
 			self.part_info_scrape_button.set_sensitive(False)
@@ -544,9 +545,9 @@ class Manager(gobject.GObject):
 				#print 'Trying Part.select_all():', Part.select_all(wspace.memory)
 			#print 'Temp: ', type(temp), temp
 			if temp.product is None:
-				iter = self.bom_store.append([temp.name, temp.value, temp.device, temp.package, temp.description, '', 1])
+				iter = self.bom_store.append(None, [temp.name, temp.value, temp.device, temp.package, temp.description, '', 1])
 			else:
-				iter = self.bom_store.append([temp.name, temp.value, temp.device, temp.package, temp.description, temp.product.manufacturer_pn, 1])
+				iter = self.bom_store.append(None, [temp.name, temp.value, temp.device, temp.package, temp.description, temp.product.manufacturer_pn, 1])
 		
 		self.bom_tree_view.columns_autosize()
 	
@@ -557,20 +558,18 @@ class Manager(gobject.GObject):
 		self.active_bom.set_val_counts(wspace.memory)
 		
 		for val in self.active_bom.val_counts.keys():
-			group_name = "\t"	# Clear group_name and prepend a tab
-			# TODO: Does this split up parts of the same value but different package?
-			# If not, the "part number" column will be bad
+			# Make a row in the model for this value
+			if val == '':
+				group_iter = self.bom_store.append(None, ['', 'None', '', '', '', '', self.active_bom.val_counts[val]])
+			else:
+				group_iter = self.bom_store.append(None, ['', val, '', '', '', '', self.active_bom.val_counts[val]])
+			
 			group = self.active_bom.select_parts_by_value(val, wspace.memory)
 			for part in group:
-				group_name += part.name + ", "
-			
-			# Replace trailing comma with tab
-			group_name = group_name[0:-2]
-			temp = group[0]	# Part object
-			if temp.product is None:
-				iter = self.bom_store.append([group_name, temp.value, temp.device, temp.package, temp.description, '', self.active_bom.val_counts[val]])
-			else:
-				iter = self.bom_store.append([group_name, temp.value, temp.device, temp.package, temp.description, temp.product.manufacturer_pn, self.active_bom.val_counts[val]])
+				if part.product is None:
+					iter = self.bom_store.append(group_iter, [part.name, part.value, part.device, part.package, part.description, '', self.active_bom.val_counts[val]])
+				else:
+					iter = self.bom_store.append(group_iter, [part.name, part.value, part.device, part.package, part.description, part.product.manufacturer_pn, self.active_bom.val_counts[val]])
 		
 		self.bom_tree_view.columns_autosize()
 	
@@ -580,28 +579,19 @@ class Manager(gobject.GObject):
 		
 		self.active_bom.sort_by_prod()
 		self.active_bom.set_prod_counts(wspace.memory)
-		
 		for prod in self.active_bom.prod_counts.keys():
-			group_name = "\t"	# Clear group_name and prepend a tab
-			print "Querying with prod =", prod, " of length ", len(prod)
-			# Catch empty product string
-			if prod == ' ' or len(prod) == 0 or prod is None or prod == 'NULL': 
-				print "Caught empty product"
-				group = self.active_bom.select_parts_by_product('NULL', wspace.memory)	# TODO: Is this still right?
+			# Make a row in the model for this product
+			if prod is None or prod == '' or len(prod) == 0 or prod == 'NULL':
+				group_iter = self.bom_store.append(None, ['', '', '', '', '', 'None', self.active_bom.prod_counts[prod]])
 			else:
-				group = self.active_bom.select_parts_by_product(prod, wspace.memory)
-			print "Group: \n", group
-			for part in group:	# TODO: Ensure this data is what we expect
-				group_name += part.name + ", "
+				group_iter = self.bom_store.append(None, ['', '', '', '', '', prod, self.active_bom.prod_counts[prod]])
 			
-			# Replace trailing comma with tab
-			group_name = group_name[0:-2]
-			
-			temp = group[0]	# Part object
-			if temp.product is None:
-				iter = self.bom_store.append([group_name, temp.value, temp.device, temp.package, temp.description, '', self.active_bom.prod_counts[prod]])
-			else:
-				iter = self.bom_store.append([group_name, temp.value, temp.device, temp.package, temp.description, temp.product.manufacturer_pn, self.active_bom.prod_counts[prod]])
+			group = self.active_bom.select_parts_by_product(prod, wspace.memory)
+			for part in group:
+				if part.product is None:
+					iter = self.bom_store.append(group_iter, [part.name, part.value, part.device, part.package, part.description, '', self.active_bom.prod_counts[prod]])
+				else:
+					iter = self.bom_store.append(group_iter, [part.name, part.value, part.device, part.package, part.description, part.product.manufacturer_pn, self.active_bom.prod_counts[prod]])
 		
 		self.bom_tree_view.columns_autosize()
 	
@@ -787,7 +777,7 @@ class Manager(gobject.GObject):
 		self.bom_scroll_win = gtk.ScrolledWindow() # Holds bomTable
 		
 		# Columns: Name, Value, Device, Package, Description, MFG PN, Quantity
-		self.bom_store = gtk.ListStore(str, str, str, str, str, str, int)
+		self.bom_store = gtk.TreeStore(str, str, str, str, str, str, int)
 									
 		self.bom_name_cell = gtk.CellRendererText()
 		self.bom_name_column = gtk.TreeViewColumn('Name', self.bom_name_cell)
