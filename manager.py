@@ -244,30 +244,32 @@ class Manager(gobject.GObject):
 		(model, row_iter) = self.bom_tree_view.get_selection().get_selected()
 		#print 'row_iter is: ', row_iter, '\n'
 		#print 'model.get(row_iter,0)[0] is: ', model.get(row_iter,0)[0]
-		if model.get(row_iter,0)[0] is not None and len(model.get(row_iter,0)[0]) != 0 and model.get(row_iter,0)[0] != '':
-			self.selected_bom_part = self.active_bom.select_parts_by_name(model.get(row_iter,0)[0], wspace.memory)[0]
-			# Grab the vendor part number for the selected item from the label text
-			selected_pn = model.get(row_iter,5)[0]
-			#print "selected_pn is: %s" % selected_pn
-			if selected_pn is not None and selected_pn != 'NULL' and selected_pn != '': # Look up part in DB
-				self.part_info_datasheet_button.set_sensitive(True)
-				self.part_info_scrape_button.set_sensitive(True)
-				# Set class field for currently selected product
-				#rint "Querying with selected_pn: %s" % selected_pn
-				if len(self.selected_bom_part.product.listings) == 0:
-					self.selected_bom_part.product.scrape(wspace.memory)
-				#self.selected_bom_part.product.show()
-				self.set_part_info_labels(self.selected_bom_part.product)
-				self.populate_part_info_listing_combo(self.selected_bom_part.product)
-				self.destroy_part_price_labels()
-				#print 'self.selected_bom_part.product.listings: \n', self.selected_bom_part.product.listings
-				if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
-					#Set the active Listing selection if one has been set
-					assert len(self.selected_bom_part.product.listings.keys()) > 0
-					preferred_listing = self.selected_bom_part.product.get_preferred_listing(self.active_bom, wspace.memory)
-					if preferred_listing is not None:
-						set_combo(self.part_info_listing_combo, preferred_listing.key())
-					self.set_part_price_labels(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()])
+		selected_name = model.get(row_iter,0)[0]
+		selected_pn = model.get(row_iter,5)[0]
+		
+			
+		if selected_name is not None and len(selected_name) != 0 and selected_name != '':
+			self.selected_bom_part = self.active_bom.select_parts_by_name(selected_name, wspace.memory)[0]
+				
+		if selected_pn is not None and selected_pn != 'None' and selected_pn != '': # Look up part in DB
+			self.selected_product = Product.select_by_pn(selected_pn, wspace.memory)[0]
+			print 'selected_product: ', self.selected_product
+			self.part_info_datasheet_button.set_sensitive(True)
+			self.part_info_scrape_button.set_sensitive(True)
+			# Set class field for currently selected product
+			if len(self.selected_product.listings) == 0:
+				self.selected_product.scrape(wspace.memory)
+			self.set_part_info_labels(self.selected_product)
+			self.populate_part_info_listing_combo(self.selected_product)
+			self.destroy_part_price_labels()
+			if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
+				#Set the active Listing selection if one has been set
+				assert len(self.selected_product.listings.keys()) > 0
+				preferred_listing = self.selected_product.get_preferred_listing(self.active_bom, wspace.memory)
+				if preferred_listing is not None:
+					set_combo(self.part_info_listing_combo, preferred_listing.key())
+				self.set_part_price_labels(self.selected_product.listings[self.part_info_listing_combo.get_active_text()])
+		
 		else:
 			self.part_info_datasheet_button.set_sensitive(False)
 			self.part_info_scrape_button.set_sensitive(False)
@@ -414,9 +416,8 @@ class Manager(gobject.GObject):
 				if len(self.selected_bom_part.product.listings) == 0:
 					self.selected_bom_part.product.scrape(wspace.memory)
 			
+			self.selected_product = self.selected_bom_part.product
 			# Set selected_bom_part
-			# TODO: If grouping by value or PN, what to do? Grey out the name field?
-			# It should write the rest to ALL of the parts in the row
 			self.selected_bom_part.name = self.edit_part_name_entry.get_text()
 			self.selected_bom_part.value = self.edit_part_value_entry.get_text()
 			self.selected_bom_part.device = self.edit_part_device_entry.get_text()
@@ -457,12 +458,12 @@ class Manager(gobject.GObject):
 	
 	def part_info_scrape_button_callback(self, widget):
 		''' Part info frame "Scrape" button callback. '''
-		self.selected_bom_part.product.scrape(wspace.memory)
-		self.set_part_info_labels(self.selected_bom_part.product)
-		self.populate_part_info_listing_combo(self.selected_bom_part.product)
+		self.selected_product.scrape(wspace.memory)
+		self.set_part_info_labels(self.selected_product)
+		self.populate_part_info_listing_combo(self.selected_product)
 		if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
-			self.set_part_price_labels(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()])
-			self.part_info_inventory_content_label.set_text(str(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()].inventory))
+			self.set_part_price_labels(self.selected_product.listings[self.part_info_listing_combo.get_active_text()])
+			self.part_info_inventory_content_label.set_text(str(self.selected_product.listings[self.part_info_listing_combo.get_active_text()].inventory))
 			self.part_info_set_listing_button.set_sensitive(True)
 		else:
 			self.part_info_set_listing_button.set_sensitive(False)
@@ -472,8 +473,8 @@ class Manager(gobject.GObject):
 	def part_info_listing_combo_callback(self, widget, data=None):
 		self.destroy_part_price_labels()
 		if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
-			self.set_part_price_labels(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()])
-			self.part_info_inventory_content_label.set_text(str(self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()].inventory))
+			self.set_part_price_labels(self.selected_product.listings[self.part_info_listing_combo.get_active_text()])
+			self.part_info_inventory_content_label.set_text(str(self.selected_product.listings[self.part_info_listing_combo.get_active_text()].inventory))
 			self.part_info_set_listing_button.set_sensitive(True)
 		else:
 			self.part_info_set_listing_button.set_sensitive(False)
@@ -481,7 +482,7 @@ class Manager(gobject.GObject):
 	def part_info_set_listing_button_callback(self, widget, data=None):
 		print 'Set preferred listing callback'
 		if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
-			self.selected_bom_part.product.set_preferred_listing(self.active_bom, self.selected_bom_part.product.listings[self.part_info_listing_combo.get_active_text()], wspace.memory)
+			self.selected_product.set_preferred_listing(self.active_bom, self.selected_product.listings[self.part_info_listing_combo.get_active_text()], wspace.memory)
 	
 	def order_size_spin_callback(self, widget):
 		''' Update the per-unit and total order prices when the order size
