@@ -614,18 +614,20 @@ class Product:
 	
 	def scrape_far(self):
 		''' Scrape method for Farnell. '''
-		print "Distributor scraping not yet implemented!"
+		raise NotImplementedError("Farnell scraping not yet implemented!")
 	
 	def scrape_fue(self):
 		''' Scrape method for Future Electronics. '''
-		print "Distributor scraping not yet implemented!"
+		raise NotImplementedError("Future scraping not yet implemented!")
 		
 	def scrape_jam(self):
 		''' Scrape method for Jameco. '''
-		print "Distributor scraping not yet implemented!"
+		raise NotImplementedError("Jameco scraping not yet implemented!")
 		
 	def scrape_me(self):
 		''' Scrape method for Mouser Electronics. '''
+		raise NotImplementedError("Mouser scraping not yet implemented!")
+		
 		search_url = 'http://www.mouser.com/Search/Refine.aspx?Keyword=' + self.manufacturer_pn
 		search_page = urllib2.urlopen(search_url)
 		search_soup = BeautifulSoup(search_page)
@@ -633,15 +635,14 @@ class Product:
 		# Create a list of product URLs from the search page
 		prod_urls = []
 		# Check "Mouser Part #" column in table -- ignore any rows where that cell says "Not Assigned"
-		print "Distributor scraping not yet implemented!"
 	
 	def scrape_new(self):
 		''' Scrape method for Newark. '''
-		print "Distributor scraping not yet implemented!"
+		raise NotImplementedError("Newark scraping not yet implemented!")
 	
 	def scrape_sfe(self):
 		''' Scrape method for Sparkfun. '''	
-		print "Distributor scraping not yet implemented!"
+		raise NotImplementedError("SparkFun scraping not yet implemented!")
 		# Clear previous pricing data (in case price break keys change)
 		self.prices.clear()
 		
