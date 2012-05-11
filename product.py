@@ -555,7 +555,7 @@ class Product:
 			
 			vendor_pn = soup.body("th", text="Digi-Key Part Number")[0].parent.nextSibling.contents[0].string.__str__()
 			# Get manufacturer and PN
-			self.manufacturer = soup.body('th', text="Manufacturer")[0].parent.nextSibling.contents[0].string.__str__()
+			self.manufacturer = self.manufacturer_pn = soup.body("th", text="Manufacturer")[0].parent.nextSibling.contents[0].contents[0].string.__str__()
 			#print "manufacturer is: %s" % self.manufacturer
 			self.manufacturer_pn = soup.body('th', text="Manufacturer Part Number")[0].parent.nextSibling.contents[0].string.__str__()
 			#print "manufacturer_pn is: %s" % self.manufacturer_pn
