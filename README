@@ -3,17 +3,23 @@ A BOM manager designed to interface with Eagle's BOM ULP scripts.
 Scrapes product information off of distributor product pages.
 All BOM and product information is stored in a local sqlite3 database.  
 
-The latest version of the BOM-AM, bom_w_attr, and BOM-EX ULP scripts are available at:
+REQUIREMENTS:
+---------------------------------------
+The latest version of the BOM-AM, bom_w_attr, or BOM-EX ULP script, all of which are available at:
 http://www.cadsoftusa.com/downloads/ulps
-Note that while the basic bom.ulp script bundled with Eagle is not supported at this time due to lack of features, BOM-AM, bom_w_attr, and BOM-EX all work.
+The basic bom.ulp script bundled with Eagle is not supported at this time due to lack of features, BOM-AM, bom_w_attr, and BOM-EX all work.
+
+Note that while this tool was originally created to supplement the BOM management functionality of Eagle, it is fully compatible with any other EDA tool that can export a CSV file with the correct formatting. The supported input file formats may be expanded in the future to support other EDA tools should the need arise.
 
 Required third-party Python (2.7) modules:
 Beautiful Soup: http://www.crummy.com/software/BeautifulSoup/
 PyGTK: http://www.pygtk.org/
 APSW: http://code.google.com/p/apsw/
+---------------------------------------
 
-Importing data:
-Export a CSV file from one of the BOM scripts with the following columns:
+IMPORTING DATA:
+---------------------------------------
+Export a CSV file from one of the Eagle BOM scripts with the following columns:
 Name, Value, Device, Package, Description
 
 A manufacturer part number attribute can be optionally added as a 6th column without adding a column header row.
@@ -28,16 +34,18 @@ When using a column header row, the manufacturer part number column does not nee
 'pn'
 
 The file should have one component per line -- do not group components by value in the ULP.
-
+---------------------------------------
 
 The following distributors are currently supported:
 - Digikey
 
-Support for the following distributors is planned for the near future:
+The following distributors will be supported soon:
+- Mouser Electronics
+
+Support for the following distributors is planned for the future:
 - Farnell
 - Future Electronics
 - Jameco
-- Mouser Electronics
 - Newark
 
 To request support for additional distributors, please submit an issue on the Github page.
