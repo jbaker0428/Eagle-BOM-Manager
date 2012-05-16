@@ -207,8 +207,7 @@ class BOM:
 			reader = csv.reader(f, dialect=sniffed_dialect)
 			if has_header is True:
 				rownum = 0
-				print 'Header found in CSV'
-				
+				#print 'Header found in CSV'
 					
 				for row in reader:
 					if rownum == 0:
@@ -239,6 +238,9 @@ class BOM:
 							else:
 								bom_attribs[index] = column
 							index += 1
+						if name_col == -1:
+							raise KeyError("Component name column not found in header!")
+						
 					else:
 						print 'Row: ', row
 						#row_attribs = {}
@@ -248,15 +250,35 @@ class BOM:
 							if len(row[attrib[0]]) > 0:
 								row_attribs[attrib[1]] = row[attrib[0]]
 						#print 'Row attribs: ', row_attribs
-						if prod_col == -1:
-							part = Part(row[name_col], self, row[val_col], row[dev_col], row[pkg_col], row[desc_col], None, row_attribs)
+						# No need for a "name column found" check here,
+						# as a KeyError would already have been raised above
+						new_name = row[name_col]	
+						if val_col != -1:
+							new_val = row[val_col]
 						else:
+							new_val = ""
+						if dev_col != -1:
+							new_dev = row[dev_col]
+						else:
+							new_dev = ""
+						if pkg_col != -1:
+							new_pkg = row[pkg_col]
+						else:
+							new_pkg = ""
+						if desc_col != -1:
+							new_desc = row[desc_col]
+						else:
+							new_desc = ""
+						if prod_col != -1:
 							prod = Product.select_by_pn(row[prod_col], connection)
 							if prod is not None and len(prod) > 0:
-								part = Part(row[name_col], self, row[val_col], row[dev_col], row[pkg_col], row[desc_col], prod[0], row_attribs)
+								new_prod = prod[0]
 							else:
-								part = Part(row[name_col], self, row[val_col], row[dev_col], row[pkg_col], row[desc_col], None, row_attribs)
+								new_prod = None
+						else:
+							new_prod = None
 						
+						part = Part(new_name, self, new_val, new_dev, new_pkg, new_desc, new_prod, row_attribs)
 						part.product_updater(connection)
 						if part.product is None:
 							self.parts.append([part.name, part.value, ''])
