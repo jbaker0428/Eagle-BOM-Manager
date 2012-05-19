@@ -45,6 +45,7 @@ The following distributors are currently supported:
 
 The following distributors will be supported soon:
 - Mouser Electronics
+- Multiple distributors via Octopart search API
 
 Support for the following distributors is planned for the future:
 - Farnell
