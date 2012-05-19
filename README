@@ -34,8 +34,12 @@ When using a column header row, the manufacturer part number column does not nee
 'pn'
 
 The file should have one component per line -- do not group components by value in the ULP.
+
+Importing netlist files will be supported in the near future.
 ---------------------------------------
 
+DISTRIBUTOR SCRAPING:
+---------------------------------------
 The following distributors are currently supported:
 - Digikey
 
@@ -49,3 +53,4 @@ Support for the following distributors is planned for the future:
 - Newark
 
 To request support for additional distributors, please submit an issue on the Github page.
+---------------------------------------
