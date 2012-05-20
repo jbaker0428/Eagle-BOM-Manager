@@ -1,5 +1,6 @@
 import urllib2
 from BeautifulSoup import BeautifulSoup, Tag, NavigableString
+from octopart import *
 import shutil
 import os
 import urlparse
@@ -28,7 +29,8 @@ VENDOR_SFE = "SparkFun"
 
 # TODO : Set these based on program config file
 # This will allow the user to disable vendors they do not purchase from
-VENDOR_DK_EN = True
+OCTOPART_EN = True
+VENDOR_DK_EN = False
 VENDOR_FAR_EN = False
 VENDOR_FUE_EN = False
 VENDOR_JAM_EN = False
@@ -40,6 +42,8 @@ VENDOR_WARN_IF_NONE_EN = True
 def no_vendors_enabled():
 	''' Return True if all VENDOR_*_EN config vars are False. '''
 	ret = True
+	if OCTOPART_EN == True:
+		ret = False
 	if VENDOR_DK_EN == True:
 		ret = False
 	elif VENDOR_FAR_EN == True:
@@ -473,6 +477,11 @@ class Product:
 				stocked = True
 				break
 	
+	def search_octopart(self):
+		''' Multi-vendor search using Octopart.
+		Uses the Octopart API instead of HTML scraping. '''
+		octo = Octopart('3b6a195e')
+	
 	def scrape_dk(self):
 		''' Scrape method for Digikey. '''
 		# Clear previous pricing data (in case price break keys change)
@@ -660,6 +669,8 @@ class Product:
 		else:
 			self.listings.clear()
 			# Proceed based on source config
+			if OCTOPART_EN:
+				self.search_octopart()
 			if VENDOR_DK_EN:
 				try:
 					self.scrape_dk()
