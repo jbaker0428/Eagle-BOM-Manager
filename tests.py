@@ -47,7 +47,7 @@ class EagleManagerTestCase(unittest.TestCase):
 		assert 'pricebreaks' in tables
 		assert 'preferred_listings' in tables
 		
-		self.test_BOM = BOM.new_project('dbtests', 'Databse Unit tests', '', self.wspace.memory)
+		self.test_BOM = BOM.new_project('dbtests', 'Database Unit tests', '', self.wspace.memory)
 		self.wspace.projects = self.wspace.list_projects()
 		
 		assert len(self.wspace.projects) == 1
