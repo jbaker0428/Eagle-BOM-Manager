@@ -680,8 +680,7 @@ class Product(OctopartPart):
 			sql = 'SELECT txt FROM descriptions WHERE product=?'
 			params = (mpn,)
 			for row in cur.execute(sql, params):
-				# TODO: Make this line up with the API data structure
-				descriptions.append(row[0])
+				descriptions.append({'text' : row[0]})
 			
 		finally:
 			cur.close()
