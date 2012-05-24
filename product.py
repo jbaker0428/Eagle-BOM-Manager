@@ -383,6 +383,41 @@ class ProductAttribute(OctopartPartAttribute):
 	
 	def __init__(self, fieldname, displayname, type, metadata):
 		OctopartPartAttribute.__init__(fieldname, displayname, type, metadata)
+	
+	def update(self, connection):
+		''' Update an existing ProductAttribute record in the DB. '''
+		try:
+			cur = connection.cursor()
+			
+			params = (self.fieldname, self.displayname, self.type, self.metadata['datatype'], self.metadata['unit'].name,)
+			cur.execute('''UPDATE product_attributes 
+			SET fieldname=?1, displayname=?2, type=?3, datatype=?4, unit=?5 
+			WHERE fieldname=?1''', params)
+			
+		finally:
+			cur.close()
+	
+	def insert(self, connection):
+		''' Write the ProductAttribute to the DB. '''
+		try:
+			cur = connection.cursor()
+			
+			params = (self.fieldname, self.displayname, self.type, self.metadata['datatype'], self.metadata['unit'].name,)
+			cur.execute('INSERT OR REPLACE INTO product_attributes VALUES (?,?,?,?,?)', params)
+				
+		finally:
+			cur.close()
+	
+	def delete(self, connection):
+		''' Delete the ProductAttribute from the DB. '''
+		try:
+			cur = connection.cursor()
+			
+			params = (self.fieldname,)
+			cur.execute('DELETE FROM product_attributes WHERE fieldname=?', params)
+			
+		finally:
+			cur.close()
 
 class Product(OctopartPart):
 	''' A physical product, independent of distributor.
