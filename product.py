@@ -19,6 +19,8 @@ def get_filename(url,openUrl):
 	# if no filename was found above, parse it out of the final URL.
 	return os.path.basename(urlparse.urlsplit(openUrl.url)[2])
 
+OCTOPART_API_KEY = '3b6a195e'
+
 VENDOR_DK = "Digi-Key"
 VENDOR_FAR = "Farnell"
 VENDOR_FUE = "Future"
@@ -73,11 +75,11 @@ class ScrapeException(Exception):
 	soup_errors = {}
 	def __init__(self, source, mfg_pn, error_number):
 		self.source = source
-		self.manufacturer_pn = mfg_pn
+		self.mpn = mfg_pn
 		
 		self.error = error_number
 	def __str__(self):
-		str = errors[self.error] + ' Source: ' + self.source + ' Manufacturer Part Number: ' + self.manufacturer_pn
+		str = errors[self.error] + ' Source: ' + self.source + ' Manufacturer Part Number: ' + self.mpn
 		return repr(str)
 
 class Listing:
@@ -273,16 +275,198 @@ class Listing:
 			elif  breaks[i] > qty:
 				return [breaks[i-1], self.prices[breaks[i-1]]]		
 
-class Product:
+class ProductAttribute(OctopartPartAttribute):
+	'''Database methods for the OctopartPartAttribute class. '''
+	
+	@staticmethod
+	def fetch_unit(fieldname, connection):
+		''' Fetch the units table entry for a ProductAttribute of given fieldname. '''
+		try:
+			cur = connection.cursor()
+			
+			sql = 'SELECT name, symbol FROM units WHERE name IN (SELECT unit FROM product_attributes WHERE fieldname=?)'
+			params = (fieldname,)
+			for row in cur.execute(sql, params):
+				unit = {'name' : row[0], 'symbol' : row[1]}
+		
+		finally:
+			cur.close()
+			return unit
+	
+	@staticmethod
+	def new_from_row(row, connection):
+		''' Given a product_attributes row from the DB, returns a ProductAttribute object. '''
+		unit = ProductAttribute.fetch_unit(row[0], connection)
+		metadata = {'datatype' : row[3], 'unit' : unit}
+		attrib = ProductAttribute(row[0], row[1], row[2], metadata)
+		return attrib
+	
+	@staticmethod
+	def select_by_fieldname(fieldname, connection):
+		''' Return the ProductAttribute of given field fieldname. '''
+		prods = []
+		try:
+			cur = connection.cursor()
+			
+			params = (fieldname,)
+			for row in cur.execute('SELECT * FROM product_attributes WHERE fieldname=?', params):
+				attrib = ProductAttribute.new_from_row(row, connection)
+			
+		finally:
+			cur.close()
+			return attrib
+	
+	def __init__(self, fieldname, displayname, type, metadata):
+		OctopartPartAttribute.__init__(fieldname, displayname, type, metadata)
+
+class Product(OctopartPart):
 	''' A physical product, independent of distributor.
 	The primary identifying key is the manufacturer PN. '''
 	
 	@staticmethod
 	def new_from_row(row, connection):
 		''' Given a product row from the DB, returns a Product object. '''
-		prod = Product(row[0], row[1], row[2], row[3], row[4])
-		prod.fetch_listings(connection)
+		part_dict = {}
+		part_dict['uid'] = row[0]
+		part_dict['mpn'] = row[1]
+		part_dict['manufacturer'] = row[2]
+		part_dict['detail_url'] = row[3]
+		part_dict['avg_price'] = row[4]
+		part_dict['avg_avail'] = row[5]
+		part_dict['market_status'] = row[6]
+		part_dict['num_suppliers'] = row[7]
+		part_dict['num_authsuppliers'] = row[8]
+		part_dict['short_description'] = row[9]
+		part_dict['category_ids'] = Product.fetch_category_ids(part_dict['mpn'], connection)
+		part_dict['images'] = Product.fetch_images(part_dict['mpn'], connection)
+		part_dict['datasheets'] = Product.fetch_datasheets(part_dict['mpn'], connection) 
+		part_dict['descriptions'] = Product.fetch_descriptions(part_dict['mpn'], connection) 
+		part_dict['hyperlinks'] = {'freesample' : row[10], 'evalkit' : row[11], 'manufacturer' : row[12]}
+		part_dict['offers'] = Product.fetch_offers(part_dict['mpn'], connection)
+		part_dict['specs'] = Product.fetch_specs(part_dict['mpn'], connection)
+		prod = Product(part_dict)
 		return prod
+	
+	@staticmethod
+	def fetch_category_ids(mpn, connection):
+		''' Fetch the list of category IDs for a given MPN. '''
+		ids = []
+		try:
+			cur = connection.cursor()
+			
+			sql = 'SELECT id FROM categories WHERE id IN (SELECT category FROM product_categories WHERE product=?)'
+			params = (mpn,)
+			for row in cur.execute(sql, params):
+				ids.append(row[0])
+			
+		finally:
+			cur.close()
+			return ids
+	
+	@staticmethod
+	def fetch_images(mpn, connection):
+		''' Fetch the list of images for a given MPN. '''
+		images = []
+		try:
+			cur = connection.cursor()
+			
+			sql = 'SELECT url, url_30px, url_35px, url_55px, url_90px, credit_url, credit_domain FROM product_images WHERE product=?'
+			params = (mpn,)
+			for row in cur.execute(sql, params):
+				result = {}
+				result['url'] = row[0]
+				result['url_30px'] = row[1]
+				result['url_35px'] = row[2]
+				result['url_55px'] = row[3]
+				result['url_90px'] = row[4]
+				result['credit_url'] = row[5]
+				result['credit_domain'] = row[6]
+				images.append(result)
+			
+		finally:
+			cur.close()
+			return images
+	
+	@staticmethod
+	def fetch_datasheets(mpn, connection):
+		''' Fetch the list of datasheets for a given MPN. '''
+		datasheets = []
+		try:
+			cur = connection.cursor()
+			
+			sql = 'SELECT url, score FROM datasheets WHERE product=?'
+			params = (mpn,)
+			for row in cur.execute(sql, params):
+				datasheets.append({'url': row[0], 'score' : row[1]})
+			
+		finally:
+			cur.close()
+			return datasheets
+	
+	@staticmethod
+	def fetch_descriptions(mpn, connection):
+		''' Fetch the list of descriptions for a given MPN. '''
+		descriptions = []
+		try:
+			cur = connection.cursor()
+			
+			sql = 'SELECT txt FROM descriptions WHERE product=?'
+			params = (mpn,)
+			for row in cur.execute(sql, params):
+				descriptions.append(row[0])
+			
+		finally:
+			cur.close()
+			return descriptions
+	
+	@staticmethod
+	def fetch_offers(mpn, connection):
+		''' Fetch the list of offers for a given MPN. '''
+		offers = []
+		try:
+			cur = connection.cursor()
+			
+			sql = 'SELECT * FROM offers WHERE mpn=? ORDER BY supplier'
+			params = (mpn,)
+			for row in cur.execute(sql, params):
+				# TODO: Revise this line when the Listing class is revamped
+				listing = Listing.new_from_row(row, connection)
+				offers.append(listing)
+			
+		finally:
+			cur.close()
+			return offers
+	
+	@staticmethod
+	def fetch_specs(mpn, connection):
+		''' Fetch the list of specs for a given MPN. '''
+		specs = []
+		attrib = ProductAttribute('', '', 'text', None)
+		previous_fieldname = ''
+		spec = {}
+		try:
+			cur = connection.cursor()
+			
+			sql = 'SELECT attribute, name, value FROM specs WHERE product=? ORDER BY attribute'
+			params = (mpn,)
+			for attribute, name, value in cur.execute(sql, params):
+				if previous_fieldname == '':
+					previous_fieldname = attribute
+				else:
+					if attribute != previous_fieldname:
+						specs.append(spec)
+						spec = {}
+						previous_fieldname = attribute
+						attrib = ProductAttribute.select_by_fieldname(attribute, connection)
+						spec['attribute'] = attrib
+						spec['values'] = [{}]
+				spec['values'][0]['name'] = name
+				if value is not None:
+					spec['values'][0]['value'] = value
+			
+		finally:
+			cur.close()
+			return specs
 	
 	@staticmethod
 	def select_all(connection):
@@ -309,28 +493,22 @@ class Product:
 			cur = connection.cursor()
 			
 			params = (pn,)
-			for row in cur.execute('SELECT * FROM products WHERE manufacturer_pn=?', params):
+			for row in cur.execute('SELECT * FROM products WHERE mpn=?', params):
 				prods.append(Product.new_from_row(row, connection))
 			
 		finally:
 			cur.close()
 			return prods
 		
-	def __init__(self, mfg, manufacturer_pn, dsheet='NULL', desc='NULL', pkg='NULL'):
-		self.manufacturer = mfg
-		self.manufacturer_pn = manufacturer_pn
-		self.datasheet = dsheet
-		self.description = desc
-		self.package = pkg
+	def __init__(self, part_dict):
+		OctopartPart.__init__(self, part_dict)
 		self.listings = {}	# Key is key = source + ': ' + vendor_pn + ' (' + packaging + ')'
 	
 	def show(self, show_listings=False):
 		''' A simple print method. '''
 		print 'Manufacturer: ', self.manufacturer, type(self.manufacturer)
-		print 'Manufacturer PN: ', self.manufacturer_pn, type(self.manufacturer_pn)
-		print 'Datasheet: ', self.datasheet, type(self.datasheet)
-		print 'Description: ', self.description, type(self.description)
-		print 'Package: ', self.package, type(self.package)
+		print 'Manufacturer PN: ', self.mpn, type(self.mpn)
+		print 'Description: ', self.short_description, type(self.short_description)
 		if show_listings is True:
 			print 'Listings:'
 			for listing in self.listings.items():
@@ -344,7 +522,7 @@ class Product:
 		eq = True
 		if self.manufacturer != p.manufacturer:
 			eq = False
-		elif self.manufacturer_pn != p.manufacturer_pn:
+		elif self.mpn != p.mpn:
 			eq = False
 		elif self.datasheet != p.datasheet:
 			eq = False
@@ -368,11 +546,11 @@ class Product:
 		try:
 			cur = connection.cursor()
 			
-			params = (self.manufacturer, self.manufacturer_pn, self.datasheet, self.description, 
-					self.package, self.manufacturer_pn,)
+			params = (self.manufacturer, self.mpn, self.datasheet, self.description, 
+					self.package, self.mpn,)
 			cur.execute('''UPDATE products 
-			SET manufacturer=?, manufacturer_pn=?, datasheet=?, description=?, package=? 
-			WHERE manufacturer_pn=?''', params)
+			SET manufacturer=?, mpn=?, datasheet=?, description=?, package=? 
+			WHERE mpn=?''', params)
 			
 		finally:
 			cur.close()
@@ -382,7 +560,7 @@ class Product:
 		try:
 			cur = connection.cursor()
 			
-			params = (self.manufacturer, self.manufacturer_pn, self.datasheet, self.description, self.package,)
+			params = (self.manufacturer, self.mpn, self.datasheet, self.description, self.package,)
 			cur.execute('INSERT OR REPLACE INTO products VALUES (?,?,?,?,?)', params)
 				
 		finally:
@@ -393,8 +571,8 @@ class Product:
 		try:
 			cur = connection.cursor()
 			
-			params = (self.manufacturer_pn,)
-			cur.execute('DELETE FROM products WHERE manufacturer_pn=?', params)
+			params = (self.mpn,)
+			cur.execute('DELETE FROM products WHERE mpn=?', params)
 			
 		finally:
 			cur.close()
@@ -406,8 +584,8 @@ class Product:
 		try:
 			cur = connection.cursor()
 			
-			params = (self.manufacturer_pn,)
-			for row in cur.execute('SELECT * FROM listings WHERE manufacturer_pn=? ORDER BY vendor', params):
+			params = (self.mpn,)
+			for row in cur.execute('SELECT * FROM listings WHERE mpn=? ORDER BY vendor', params):
 				listing = Listing.new_from_row(row, connection)
 				self.listings[listing.key()] = listing
 				#print 'Setting listings[%s] = ' % listing.key()
@@ -422,7 +600,7 @@ class Product:
 		If the "enforce minimum quantities" option is checked in the program config,
 		only returns listings where the order quantity meets/exceeds the minimum
 		order quantity for the listing.'''
-		print 'Entering %s.best_listing(%s)' % (self.manufacturer_pn, str(qty))
+		print 'Entering %s.best_listing(%s)' % (self.mpn, str(qty))
 		best = None
 		lowest_price = float("inf")
 		for listing in self.listings.values():
@@ -445,7 +623,7 @@ class Product:
 			listing = None
 			cur = connection.cursor()
 			
-			params = (project.name, self.manufacturer_pn,)
+			params = (project.name, self.mpn,)
 			rows = list(cur.execute('SELECT listing FROM preferred_listings WHERE project=? AND product=?', params))
 			if len(rows) > 0:
 				listing = Listing.select_by_vendor_pn(rows[0][0], connection)[0]
@@ -460,10 +638,10 @@ class Product:
 			cur = connection.cursor()
 			current_listing = self.get_preferred_listing(project, connection)
 			if current_listing is None:
-				params = (project.name, self.manufacturer_pn, listing.vendor_pn,)
+				params = (project.name, self.mpn, listing.vendor_pn,)
 				cur.execute('INSERT INTO preferred_listings VALUES (NULL,?,?,?)', params) 
 			else:
-				params = (listing.vendor_pn, project.name, self.manufacturer_pn,)
+				params = (listing.vendor_pn, project.name, self.mpn,)
 				cur.execute('UPDATE preferred_listings SET listing=? WHERE project=? AND product=?', params)
 			
 		finally:
@@ -480,12 +658,12 @@ class Product:
 	def search_octopart(self):
 		''' Multi-vendor search using Octopart.
 		Uses the Octopart API instead of HTML scraping. '''
-		octo = Octopart('3b6a195e')
+		octo = Octopart(OCTOPART_API_KEY)
 	
 	def scrape_dk(self):
 		''' Scrape method for Digikey. '''
 		# Clear previous pricing data (in case price break keys change)
-		search_url = 'http://search.digikey.com/us/en/products/' + self.manufacturer_pn
+		search_url = 'http://search.digikey.com/us/en/products/' + self.mpn
 		search_page = urllib2.urlopen(search_url)
 		search_soup = BeautifulSoup(search_page)
 		
@@ -521,7 +699,7 @@ class Product:
 			price_table = soup.body('table', id="pricing")
 			#print 'price_table: ', type(price_table), price_table
 			if len(price_table) == 0:
-				raise ScrapeException(VENDOR_DK, self.manufacturer_pn, 4)
+				raise ScrapeException(VENDOR_DK, self.mpn, 4)
 			# price_table.contents[x] should be the tr tags...
 			for tag in price_table:
 				#print 'tag: ', type(tag), tag
@@ -566,8 +744,8 @@ class Product:
 			# Get manufacturer and PN
 			self.manufacturer = soup.body("th", text="Manufacturer")[0].parent.nextSibling.contents[0].contents[0].string.__str__()
 			#print "manufacturer is: %s" % self.manufacturer
-			self.manufacturer_pn = soup.body('th', text="Manufacturer Part Number")[0].parent.nextSibling.contents[0].string.__str__()
-			#print "manufacturer_pn is: %s" % self.manufacturer_pn
+			self.mpn = soup.body('th', text="Manufacturer Part Number")[0].parent.nextSibling.contents[0].string.__str__()
+			#print "mpn is: %s" % self.mpn
 			
 			# Get datasheet filename and download
 			datasheet_soup = soup.body('th', text="Datasheets")[0].parent.nextSibling
@@ -613,8 +791,8 @@ class Product:
 			if "Digi-Reel" in packaging:
 				packaging = "Digi-Reel"	# Remove Restricted symbol
 			key = VENDOR_DK + ': ' + vendor_pn + ' (' + packaging + ')'
-			self.listings[key] = Listing(VENDOR_DK, vendor_pn, self.manufacturer_pn, prices, inventory, packaging)
-			#v = Listing(VENDOR_DK, vendor_pn, self.manufacturer_pn, prices, inventory, pkg, reel, cat, fam, ser)
+			self.listings[key] = Listing(VENDOR_DK, vendor_pn, self.mpn, prices, inventory, packaging)
+			#v = Listing(VENDOR_DK, vendor_pn, self.mpn, prices, inventory, pkg, reel, cat, fam, ser)
 			self.listings[key].category = category
 			self.listings[key].family = family
 			self.listings[key].series = series
@@ -637,7 +815,7 @@ class Product:
 		''' Scrape method for Mouser Electronics. '''
 		raise NotImplementedError("Mouser scraping not yet implemented!")
 		
-		search_url = 'http://www.mouser.com/Search/Refine.aspx?Keyword=' + self.manufacturer_pn
+		search_url = 'http://www.mouser.com/Search/Refine.aspx?Keyword=' + self.mpn
 		search_page = urllib2.urlopen(search_url)
 		search_soup = BeautifulSoup(search_page)
 		
@@ -664,7 +842,7 @@ class Product:
 		''' Scrape each source page to refresh product pricing info. '''
 		if no_vendors_enabled() == True:
 			if VENDOR_WARN_IF_NONE_EN == True:
-				raise ScrapeException(self.scrape.__name__, self.manufacturer_pn, 3)
+				raise ScrapeException(self.scrape.__name__, self.mpn, 3)
 		
 		else:
 			self.listings.clear()
@@ -702,15 +880,15 @@ class Product:
 				else:
 					listing.insert(connection)
 			if len(self.listings.values()) == 0:
-				raise ScrapeException(self.scrape.__name__, self.manufacturer_pn, 1)
+				raise ScrapeException(self.scrape.__name__, self.mpn, 1)
 			if self.in_stock() == False:
-				raise ScrapeException(VENDOR_DK, self.manufacturer_pn, 2)
+				raise ScrapeException(VENDOR_DK, self.mpn, 2)
 			
 				
 
 	def is_in_db(self, connection):
 		''' Check if this Product is in the database. '''
-		result = Product.select_by_pn(self.manufacturer_pn, connection)
+		result = Product.select_by_pn(self.mpn, connection)
 		if len(result) == 0:
 			return False
 		else:
@@ -720,13 +898,13 @@ class Product:
 		''' Sets the product fields, pulling from the local DB if possible.
 		Passing an open connection to this method is recommended. '''	
 		if(self.is_in_db(connection)):
-			temp = Product.select_by_pn(self.manufacturer_pn, connection)[0]
+			temp = Product.select_by_pn(self.mpn, connection)[0]
 			self.manufacturer = temp.manufacturer
-			self.manufacturer_pn = temp.manufacturer_pn
+			self.mpn = temp.mpn
 			self.datasheet = temp.datasheet
 			self.description = temp.description
 			self.package = temp.package
 			self.fetch_listings(connection)
-		elif self.manufacturer_pn != 'none' and self.manufacturer_pn != 'NULL':
+		elif self.mpn != 'none' and self.mpn != 'NULL':
 			self.scrape(connection)
 
