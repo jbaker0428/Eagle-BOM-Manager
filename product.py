@@ -84,15 +84,16 @@ class ScrapeException(Exception):
 
 class Brand(OctopartBrand):
 	'''Database methods for the OctopartBrand class. '''
+	
 	@staticmethod
 	def new_from_row(row, connection):
 		''' Given a brands row from the DB, returns a Brand object. '''
-		brand = ProductAttribute(row[0], row[1], row[2])
+		brand = Brand(row[0], row[1], row[2])
 		return brand
 	
 	@staticmethod
 	def select_by_name(displayname, connection):
-		''' Return the Brand of given field displayname. '''
+		''' Return the Brand of given displayname. '''
 		try:
 			cur = connection.cursor()
 			
