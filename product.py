@@ -661,11 +661,15 @@ class Product(OctopartPart):
 		try:
 			cur = connection.cursor()
 			
-			params = (self.manufacturer, self.mpn, self.datasheet, self.description, 
-					self.package, self.mpn,)
+			params = (self.uid, self.mpn, self.manufacturer, self.detail_url, \
+					self.avg_price, self.avg_avail, self.market_status, self.num_suppliers, \
+					self.num_authsuppliers, self.short_description, self.hyperlinks['freesample'], \
+					self.hyperlinks['evalkit'], self.hyperlinks['manufacturer'])
 			cur.execute('''UPDATE products 
-			SET manufacturer=?, mpn=?, datasheet=?, description=?, package=? 
-			WHERE mpn=?''', params)
+			SET uid=?1, mpn=?2, manufacturer=?3, detail_url=?4, avg_price=?5, 
+			avg_avail=?6, market_status=?7, num_suppliers=?8, num_authsuppliers=?9, 
+			short_description=?10, freesample_url=?11, evalkit_url=?12, manufacturer_url=?13
+			WHERE mpn=?2''', params)
 			
 		finally:
 			cur.close()
@@ -675,8 +679,11 @@ class Product(OctopartPart):
 		try:
 			cur = connection.cursor()
 			
-			params = (self.manufacturer, self.mpn, self.datasheet, self.description, self.package,)
-			cur.execute('INSERT OR REPLACE INTO products VALUES (?,?,?,?,?)', params)
+			params = (self.uid, self.mpn, self.manufacturer, self.detail_url, \
+					self.avg_price, self.avg_avail, self.market_status, self.num_suppliers, \
+					self.num_authsuppliers, self.short_description, self.hyperlinks['freesample'], \
+					self.hyperlinks['evalkit'], self.hyperlinks['manufacturer'])
+			cur.execute('INSERT OR REPLACE INTO products VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)', params)
 				
 		finally:
 			cur.close()
