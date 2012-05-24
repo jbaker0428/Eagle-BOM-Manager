@@ -82,6 +82,72 @@ class ScrapeException(Exception):
 		str = errors[self.error] + ' Source: ' + self.source + ' Manufacturer Part Number: ' + self.mpn
 		return repr(str)
 
+class Brand(OctopartBrand):
+	'''Database methods for the OctopartBrand class. '''
+	@staticmethod
+	def new_from_row(row, connection):
+		''' Given a brands row from the DB, returns a Brand object. '''
+		brand = ProductAttribute(row[0], row[1], row[2])
+		return brand
+	
+	@staticmethod
+	def select_by_name(displayname, connection):
+		''' Return the Brand of given field displayname. '''
+		try:
+			cur = connection.cursor()
+			
+			params = (displayname,)
+			for row in cur.execute('SELECT * FROM brands WHERE displayname=?', params):
+				brand = Brand.new_from_row(row, connection)
+			
+		finally:
+			cur.close()
+			return brand
+	
+	def __init__(self, id, dispname, homepage):
+		OctopartBrand.__init__(id, dispname, homepage)
+	
+	def show(self):
+		''' A detailed print method. '''
+		print 'Octopart ID: ', self.id
+		print 'Name: ', self.displayname
+		print 'Homepage: ', self.homepage_url
+	
+	def update(self, connection):
+		''' Update an existing Brand record in the DB. '''
+		try:
+			cur = connection.cursor()
+			
+			params = (self.id, self.displayname, self.homepage_url,)
+			cur.execute('''UPDATE brands 
+			SET id=?1, displayname=?2, homepage_url=?3 
+			WHERE id=?1''', params)
+			
+		finally:
+			cur.close()
+	
+	def insert(self, connection):
+		''' Write the Brand to the DB. '''
+		try:
+			cur = connection.cursor()
+			
+			params = (self.id, self.displayname, self.homepage_url,)
+			cur.execute('INSERT OR REPLACE INTO brands VALUES (?,?,?)', params)
+				
+		finally:
+			cur.close()
+	
+	def delete(self, connection):
+		''' Delete the Brand from the DB. '''
+		try:
+			cur = connection.cursor()
+			
+			params = (self.id,)
+			cur.execute('DELETE FROM brands WHERE id=?', params)
+			
+		finally:
+			cur.close()
+
 class Listing:
 	''' A distributor's listing for a Product object. '''
 	
@@ -304,7 +370,6 @@ class ProductAttribute(OctopartPartAttribute):
 	@staticmethod
 	def select_by_fieldname(fieldname, connection):
 		''' Return the ProductAttribute of given field fieldname. '''
-		prods = []
 		try:
 			cur = connection.cursor()
 			
@@ -329,7 +394,7 @@ class Product(OctopartPart):
 		part_dict = {}
 		part_dict['uid'] = row[0]
 		part_dict['mpn'] = row[1]
-		part_dict['manufacturer'] = row[2]
+		part_dict['manufacturer'] = Brand.select_by_name(row[2], connection)
 		part_dict['detail_url'] = row[3]
 		part_dict['avg_price'] = row[4]
 		part_dict['avg_avail'] = row[5]
@@ -507,7 +572,7 @@ class Product(OctopartPart):
 		''' A detailed print method. '''
 		print 'Octopart UID: ', self.uid, type(self.uid)
 		print 'Manufacturer PN: ', self.mpn, type(self.mpn)
-		print 'Manufacturer: ', self.manufacturer, type(self.manufacturer)
+		print 'Manufacturer: ', self.manufacturer.show(), type(self.manufacturer.show())
 		print 'Detail URL: ', self.detail_url, type(self.detail_url)
 		print 'Average price: ', self.avg_price, type(self.avg_price)
 		print 'Average available: ', self.avg_avail, type(self.avg_avail)

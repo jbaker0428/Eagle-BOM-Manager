@@ -102,7 +102,7 @@ class Workspace:
 			cur.execute('''CREATE TABLE IF NOT EXISTS products
 			(uid INTEGER, 
 			mpn TEXT PRIMARY KEY, 
-			manufacturer TEXT, 
+			manufacturer TEXT REFERENCES brands(displayname) ON DELETE CASCADE ON UPDATE CASCADE, 
 			detail_url TEXT, 
 			avg_price DOUBLE, 
 			avg_avail INTEGER, 
