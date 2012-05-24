@@ -680,6 +680,7 @@ class Product(OctopartPart):
 			sql = 'SELECT txt FROM descriptions WHERE product=?'
 			params = (mpn,)
 			for row in cur.execute(sql, params):
+				# TODO: Make this line up with the API data structure
 				descriptions.append(row[0])
 			
 		finally:
@@ -728,8 +729,7 @@ class Product(OctopartPart):
 						spec['attribute'] = attrib
 						spec['values'] = [{}]
 				spec['values'][0]['name'] = name
-				if value is not None:
-					spec['values'][0]['value'] = value
+				spec['values'][0]['value'] = value
 			
 		finally:
 			cur.close()
@@ -846,11 +846,52 @@ class Product(OctopartPart):
 		try:
 			cur = connection.cursor()
 			
+			# Since we're inserting a fresh copy of the product, we should wipe
+			# any existing entries/references to ensure that there are no extra
+			# references to this product left over in the DB
+			# One delete call should take care of everything via cascading
+			# foreign key constraints
+			self.delete(connection)
+			
 			params = (self.uid, self.mpn, self.manufacturer, self.detail_url, \
 					self.avg_price, self.avg_avail, self.market_status, self.num_suppliers, \
 					self.num_authsuppliers, self.short_description, self.hyperlinks['freesample'], \
 					self.hyperlinks['evalkit'], self.hyperlinks['manufacturer'])
 			cur.execute('INSERT OR REPLACE INTO products VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)', params)
+			
+			# Write product categories
+			for id in self.category_ids:
+				cur.execute('INSERT OR REPLACE INTO product_categories VALUES (NULL,?,?)', (self.mpn, id,))
+			
+			# Write product images
+			params = (self.mpn, self.images['url'], self.images['url_30px'], \
+					self.images['url_35px'], self.images['url_55px'], self.images['url_90px'], \
+					self.images['credit_url'], self.images['credit_domain'],)
+			cur.execute('INSERT OR REPLACE INTO product_images VALUES (?,?,?,?,?,?,?,?)', params)
+			
+			# Write datasheets
+			for sheet in self.datasheets:
+				params = (self.mpn, sheet['url'], sheet['score'])
+				cur.execute('INSERT OR REPLACE INTO datasheets VALUES (?,?,?)', params)
+			
+			# Write descriptions
+			for desc in self.descriptions:
+				params = (self.mpn, desc['text'])
+				cur.execute('INSERT OR REPLACE INTO descriptions VALUES (NULL,?,?)', params)
+			
+			# Write specs
+			for spec in self.specs:
+				params = (self.mpn, spec['attribute'].fieldname, spec['name'], spec['value'])
+				sql = 'INSERT OR REPLACE INTO specs VALUES (?,?)' 
+				# Try and catch a FK violation here
+				# Can't actually tell what kind of constraint is being violated
+				# Attempt to correct FK violation by writing the ProductAttribute 
+				# instance to DB and try again
+				try:
+					cur.execute(sql, params)
+				except apsw.ConstraintError:
+					spec['attribute'].insert(connection)
+					cur.execute(sql, params)
 				
 		finally:
 			cur.close()
