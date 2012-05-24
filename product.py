@@ -149,6 +149,172 @@ class Brand(OctopartBrand):
 		finally:
 			cur.close()
 
+class Category(OctopartCategory):
+	'''Database methods for the OctopartCategory class. '''
+	
+	@staticmethod
+	def new_from_row(row, connection, get_ancestors=True):
+		''' Given a categories row from the DB, returns a Category object. '''
+		images = Category.fetch_images(row[0], connection)
+		children_ids = Category.fetch_children_ids(row[0], connection)
+		ancestor_ids = Category.fetch_ancestor_ids(row[1], connection)
+		if get_ancestors is True:
+			ancestors = Category.fetch_ancestors(row[1], connection)
+		else:
+			ancestors = None
+		category = Category(row[0], row[1], row[2], images, children_ids, ancestor_ids, ancestors, row[3])
+		return category
+	
+	@staticmethod
+	def fetch_images(id, connection):
+		''' Fetch the list of images for the Category of given ID. '''
+		images = []
+		try:
+			cur = connection.cursor()
+			
+			sql = 'SELECT url, url_40px, url_50px FROM category_images WHERE category=?'
+			params = (id,)
+			for row in cur.execute(sql, params):
+				result = {}
+				result['url'] = row[0]
+				result['url_40px'] = row[1]
+				result['url_50px'] = row[2]
+				images.append(result)
+			
+		finally:
+			cur.close()
+			return images
+	
+	@staticmethod
+	def fetch_children_ids(id, connection):
+		''' Fetch all immediate children IDs of the Category of given ID. '''
+		ids = []
+		try:
+			cur = connection.cursor()
+			
+			params = (id,)
+			for row in cur.execute('SELECT id FROM categories WHERE parent_id=?', params):
+				ids.append(row[0])
+			
+		finally:
+			cur.close()
+			return ids
+	
+	@staticmethod
+	def fetch_ancestor_ids(parent_id, connection):
+		''' Fetch all ancestor IDs of the Category of given parent ID. '''
+		ids = []
+		try:
+			cur = connection.cursor()
+			
+			params = (parent_id,)
+			for row in cur.execute('SELECT parent_id FROM categories WHERE id=?', params):
+				if row[0] is not None:
+					ids.append(row[0])
+					ids.append(Category.fetch_ancestor_ids(row[0], connection))
+			# The API docs specify "immediate parent is last" sorting
+			ids.reverse()
+			
+		finally:
+			cur.close()
+			return ids
+	
+	@staticmethod
+	def fetch_ancestors(parent_id, connection):
+		''' Fetch all ancestors of the Category of given parent ID. '''
+		ancestor_ids = Category.fetch_ancestor_ids(parent_id, connection)
+		ancestors = []
+		try:
+			cur = connection.cursor()
+			
+			for id in ancestor_ids:
+				# ancestor_ids is tree root first
+				params = (id,)
+				for row in cur.execute('SELECT * FROM categories WHERE id=?', params):
+					ancestor = Category.new_from_row(row, connection, False)
+					ancestor.ancestors.append(ancestors)
+					ancestors.append(ancestor)
+			
+		finally:
+			cur.close()
+			return ancestors
+	
+	@staticmethod
+	def select_by_id(id, connection):
+		''' Return the Category of given ID. '''
+		try:
+			cur = connection.cursor()
+			
+			params = (id,)
+			for row in cur.execute('SELECT * FROM categories WHERE id=?', params):
+				category = Category.new_from_row(row, connection)
+			
+		finally:
+			cur.close()
+			return category
+	
+	@staticmethod
+	def select_by_name(nodename, connection):
+		''' Return the Category of given node name. '''
+		try:
+			cur = connection.cursor()
+			
+			params = (nodename,)
+			for row in cur.execute('SELECT * FROM categories WHERE nodename=?', params):
+				category = Category.new_from_row(row, connection)
+			
+		finally:
+			cur.close()
+			return category
+	
+	def __init__(self, id, parent_id, nodename, images, children_ids, ancestor_ids, ancestors, num_parts):
+		OctopartCategory.__init__(id, parent_id, nodename, images, children_ids, ancestor_ids, ancestors, num_parts)
+	
+	def show(self):
+		''' A detailed print method. '''
+		print 'Octopart ID: ', self.id
+		print 'Parent ID: ', self.parent_id
+		print 'Name: ', self.nodename
+		print 'Images: ', self.images
+		print 'Children IDs: ', self.children_ids
+		print 'Ancestor IDs: ', self.ancestor_ids
+		print 'Number of parts: ', self.num_parts
+	
+	def update(self, connection):
+		''' Update an existing Category record in the DB. '''
+		try:
+			cur = connection.cursor()
+			
+			params = (self.id, self.parent_id, self.nodename, self.num_parts,)
+			cur.execute('''UPDATE categories 
+			SET id=?1, parent_id=?2, nodename=?3, num_parts=?4 
+			WHERE id=?1''', params)
+			
+		finally:
+			cur.close()
+	
+	def insert(self, connection):
+		''' Write the Category to the DB. '''
+		try:
+			cur = connection.cursor()
+			
+			params = (self.id, self.parent_id, self.nodename, self.num_parts,)
+			cur.execute('INSERT OR REPLACE INTO categories VALUES (?,?,?,?)', params)
+				
+		finally:
+			cur.close()
+	
+	def delete(self, connection):
+		''' Delete the Category from the DB. '''
+		try:
+			cur = connection.cursor()
+			
+			params = (self.id,)
+			cur.execute('DELETE FROM categories WHERE id=?', params)
+			
+		finally:
+			cur.close()
+
 class Listing:
 	''' A distributor's listing for a Product object. '''
 	
