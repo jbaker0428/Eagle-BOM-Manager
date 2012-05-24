@@ -67,9 +67,9 @@ ENFORCE_MIN_QTY = True
 
 class ScrapeException(Exception):
 	''' Raised when something goes wrong scraping. '''
-	errors = {0: 'No listings found on source.', \
-			  1: 'No listings found across all vendors.', \
-			  2: 'Found no listings with inventory in stock.', \
+	errors = {0: 'No offers found on source.', \
+			  1: 'No offers found across all vendors.', \
+			  2: 'Found no offers with inventory in stock.', \
 			  3: 'No vendors enabled.', \
 			  4: 'Could not find pricing table on vendor page.'}
 	soup_errors = {}
@@ -100,7 +100,7 @@ class Listing:
 			cur = connection.cursor()
 			
 			params = (pn,)
-			for row in cur.execute('SELECT * FROM listings WHERE vendor_pn=?', params):
+			for row in cur.execute('SELECT * FROM offers WHERE vendor_pn=?', params):
 				listings.append(Listing.new_from_row(row, connection))
 			
 		finally:
@@ -115,7 +115,7 @@ class Listing:
 			cur = connection.cursor()
 			
 			params = (pn,)
-			for row in cur.execute('SELECT * FROM listings WHERE manufacturer_pn=?', params):
+			for row in cur.execute('SELECT * FROM offers WHERE manufacturer_pn=?', params):
 				listings.append(Listing.new_from_row(row, connection))
 			
 		finally:
@@ -198,7 +198,7 @@ class Listing:
 			
 			params = (self.source, self.vendor_pn, self.manufacturer_pn, self.inventory, self.packaging,
 					self.reel_fee, self.category, self.family, self.series, self.vendor_pn,)
-			cur.execute('''UPDATE listings 
+			cur.execute('''UPDATE offers 
 			SET vendor=?, vendor_pn=?, manufacturer_pn=?, inventory=?, packaging=?, reelfee=?, 
 			category=?, family=?, series=? 
 			WHERE vendor_pn=?''', params)
@@ -213,7 +213,7 @@ class Listing:
 			
 			params = (self.source, self.vendor_pn, self.manufacturer_pn, self.inventory, self.packaging,
 					self.reel_fee, self.category, self.family, self.series,)
-			cur.execute('INSERT OR REPLACE INTO listings VALUES (?,?,?,?,?,?,?,?,?)', params)
+			cur.execute('INSERT OR REPLACE INTO offers VALUES (?,?,?,?,?,?,?,?,?)', params)
 			
 			cur.execute('DELETE FROM pricebreaks WHERE pn=?', (self.vendor_pn,))
 			for pb in self.prices.items():
@@ -228,7 +228,7 @@ class Listing:
 			cur = connection.cursor()
 			
 			params = (self.vendor_pn,)
-			cur.execute('DELETE FROM listings WHERE vendor_pn=?', params)
+			cur.execute('DELETE FROM offers WHERE vendor_pn=?', params)
 			
 		finally:
 			cur.close()
@@ -502,43 +502,58 @@ class Product(OctopartPart):
 		
 	def __init__(self, part_dict):
 		OctopartPart.__init__(self, part_dict)
-		self.listings = {}	# Key is key = source + ': ' + vendor_pn + ' (' + packaging + ')'
 	
-	def show(self, show_listings=False):
-		''' A simple print method. '''
-		print 'Manufacturer: ', self.manufacturer, type(self.manufacturer)
+	def show(self, show_offers=False):
+		''' A detailed print method. '''
+		print 'Octopart UID: ', self.uid, type(self.uid)
 		print 'Manufacturer PN: ', self.mpn, type(self.mpn)
+		print 'Manufacturer: ', self.manufacturer, type(self.manufacturer)
+		print 'Detail URL: ', self.detail_url, type(self.detail_url)
+		print 'Average price: ', self.avg_price, type(self.avg_price)
+		print 'Average available: ', self.avg_avail, type(self.avg_avail)
+		print 'Market status: ', self.market_status, type(self.market_status)
+		print 'Number of suppliers: ', self.num_suppliers, type(self.num_suppliers)
+		print 'Number of authorized suppliers: ', self.num_authsuppliers, type(self.num_authsuppliers)
 		print 'Description: ', self.short_description, type(self.short_description)
-		if show_listings is True:
-			print 'Listings:'
-			for listing in self.listings.items():
-				print "\nListing key: ", listing[0]
-				listing[1].show()
+		print 'Free sample: ', self.hyperlinks['freesample'], type(self.hyperlinks['freesample'])
+		print 'Evaluation kit: ', self.hyperlinks['evalkit'], type(self.hyperlinks['evalkit'])
+		print 'Manufacturer page: ', self.hyperlinks['manufacturer'], type(self.hyperlinks['manufacturer'])
+		if show_offers is True:
+			print 'Offers: '
+			for offer in self.offers:
+				offer.show()
 	
 	def equals(self, p):
 		''' Compares the Product to another Product.'''
 		if type(p) != type(self):
 			return False
 		eq = True
-		if self.manufacturer != p.manufacturer:
+		if self.uid != p.uid:
 			eq = False
-		elif self.mpn != p.mpn:
+		if self.mpn != p.mpn:
 			eq = False
-		elif self.datasheet != p.datasheet:
+		elif self.manufacturer != p.manufacturer:
 			eq = False
-		elif self.description != p.description:
+		elif self.detail_url != p.detail_url:
 			eq = False
-		elif self.package != p.package:
+		elif self.avg_price != p.avg_price:
 			eq = False
-		for k in self.listings.keys():
-			if k not in p.listings.keys():
-				eq = False
-			else:
-				if self.listings[k].equals(p.listings[k]) == False:
-					eq = False
-		for k in p.listings.keys():
-			if k not in self.listings.keys():
-				eq = False
+		elif self.avg_avail != p.avg_avail:
+			eq = False
+		elif self.market_status != p.market_status:
+			eq = False
+		elif self.num_suppliers != p.num_suppliers:
+			eq = False
+		elif self.num_authsuppliers != p.num_authsuppliers:
+			eq = False
+		elif self.short_description != p.short_description:
+			eq = False
+		elif self.hyperlinks['freesample'] != p.hyperlinks['freesample']:
+			eq = False
+		elif self.hyperlinks['evalkit'] != p.hyperlinks['evalkit']:
+			eq = False
+		elif self.hyperlinks['manufacturer'] != p.hyperlinks['manufacturer']:
+			eq = False
 		return eq
 	
 	def update(self, connection):
@@ -578,17 +593,17 @@ class Product(OctopartPart):
 			cur.close()
 	
 	def fetch_listings(self, connection):
-		''' Fetch listings dictionary for this Product. 
-		Clears and sets the self.listings dictionary directly. '''
-		self.listings.clear()
+		''' Fetch offers dictionary for this Product. 
+		Clears and sets the self.offers dictionary directly. '''
+		self.offers.clear()
 		try:
 			cur = connection.cursor()
 			
 			params = (self.mpn,)
-			for row in cur.execute('SELECT * FROM listings WHERE mpn=? ORDER BY vendor', params):
+			for row in cur.execute('SELECT * FROM offers WHERE mpn=? ORDER BY vendor', params):
 				listing = Listing.new_from_row(row, connection)
-				self.listings[listing.key()] = listing
-				#print 'Setting listings[%s] = ' % listing.key()
+				self.offers[listing.key()] = listing
+				#print 'Setting offers[%s] = ' % listing.key()
 				#listing.show()
 			
 		finally:
@@ -598,12 +613,12 @@ class Product(OctopartPart):
 		''' Return the Listing with the best price for the given order quantity. 
 		
 		If the "enforce minimum quantities" option is checked in the program config,
-		only returns listings where the order quantity meets/exceeds the minimum
+		only returns offers where the order quantity meets/exceeds the minimum
 		order quantity for the listing.'''
 		print 'Entering %s.best_listing(%s)' % (self.mpn, str(qty))
 		best = None
 		lowest_price = float("inf")
-		for listing in self.listings.values():
+		for listing in self.offers.values():
 			listing.show_brief()
 			price_break = listing.get_price_break(qty)
 			print 'price_break from listing.get_price_break( %s ) = ' % str(qty)
@@ -650,7 +665,7 @@ class Product(OctopartPart):
 	def in_stock(self):
 		''' Returns true if any Listings have inventory > 0. '''
 		stocked = False
-		for listing in self.listings.values():
+		for listing in self.offers.values():
 			if listing.inventory > 0:
 				stocked = True
 				break
@@ -791,13 +806,13 @@ class Product(OctopartPart):
 			if "Digi-Reel" in packaging:
 				packaging = "Digi-Reel"	# Remove Restricted symbol
 			key = VENDOR_DK + ': ' + vendor_pn + ' (' + packaging + ')'
-			self.listings[key] = Listing(VENDOR_DK, vendor_pn, self.mpn, prices, inventory, packaging)
+			self.offers[key] = Listing(VENDOR_DK, vendor_pn, self.mpn, prices, inventory, packaging)
 			#v = Listing(VENDOR_DK, vendor_pn, self.mpn, prices, inventory, pkg, reel, cat, fam, ser)
-			self.listings[key].category = category
-			self.listings[key].family = family
-			self.listings[key].series = series
+			self.offers[key].category = category
+			self.offers[key].family = family
+			self.offers[key].series = series
 			if "Digi-Reel" in packaging:
-				self.listings[key].reel_fee = 7
+				self.offers[key].reel_fee = 7
 	
 	def scrape_far(self):
 		''' Scrape method for Farnell. '''
@@ -845,7 +860,7 @@ class Product(OctopartPart):
 				raise ScrapeException(self.scrape.__name__, self.mpn, 3)
 		
 		else:
-			self.listings.clear()
+			self.offers.clear()
 			# Proceed based on source config
 			if OCTOPART_EN:
 				self.search_octopart()
@@ -874,12 +889,12 @@ class Product(OctopartPart):
 				self.update(connection)
 			else:
 				self.insert(connection)
-			for listing in self.listings.values():
+			for listing in self.offers.values():
 				if listing.is_in_db(connection):
 					listing.update(connection)
 				else:
 					listing.insert(connection)
-			if len(self.listings.values()) == 0:
+			if len(self.offers.values()) == 0:
 				raise ScrapeException(self.scrape.__name__, self.mpn, 1)
 			if self.in_stock() == False:
 				raise ScrapeException(VENDOR_DK, self.mpn, 2)
