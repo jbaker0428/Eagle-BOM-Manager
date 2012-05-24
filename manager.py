@@ -82,39 +82,114 @@ class Workspace:
 			FOREIGN KEY(part, project) REFERENCES parts(name, project) ON DELETE CASCADE ON UPDATE CASCADE, 
 			UNIQUE(part ASC, project ASC, name) ON CONFLICT REPLACE)''')
 			
-			cur.execute('''CREATE TABLE IF NOT EXISTS products
-			(manufacturer TEXT, 
-			manufacturer_pn TEXT PRIMARY KEY, 
-			datasheet TEXT, 
-			description TEXT, 
-			package TEXT,
-			UNIQUE (manufacturer ASC, manufacturer_pn ASC) ON CONFLICT FAIL)''')
-			cur.execute("INSERT OR REPLACE INTO products VALUES ('NULL','NULL','NULL','NULL','NULL')")
-			
-			cur.execute('''CREATE TABLE IF NOT EXISTS listings
-			(vendor TEXT, 
-			vendor_pn TEXT NOT NULL PRIMARY KEY, 
-			manufacturer_pn TEXT REFERENCES products(manufacturer_pn) ON DELETE CASCADE ON UPDATE CASCADE, 
-			inventory INTEGER, 
-			packaging TEXT,
-			reelfee FLOAT, 
-			category TEXT,
-			family TEXT,
-			series TEXT)''')
-			
-			cur.execute('''CREATE TABLE IF NOT EXISTS pricebreaks
+			cur.execute('''CREATE TABLE IF NOT EXISTS brands 
 			(id INTEGER PRIMARY KEY,
-			pn TEXT REFERENCES listings(vendor_pn) ON DELETE CASCADE ON UPDATE CASCADE, 
+			displayname TEXT, 
+			homepage_url TEXT)''')
+			
+			cur.execute('''CREATE TABLE IF NOT EXISTS categories 
+			(id INTEGER PRIMARY KEY, 
+			parent_id INTEGER REFERENCES categories(id), 
+			nodename TEXT, 
+			num_parts INTEGER)''')
+			
+			cur.execute('''CREATE TABLE IF NOT EXISTS category_images 
+			(category INTEGER REFERENCES categories(id) ON DELETE CASCADE ON UPDATE CASCADE, 
+			url TEXT PRIMARY KEY, 
+			url_40px TEXT,
+			url_50px TEXT)''')
+			
+			cur.execute('''CREATE TABLE IF NOT EXISTS products
+			(uid INTEGER, 
+			mpn TEXT PRIMARY KEY, 
+			manufacturer TEXT, 
+			detail_url TEXT, 
+			avg_price DOUBLE, 
+			avg_avail INTEGER, 
+			market_status TEXT, 
+			num_suppliers INTEGER, 
+			num_authsuppliers INTEGER,
+			short_description TEXT, 
+			freesample_url TEXT, 
+			evalkit_url TEXT, 
+			manufacturer_url TEXT, 
+			UNIQUE (manufacturer ASC, mpn ASC) ON CONFLICT FAIL, 
+			UNIQUE (uid) ON CONFLICT FAIL)''')
+						
+			cur.execute('''CREATE TABLE IF NOT EXISTS product_categories
+			(id INTEGER PRIMARY KEY, 
+			product TEXT REFERENCES products(mpn) ON DELETE CASCADE ON UPDATE CASCADE, 
+			category INTEGER REFERENCES categories(id) ON DELETE CASCADE ON UPDATE CASCADE )''')
+			
+			cur.execute('''CREATE TABLE IF NOT EXISTS product_images 
+			(product TEXT REFERENCES products(mpn) ON DELETE CASCADE ON UPDATE CASCADE, 
+			url TEXT PRIMARY KEY, 
+			url_30px TEXT,
+			url_35px TEXT, 
+			url_55px TEXT, 
+			url_90px TEXT, 
+			credit_url TEXT, 
+			credit_domain TEXT)''')
+			
+			cur.execute('''CREATE TABLE IF NOT EXISTS datasheets 
+			(product TEXT REFERENCES products(mpn) ON DELETE CASCADE ON UPDATE CASCADE, 
+			url TEXT PRIMARY KEY, 
+			score INTEGER)''')
+			
+			cur.execute('''CREATE TABLE IF NOT EXISTS descriptions 
+			(id INTEGER PRIMARY KEY, 
+			product TEXT REFERENCES products(mpn) ON DELETE CASCADE ON UPDATE CASCADE, 
+			txt TEXT)''')
+			
+			cur.execute('''CREATE TABLE IF NOT EXISTS offers 
+			(mpn TEXT REFERENCES products(mpn) ON DELETE CASCADE ON UPDATE CASCADE, 
+			sku TEXT NOT NULL PRIMARY KEY, 
+			supplier TEXT NOT NULL REFERENCES brands(displayname) ON DELETE CASCADE ON UPDATE CASCADE, 
+			inventory INTEGER, 
+			is_authorized INTEGER, 
+			is_brokered INTEGER, 
+			clickthrough_url TEXT, 
+			buynow_url TEXT, 
+			sendrfq_url TEXT, 
+			packaging TEXT, 
+			reelfee FLOAT, 
+			update_ts TEXT, 
+			UNIQUE(supplier, sku) ON CONFLICT REPLACE )''')
+			
+			cur.execute('''CREATE TABLE IF NOT EXISTS prices
+			(id INTEGER PRIMARY KEY,
+			sku TEXT REFERENCES offers(sku) ON DELETE CASCADE ON UPDATE CASCADE, 
 			qty INTEGER,
 			unit DOUBLE,
-			UNIQUE(pn ASC, qty ASC, unit) ON CONFLICT REPLACE)''')
+			UNIQUE(sku ASC, qty ASC, unit) ON CONFLICT REPLACE)''')
 			
-			cur.execute('''CREATE TABLE IF NOT EXISTS preferred_listings
+			cur.execute('''CREATE TABLE IF NOT EXISTS preferred_offers 
 			(id INTEGER PRIMARY KEY, 
 			project TEXT REFERENCES projects(name) ON DELETE CASCADE ON UPDATE CASCADE, 
-			product TEXT REFERENCES products(manufacturer_pn) ON DELETE CASCADE ON UPDATE CASCADE, 
-			listing TEXT REFERENCES listings(vendor_pn) ON DELETE CASCADE ON UPDATE CASCADE, 
+			product TEXT REFERENCES products(mpn) ON DELETE CASCADE ON UPDATE CASCADE, 
+			listing TEXT REFERENCES offers(sku) ON DELETE CASCADE ON UPDATE CASCADE, 
 			UNIQUE(project ASC, product) ON CONFLICT REPLACE)''')
+			
+			cur.execute('''CREATE TABLE IF NOT EXISTS units 
+			(name TEXT PRIMARY KEY, 
+			symbol TEXT)''')
+			
+			cur.execute('''CREATE TABLE IF NOT EXISTS product_attributes 
+			(fieldname TEXT PRIMARY KEY, 
+			displayname TEXT, 
+			type TEXT, 
+			datatype TEXT, 
+			unit TEXT REFERENCES units(name) ON DELETE CASCADE ON UPDATE CASCADE )''')
+			
+			# Values in JSON can either be a "name": value pair or just a string
+			# The latter can be a blank value column with the string in the name column
+			cur.execute('''CREATE TABLE IF NOT EXISTS specs 
+			(id INTEGER PRIMARY KEY, 
+			product TEXT REFERENCES products(mpn) ON DELETE CASCADE ON UPDATE CASCADE, 
+			attribute TEXT REFERENCES product_attributes(fieldname) ON DELETE CASCADE ON UPDATE CASCADE, 
+			name TEXT NOT NULL, 
+			value DOUBLE, 
+			UNIQUE(product, attribute, name) ON CONFLICT REPLACE)''')
 						
 		finally:
 			cur.close()

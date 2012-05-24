@@ -39,13 +39,23 @@ class EagleManagerTestCase(unittest.TestCase):
 		
 		cur.close()
 		
-		assert 'products' in tables
+		assert 'projects' in tables
 		assert 'parts' in tables
 		assert 'part_attributes' in tables
-		assert 'listings' in tables
-		assert 'projects' in tables
-		assert 'pricebreaks' in tables
-		assert 'preferred_listings' in tables
+		assert 'brands' in tables
+		assert 'categories' in tables
+		assert 'category_images' in tables
+		assert 'products' in tables
+		assert 'product_categories' in tables
+		assert 'product_images' in tables
+		assert 'datasheets' in tables
+		assert 'descriptions' in tables
+		assert 'offers' in tables
+		assert 'prices' in tables
+		assert 'preferred_offers' in tables
+		assert 'units' in tables
+		assert 'product_attributes' in tables
+		assert 'specs' in tables
 		
 		self.test_BOM = BOM.new_project('dbtests', 'Database Unit tests', '', self.wspace.memory)
 		self.wspace.projects = self.wspace.list_projects()
