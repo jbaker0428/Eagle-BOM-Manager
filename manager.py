@@ -102,7 +102,7 @@ class Workspace:
 			cur.execute('''CREATE TABLE IF NOT EXISTS products
 			(uid INTEGER, 
 			mpn TEXT PRIMARY KEY, 
-			manufacturer TEXT REFERENCES brands(displayname) ON DELETE CASCADE ON UPDATE CASCADE, 
+			manufacturer TEXT REFERENCES brands(displayname) ON DELETE SET NULL ON UPDATE CASCADE, 
 			detail_url TEXT, 
 			avg_price DOUBLE, 
 			avg_avail INTEGER, 
@@ -144,7 +144,7 @@ class Workspace:
 			cur.execute('''CREATE TABLE IF NOT EXISTS offers 
 			(mpn TEXT REFERENCES products(mpn) ON DELETE CASCADE ON UPDATE CASCADE, 
 			sku TEXT NOT NULL PRIMARY KEY, 
-			supplier TEXT NOT NULL REFERENCES brands(displayname) ON DELETE CASCADE ON UPDATE CASCADE, 
+			supplier TEXT NOT NULL REFERENCES brands(displayname) ON DELETE SET NULL ON UPDATE CASCADE, 
 			inventory INTEGER, 
 			is_authorized INTEGER, 
 			is_brokered INTEGER, 
@@ -167,7 +167,7 @@ class Workspace:
 			(id INTEGER PRIMARY KEY, 
 			project TEXT REFERENCES projects(name) ON DELETE CASCADE ON UPDATE CASCADE, 
 			product TEXT REFERENCES products(mpn) ON DELETE CASCADE ON UPDATE CASCADE, 
-			listing TEXT REFERENCES offers(sku) ON DELETE CASCADE ON UPDATE CASCADE, 
+			listing TEXT REFERENCES offers(sku) ON DELETE SET NULL ON UPDATE CASCADE, 
 			UNIQUE(project ASC, product) ON CONFLICT REPLACE)''')
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS units 
