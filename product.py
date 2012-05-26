@@ -871,6 +871,7 @@ class Product(OctopartPart):
 			# Write datasheets
 			for sheet in self.datasheets:
 				params = (self.mpn, sheet['url'], sheet['score'])
+				cur.execute('INSERT OR REPLACE INTO datasheets VALUES (NULL,?,?,?)', params)
 				cur.execute('INSERT OR REPLACE INTO datasheets VALUES (?,?,?)', params)
 			
 			# Write descriptions

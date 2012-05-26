@@ -132,8 +132,9 @@ class Workspace:
 			credit_domain TEXT)''')
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS datasheets 
-			(product TEXT REFERENCES products(mpn) ON DELETE CASCADE ON UPDATE CASCADE, 
-			url TEXT PRIMARY KEY, 
+			(id INTEGER PRIMARY KEY, 
+			product TEXT REFERENCES products(mpn) ON DELETE CASCADE ON UPDATE CASCADE, 
+			url TEXT, 
 			score INTEGER)''')
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS descriptions 
