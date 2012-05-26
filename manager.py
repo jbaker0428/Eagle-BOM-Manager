@@ -84,13 +84,13 @@ class Workspace:
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS brands 
 			(id INTEGER PRIMARY KEY,
-			displayname TEXT, 
+			displayname TEXT NOT NULL, 
 			homepage_url TEXT)''')
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS categories 
 			(id INTEGER PRIMARY KEY, 
 			parent_id INTEGER REFERENCES categories(id), 
-			nodename TEXT, 
+			nodename TEXT NOT NULL, 
 			num_parts INTEGER)''')
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS category_images 
@@ -133,14 +133,16 @@ class Workspace:
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS datasheets 
 			(id INTEGER PRIMARY KEY, 
-			product TEXT REFERENCES products(mpn) ON DELETE CASCADE ON UPDATE CASCADE, 
+			product TEXT NOT NULL REFERENCES products(mpn) ON DELETE CASCADE ON UPDATE CASCADE, 
 			url TEXT, 
-			score INTEGER)''')
+			score INTEGER, 
+			UNIQUE(product ASC, url) ON CONFLICT REPLACE )''')
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS descriptions 
 			(id INTEGER PRIMARY KEY, 
-			product TEXT REFERENCES products(mpn) ON DELETE CASCADE ON UPDATE CASCADE, 
-			txt TEXT)''')
+			product TEXT NOT NULL REFERENCES products(mpn) ON DELETE CASCADE ON UPDATE CASCADE, 
+			txt TEXT, 
+			UNIQUE(product ASC, txt) ON CONFLICT IGNORE )''')
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS offers 
 			(mpn TEXT REFERENCES products(mpn) ON DELETE CASCADE ON UPDATE CASCADE, 
@@ -155,19 +157,19 @@ class Workspace:
 			packaging TEXT, 
 			reelfee FLOAT, 
 			update_ts TEXT, 
-			UNIQUE(supplier, sku) ON CONFLICT REPLACE )''')
+			UNIQUE(supplier ASC, sku) ON CONFLICT REPLACE )''')
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS prices
 			(id INTEGER PRIMARY KEY,
-			sku TEXT REFERENCES offers(sku) ON DELETE CASCADE ON UPDATE CASCADE, 
-			qty INTEGER,
-			unit DOUBLE,
+			sku TEXT NOT NULL REFERENCES offers(sku) ON DELETE CASCADE ON UPDATE CASCADE, 
+			qty INTEGER NOT NULL,
+			unit DOUBLE NOT NULL,
 			UNIQUE(sku ASC, qty ASC, unit) ON CONFLICT REPLACE)''')
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS preferred_offers 
 			(id INTEGER PRIMARY KEY, 
-			project TEXT REFERENCES projects(name) ON DELETE CASCADE ON UPDATE CASCADE, 
-			product TEXT REFERENCES products(mpn) ON DELETE CASCADE ON UPDATE CASCADE, 
+			project TEXT NOT NULL REFERENCES projects(name) ON DELETE CASCADE ON UPDATE CASCADE, 
+			product TEXT NOT NULL REFERENCES products(mpn) ON DELETE CASCADE ON UPDATE CASCADE, 
 			listing TEXT REFERENCES offers(sku) ON DELETE SET NULL ON UPDATE CASCADE, 
 			UNIQUE(project ASC, product) ON CONFLICT REPLACE)''')
 			
@@ -177,20 +179,20 @@ class Workspace:
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS product_attributes 
 			(fieldname TEXT PRIMARY KEY, 
-			displayname TEXT, 
+			displayname TEXT NOT NULL, 
 			type TEXT, 
 			datatype TEXT, 
-			unit TEXT REFERENCES units(name) ON DELETE CASCADE ON UPDATE CASCADE )''')
+			unit TEXT REFERENCES units(name) ON DELETE RESTRICT ON UPDATE CASCADE )''')
 			
 			# Values in JSON can either be a "name": value pair or just a string
 			# The latter can be a blank value column with the string in the name column
 			cur.execute('''CREATE TABLE IF NOT EXISTS specs 
 			(id INTEGER PRIMARY KEY, 
-			product TEXT REFERENCES products(mpn) ON DELETE CASCADE ON UPDATE CASCADE, 
-			attribute TEXT REFERENCES product_attributes(fieldname) ON DELETE CASCADE ON UPDATE CASCADE, 
+			product TEXT NOT NULL REFERENCES products(mpn) ON DELETE CASCADE ON UPDATE CASCADE, 
+			attribute TEXT NOT NULL REFERENCES product_attributes(fieldname) ON DELETE RESTRICT ON UPDATE CASCADE, 
 			name TEXT NOT NULL, 
 			value DOUBLE, 
-			UNIQUE(product, attribute, name) ON CONFLICT REPLACE)''')
+			UNIQUE(product ASC, attribute ASC, name) ON CONFLICT REPLACE)''')
 						
 		finally:
 			cur.close()
