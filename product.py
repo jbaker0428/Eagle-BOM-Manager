@@ -860,7 +860,7 @@ class Product(OctopartPart):
 			
 			# Write product categories
 			for id in self.category_ids:
-				cur.execute('INSERT OR REPLACE INTO product_categories VALUES (NULL,?,?)', (self.mpn, id,))
+				cur.execute('INSERT INTO product_categories VALUES (NULL,?,?)', (self.mpn, id,))
 			
 			# Write product images
 			params = (self.mpn, self.images['url'], self.images['url_30px'], \
@@ -871,27 +871,27 @@ class Product(OctopartPart):
 			# Write datasheets
 			for sheet in self.datasheets:
 				params = (self.mpn, sheet['url'], sheet['score'])
-				cur.execute('INSERT OR REPLACE INTO datasheets VALUES (NULL,?,?,?)', params)
-				cur.execute('INSERT OR REPLACE INTO datasheets VALUES (?,?,?)', params)
+				cur.execute('INSERT INTO datasheets VALUES (NULL,?,?,?)', params)
 			
 			# Write descriptions
 			for desc in self.descriptions:
 				params = (self.mpn, desc['text'])
-				cur.execute('INSERT OR REPLACE INTO descriptions VALUES (NULL,?,?)', params)
+				cur.execute('INSERT INTO descriptions VALUES (NULL,?,?)', params)
 			
 			# Write specs
 			for spec in self.specs:
-				params = (self.mpn, spec['attribute'].fieldname, spec['name'], spec['value'])
-				sql = 'INSERT OR REPLACE INTO specs VALUES (?,?)' 
-				# Try and catch a FK violation here
-				# Can't actually tell what kind of constraint is being violated
-				# Attempt to correct FK violation by writing the ProductAttribute 
-				# instance to DB and try again
-				try:
-					cur.execute(sql, params)
-				except apsw.ConstraintError:
-					spec['attribute'].insert(connection)
-					cur.execute(sql, params)
+				for val in spec['values']:
+					params = (self.mpn, spec['attribute'].fieldname, val['name'], val['value'])
+					sql = 'INSERT INTO specs VALUES (NULL,?,?,?,?)' 
+					# Try and catch a FK violation here
+					# Can't actually tell what kind of constraint is being violated
+					# Attempt to correct FK violation by writing the ProductAttribute 
+					# instance to DB and try again
+					try:
+						cur.execute(sql, params)
+					except apsw.ConstraintError:
+						spec['attribute'].insert(connection)
+						cur.execute(sql, params)
 				
 		finally:
 			cur.close()
