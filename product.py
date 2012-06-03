@@ -826,16 +826,135 @@ class Product(OctopartPart):
 		''' Update an existing Product record in the DB. '''
 		try:
 			cur = connection.cursor()
-			
+			sql = '''UPDATE products 
+			SET uid=?1, mpn=?2, manufacturer=?3, detail_url=?4, avg_price=?5, 
+			avg_avail=?6, market_status=?7, num_suppliers=?8, num_authsuppliers=?9, 
+			short_description=?10, freesample_url=?11, evalkit_url=?12, manufacturer_url=?13
+			WHERE mpn=?2'''
 			params = (self.uid, self.mpn, self.manufacturer, self.detail_url, \
 					self.avg_price, self.avg_avail, self.market_status, self.num_suppliers, \
 					self.num_authsuppliers, self.short_description, self.hyperlinks['freesample'], \
 					self.hyperlinks['evalkit'], self.hyperlinks['manufacturer'])
-			cur.execute('''UPDATE products 
-			SET uid=?1, mpn=?2, manufacturer=?3, detail_url=?4, avg_price=?5, 
-			avg_avail=?6, market_status=?7, num_suppliers=?8, num_authsuppliers=?9, 
-			short_description=?10, freesample_url=?11, evalkit_url=?12, manufacturer_url=?13
-			WHERE mpn=?2''', params)
+			cur.execute(sql, params)
+			
+			# Update product categories
+			old_category_ids = []
+			delete_category_ids = []
+			for row in cur.execute('SELECT sheet FROM product_categories WHERE product=?', (self.mpn,)):
+				old_category_ids.append(row[0])
+				if row[0] not in self.category_ids:
+					delete_category_ids.append(row)
+			cur.executemany('DELETE FROM product_categories WHERE sheet=?', delete_category_ids)
+			to_insert = list(set(self.category_ids).difference(old_category_ids))
+			for sheet in to_insert:
+				cur.execute('INSERT INTO product_categories VALUES (NULL,?,?)', (self.mpn, sheet,))
+			
+			# Update product images
+			sql = '''UPDATE product_images 
+			SET url=?2, url_30px=?3, url_35px=?4, url_55px=?5, url_90px=?6, 
+			credit_url=?7, credit_domain=?8
+			WHERE product=?1'''
+			params = (self.mpn, self.images['url'], self.images['url_30px'], \
+					self.images['url_35px'], self.images['url_55px'], self.images['url_90px'], \
+					self.images['credit_url'], self.images['credit_domain'],)
+			cur.execute(sql, params)
+			
+			# Update datasheets
+			old_datasheets = set()
+			old_ids = {}
+			new_datasheets = set()
+			
+			for sheet in self.datasheets:
+				new_datasheets.add((sheet['url'], sheet['score'],))
+			
+			for id, url, score in cur.execute('SELECT id, url, score FROM datasheets WHERE product=?', (self.mpn,)):
+				old_datasheets.add((url, score,))
+				old_ids[url] = id
+			
+			to_update = old_datasheets & new_datasheets
+			to_insert = new_datasheets - old_datasheets
+			to_delete = old_datasheets - new_datasheets
+			
+			for url, score in to_update:
+				cur.execute('UPDATE datasheets SET url=?, score=?, product=? WHERE id=?', (url, score, self.mpn, old_ids[url]))
+			
+			for url, score in to_insert:
+				cur.execute('INSERT INTO datasheets VALUES (NULL,?,?,?)', (self.mpn, url, score,))
+				
+			for url, score in to_delete:
+				cur.execute('DELETE FROM datasheets WHERE product=? AND url=?', (self.mpn, url,))
+			
+			# Update descriptions
+			old_descriptions = set()
+			old_ids = {}
+			new_descriptions = set()
+			
+			for desc in self.descriptions:
+				new_descriptions.add((desc['text'],))
+			
+			for id, text in cur.execute('SELECT id, txt FROM descriptions WHERE product=?', (self.mpn,)):
+				old_descriptions.add((text,))
+				old_ids[text] = id
+			
+			to_update = old_descriptions & new_descriptions
+			to_insert = new_descriptions - old_descriptions
+			to_delete = old_descriptions - new_descriptions
+			
+			for desc in to_update:
+				cur.execute('UPDATE descriptions SET txt=?, product=? WHERE id=?', (desc, self.mpn, old_ids[desc],))
+			
+			for desc in to_insert:
+				cur.execute('INSERT INTO descriptions VALUES (NULL,?,?)', (self.mpn, desc,))
+				
+			for desc in to_delete:
+				cur.execute('DELETE FROM descriptions WHERE id=?', (old_ids[desc],))
+			
+			# Update specs
+			# specs field format: a list of dicts of format ('attribute': ProductAttribute, 'values' : [dicts of name : value pairs]
+			# DB columns: (id, product, attribute(fieldname), name, value)
+			old_specs = set()
+			old_ids = {}
+			new_specs = set()
+			
+			for spec in self.specs:
+				for vals_dict in spec['values']:
+					for name, value in vals_dict.items():
+						new_specs.add((spec['attribute'].fieldname, name, value,))
+			
+			for id, fieldname, name, value in cur.execute('SELECT id, attribute, name, value FROM descriptions WHERE product=?', (self.mpn,)):
+				old_specs.add((fieldname, name, value,))
+				old_ids[fieldname + '.' + name] = id
+				
+			to_update = old_specs & new_specs
+			to_insert = new_specs - old_specs
+			to_delete = old_specs - new_specs
+			
+			for spec in to_update:
+				for vals_dict in spec['values']:
+					for name, value in vals_dict.items():
+						params = (self.mpn, spec['attribute'].fieldname, name, value, old_ids[spec['attribute'].fieldname + '.' + name],)
+						cur.execute('UPDATE specs SET product=?, attribute=?, name=?, value=? WHERE id=?', params)
+			
+			for spec in to_insert:
+				for vals_dict in spec['values']:
+					for name, value in vals_dict.items():
+						params = (self.mpn, spec['attribute'].fieldname, name, value,)
+						sql = 'INSERT INTO specs VALUES (NULL,?,?,?,?)' 
+						# Try and catch a FK violation here
+						# Can't actually tell what kind of constraint is being violated
+						# Attempt to correct FK violation by writing the ProductAttribute 
+						# instance to DB and try again
+						try:
+							cur.execute(sql, params)
+						except apsw.ConstraintError:
+							spec['attribute'].insert(connection)
+							cur.execute(sql, params)
+			
+			for spec in to_delete:
+				for vals_dict in spec['values']:
+					for name, value in vals_dict.items():
+						params = (old_ids[spec['attribute'].fieldname + '.' + name],)
+						cur.execute('DELETE FROM specs WHERE id=?', params)
 			
 		finally:
 			cur.close()
