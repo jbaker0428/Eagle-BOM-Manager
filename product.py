@@ -914,7 +914,7 @@ class Product(OctopartPart):
 			# DB columns: (id, product, attribute(fieldname), name, value)
 			old_specs = set()
 			old_ids = {}
-			new_specs = set()
+			new_specs = set(self.specs)
 			
 			for spec in self.specs:
 				for vals_dict in spec['values']:
@@ -999,18 +999,19 @@ class Product(OctopartPart):
 			
 			# Write specs
 			for spec in self.specs:
-				for val in spec['values']:
-					params = (self.mpn, spec['attribute'].fieldname, val['name'], val['value'])
-					sql = 'INSERT INTO specs VALUES (NULL,?,?,?,?)' 
-					# Try and catch a FK violation here
-					# Can't actually tell what kind of constraint is being violated
-					# Attempt to correct FK violation by writing the ProductAttribute 
-					# instance to DB and try again
-					try:
-						cur.execute(sql, params)
-					except apsw.ConstraintError:
-						spec['attribute'].insert(connection)
-						cur.execute(sql, params)
+				for vals_dict in spec['values']:
+					for name, value in vals_dict.items():
+						params = (self.mpn, spec['attribute'].fieldname, name, value,)
+						sql = 'INSERT INTO specs VALUES (NULL,?,?,?,?)' 
+						# Try and catch a FK violation here
+						# Can't actually tell what kind of constraint is being violated
+						# Attempt to correct FK violation by writing the ProductAttribute 
+						# instance to DB and try again
+						try:
+							cur.execute(sql, params)
+						except apsw.ConstraintError:
+							spec['attribute'].insert(connection)
+							cur.execute(sql, params)
 				
 		finally:
 			cur.close()
