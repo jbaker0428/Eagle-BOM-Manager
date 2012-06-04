@@ -849,6 +849,9 @@ class Product(OctopartPart):
 			eq = False
 		return eq
 	
+	def __eq__(self, p):
+		return self.equals(p)
+	
 	def update(self, connection):
 		''' Update an existing Product record in the DB. '''
 		try:
