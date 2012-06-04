@@ -23,7 +23,7 @@ OCTOPART_API_KEY = '3b6a195e'
 
 VENDOR_DK = "Digi-Key"
 VENDOR_FAR = "Farnell"
-VENDOR_FUE = "Future"
+VENDOR_FUE = "Future Electronics"
 VENDOR_JAM = "Jameco"
 VENDOR_ME = "Mouser"
 VENDOR_NEW = "Newark"
