@@ -431,20 +431,23 @@ class Offer:
 		self.prices = prices
 	
 	def show(self):
-		''' A verbose print method. '''
-		print 'Vendor: ', self.source, type(self.source)
-		print 'Vendor PN: ', self.vendor_pn, type(self.vendor_pn)
-		print 'Product MFG PN: ', self.manufacturer_pn, type(self.manufacturer_pn)
-		print 'Prices: ', self.prices.items(), type(self.prices.items())
+		''' A verbose print method. Mainly intended for debugging purposes. '''
+		print 'Manufacturer PN: ', self.manufacturer_pn, type(self.manufacturer_pn)
+		print 'SKU: ', self.sku, type(self.sku)
+		print 'Supplier: ', self.supplier, type(self.supplier)
 		print 'Inventory: ', self.inventory, type(self.inventory)
+		print 'Authorized: ', self.is_authorized, type(self.is_authorized)
+		print 'Brokered: ', self.is_brokered, type(self.is_brokered)
+		print 'Clickthrough URL: ', self.clickthrough_url, type(self.clickthrough_url)
+		print 'Buy Now URL: ', self.buynow_url, type(self.buynow_url)
+		print 'Send RFQ URL: ', self.sendrfq_url, type(self.sendrfq_url)
 		print 'Packaging: ', self.packaging, type(self.packaging)
 		print 'Reel Fee: ', self.reel_fee, type(self.reel_fee)
-		print 'Category: ', self.category, type(self.category)
-		print 'Family: ', self.family, type(self.family)
-		print 'Series: ', self.series, type(self.series)
+		print 'Data updated: ', self.update_ts.isoformat(), type(self.update_ts)
+		print 'Prices: ', self.prices, type(self.prices)
 	
 	def show_brief(self):
-		''' A less verbose print method for easy debugging. '''
+		''' A less verbose print method for debugging. '''
 		print self.key()
 		print 'Prices: ', self.prices.items()
 	
