@@ -369,7 +369,7 @@ class Offer:
 	
 	@staticmethod
 	def new_from_row(row, connection):
-		''' Given a offer row from the DB, returns a Listing object. '''
+		''' Given a offer row from the DB, returns a Offer object. '''
 		offer = Offer(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], [])
 		offer.fetch_price_breaks(connection)
 		return offer
