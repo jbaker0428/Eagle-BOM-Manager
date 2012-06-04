@@ -375,34 +375,34 @@ class Offer:
 		return offer
 		
 	@staticmethod
-	def select_by_vendor_pn(pn, connection):
-		''' Return the Listing(s) of given source part number in a list. '''
-		listings = []
+	def select_by_sku(pn, connection):
+		''' Return the Offer(s) of given supplier part number in a list. '''
+		offers = []
 		try:
 			cur = connection.cursor()
 			
 			params = (pn,)
-			for row in cur.execute('SELECT * FROM offers WHERE vendor_pn=?', params):
-				listings.append(Listing.new_from_row(row, connection))
+			for row in cur.execute('SELECT * FROM offers WHERE sku=?', params):
+				offers.append(Offer.new_from_row(row, connection))
 			
 		finally:
 			cur.close()
-			return listings
+			return offers
 	
 	@staticmethod
 	def select_by_manufacturer_pn(pn, connection):
-		''' Return the Listing(s) of given manufacturer part number in a list. '''
-		listings = []
+		''' Return the Offer(s) of given manufacturer part number in a list. '''
+		offers = []
 		try:
 			cur = connection.cursor()
 			
 			params = (pn,)
 			for row in cur.execute('SELECT * FROM offers WHERE manufacturer_pn=?', params):
-				listings.append(Listing.new_from_row(row, connection))
+				offers.append(Offer.new_from_row(row, connection))
 			
 		finally:
 			cur.close()
-			return listings
+			return offers
 	
 	def __init__(self, manufacturer_pn, sku, supplier, inv, authorized, brokered, clickthrough, buynow, rfq, pkg, reel, updated, prices):
 		self.manufacturer_pn = manufacturer_pn
