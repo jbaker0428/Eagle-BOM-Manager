@@ -165,7 +165,7 @@ class Workspace:
 			qty INTEGER NOT NULL,
 			unit DOUBLE NOT NULL, 
 			currency STRING NOT NULL, 
-			UNIQUE(sku ASC, currency ASC, qty ASC, unit) ON CONFLICT REPLACE)''')
+			UNIQUE(sku ASC, currency ASC, qty ASC) ON CONFLICT REPLACE)''')
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS preferred_offers 
 			(id INTEGER PRIMARY KEY, 
