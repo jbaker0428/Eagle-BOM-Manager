@@ -68,19 +68,19 @@ ENFORCE_MIN_QTY = True
 
 class ScrapeException(Exception):
 	''' Raised when something goes wrong scraping. '''
-	errors = {0: 'No offers found on source.', \
+	errors = {0: 'No offers found on supplier.', \
 			  1: 'No offers found across all vendors.', \
 			  2: 'Found no offers with inventory in stock.', \
-			  3: 'No vendors enabled.', \
-			  4: 'Could not find pricing table on vendor page.'}
+			  3: 'No suppliers enabled.', \
+			  4: 'Could not find pricing table on supplier page.'}
 	soup_errors = {}
-	def __init__(self, source, mfg_pn, error_number):
-		self.source = source
-		self.mpn = mfg_pn
+	def __init__(self, supplier, mpn, error_number):
+		self.supplier = supplier
+		self.mpn = mpn
 		
 		self.error = error_number
 	def __str__(self):
-		str = errors[self.error] + ' Source: ' + self.source + ' Manufacturer Part Number: ' + self.mpn
+		str = errors[self.error] + ' Source: ' + self.supplier + ' Manufacturer Part Number: ' + self.mpn
 		return repr(str)
 
 class Brand(OctopartBrand):
