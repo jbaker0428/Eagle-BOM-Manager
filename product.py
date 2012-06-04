@@ -502,7 +502,7 @@ class Offer:
 			cur.execute('DELETE FROM prices WHERE sku=?', (self.sku,))
 			for price_break, unit_price, currency in self.prices:
 				params = (self.sku, price_break, unit_price, currency,)
-				cur.execute('INSERT OR REPLACE INTO prices VALUES (NULL,?,?,?,?)', params)
+				cur.execute('INSERT INTO prices VALUES (NULL,?,?,?,?)', params)
 			
 			update_str = self.update_ts.strftime('%Y-%m-%d %H:%M:%S')
 			params = (self.manufacturer_pn, self.supplier, self.inventory, self.is_authorized, \
@@ -517,28 +517,31 @@ class Offer:
 			cur.close()
 	
 	def insert(self, connection):
-		''' Write the Listing to the DB. '''
+		''' Write the Offer to the DB. '''
 		try:
 			cur = connection.cursor()
 			
-			params = (self.source, self.vendor_pn, self.manufacturer_pn, self.inventory, self.packaging,
-					self.reel_fee, self.category, self.family, self.series,)
-			cur.execute('INSERT OR REPLACE INTO offers VALUES (?,?,?,?,?,?,?,?,?)', params)
+			self.delete(connection)	# Cascade-delete any old price data
 			
-			cur.execute('DELETE FROM pricebreaks WHERE pn=?', (self.vendor_pn,))
-			for pb in self.prices.items():
-				params = (self.vendor_pn, pb[0], pb[1],)
-				cur.execute('INSERT OR REPLACE INTO pricebreaks VALUES (NULL,?,?,?)', params)
+			update_str = self.update_ts.strftime('%Y-%m-%d %H:%M:%S')
+			params = (self.manufacturer_pn, self.sku, self.supplier, self.inventory, self.is_authorized, \
+					self.is_brokered, self.clickthrough_url, self.buynow_url, self.sendrfq_url, \
+					self.packaging, self.reel_fee, update_str,)
+			cur.execute('INSERT INTO offers VALUES (?,?,?,?,?,?,?,?,?,?,?,?)', params)
+			
+			for price_break, unit_price, currency in self.prices:
+				params = (self.sku, price_break, unit_price, currency,)
+				cur.execute('INSERT INTO prices VALUES (NULL,?,?,?,?)', params)
 		finally:
 			cur.close()
 	
 	def delete(self, connection):
-		''' Delete the Listing from the DB. '''
+		''' Delete the Offer from the DB. '''
 		try:
 			cur = connection.cursor()
 			
-			params = (self.vendor_pn,)
-			cur.execute('DELETE FROM offers WHERE vendor_pn=?', params)
+			params = (self.sku,)
+			cur.execute('DELETE FROM offers WHERE sku=?', params)
 			
 		finally:
 			cur.close()
