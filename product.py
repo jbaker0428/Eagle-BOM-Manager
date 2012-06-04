@@ -495,21 +495,23 @@ class Offer:
 		return key
 	
 	def update(self, connection):
-		''' Update an existing Listing record in the DB. '''
+		''' Update an existing Offer record in the DB. '''
 		try:
 			cur = connection.cursor()
 			
-			cur.execute('DELETE FROM pricebreaks WHERE pn=?', (self.vendor_pn,))
-			for pb in self.prices.items():
-				params = (self.vendor_pn, pb[0], pb[1],)
-				cur.execute('INSERT OR REPLACE INTO pricebreaks VALUES (NULL,?,?,?)', params)
+			cur.execute('DELETE FROM prices WHERE sku=?', (self.sku,))
+			for price_break, unit_price, currency in self.prices:
+				params = (self.sku, price_break, unit_price, currency,)
+				cur.execute('INSERT OR REPLACE INTO prices VALUES (NULL,?,?,?,?)', params)
 			
-			params = (self.source, self.vendor_pn, self.manufacturer_pn, self.inventory, self.packaging,
-					self.reel_fee, self.category, self.family, self.series, self.vendor_pn,)
+			update_str = self.update_ts.strftime('%Y-%m-%d %H:%M:%S')
+			params = (self.manufacturer_pn, self.supplier, self.inventory, self.is_authorized, \
+					self.is_brokered, self.clickthrough_url, self.buynow_url, self.sendrfq_url, \
+					self.packaging, self.reel_fee, update_str, self.sku,)
 			cur.execute('''UPDATE offers 
-			SET vendor=?, vendor_pn=?, manufacturer_pn=?, inventory=?, packaging=?, reelfee=?, 
-			category=?, family=?, series=? 
-			WHERE vendor_pn=?''', params)
+			SET mpn=?, supplier=?, inventory=?, is_authorized=?, is_brokered=?, 
+			clickthrough_url=?, buynow_url=?, sendrfq_url=?, packaging=?, reelfee=?, update_ts=? 
+			WHERE sku=?''', params)
 			
 		finally:
 			cur.close()
