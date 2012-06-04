@@ -163,8 +163,9 @@ class Workspace:
 			(id INTEGER PRIMARY KEY,
 			sku TEXT NOT NULL REFERENCES offers(sku) ON DELETE CASCADE ON UPDATE CASCADE, 
 			qty INTEGER NOT NULL,
-			unit DOUBLE NOT NULL,
-			UNIQUE(sku ASC, qty ASC, unit) ON CONFLICT REPLACE)''')
+			unit DOUBLE NOT NULL, 
+			currency STRING NOT NULL, 
+			UNIQUE(sku ASC, currency ASC, qty ASC, unit) ON CONFLICT REPLACE)''')
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS preferred_offers 
 			(id INTEGER PRIMARY KEY, 
