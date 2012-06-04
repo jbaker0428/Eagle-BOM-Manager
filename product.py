@@ -6,6 +6,7 @@ import os
 import urlparse
 import apsw
 from manager import Workspace
+import datetime
 
 def get_filename(url,openUrl):
 	if 'Content-Disposition' in openUrl.info():
@@ -328,15 +329,50 @@ class Category(OctopartCategory):
 		finally:
 			cur.close()
 
-class Listing:
-	''' A distributor's listing for a Product object. '''
+class Offer:
+	''' A distributor's offer for a Product object. '''
+	
+	# Known flat reeling fees
+	REEL_FEES = {"Digi-Reel" : 7, "MouseReel" : 7}
+	
+	@staticmethod
+	def new_from_octopart(mpn, odict):
+		''' Given an Offfer dictionary from Octopart API JSON data,
+		returns an Offer instance. 
+		@param mpn: Manufacturer part number string of parent Product instance.
+		@param odict: JSON dictionary of offer data from Octopart. '''
+		
+		supplier = Brand.promote_octopart_brand(odict['supplier'])
+		if 'packaging' in odict and odict['packaging'] is not None:
+			packaging = odict['packaging']
+		else:
+			packaging = ''
+		
+		if packaging in Offer.REEL_FEES:
+			reel_fee = Offer.REEL_FEES[packaging]
+		else:
+			reel_fee = 0
+		if 'is_brokered' in odict:
+			brokered = odict['is_brokered']
+		else:
+			brokered = False
+		
+		if 'update_ts' in odict:
+			ts = odict['update_ts']
+		else:
+			ts = None
+		
+		offer = Offer(mpn, odict['sku'], supplier, odict['avail'], odict['is_authorized'], \
+					brokered, odict['clickthrough_url'], odict['buynow_url'], \
+					odict['sendrfq_url'], packaging, reel_fee, ts, odict['prices'])
+		return offer
 	
 	@staticmethod
 	def new_from_row(row, connection):
-		''' Given a listing row from the DB, returns a Listing object. '''
-		listing = Listing(row[0], row[1], row[2], {}, row[3], row[4], row[5], row[6], row[7], row[8])
-		listing.fetch_price_breaks(connection)
-		return listing
+		''' Given a offer row from the DB, returns a Listing object. '''
+		offer = Offer(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], [])
+		offer.fetch_price_breaks(connection)
+		return offer
 		
 	@staticmethod
 	def select_by_vendor_pn(pn, connection):
@@ -368,17 +404,31 @@ class Listing:
 			cur.close()
 			return listings
 	
-	def __init__(self, vend, vendor_pn, manufacturer_pn, prices_dict, inv, pkg, reel=0, cat='NULL', fam='NULL', ser='NULL'):
-		self.source = vend
-		self.vendor_pn = vendor_pn
+	def __init__(self, manufacturer_pn, sku, supplier, inv, authorized, brokered, clickthrough, buynow, rfq, pkg, reel, updated, prices):
 		self.manufacturer_pn = manufacturer_pn
-		self.prices = prices_dict
+		self.sku = sku
+		self.supplier = supplier	# A Brand instance
+		''' 
+		From the Octopart API documentation regarding special inventory values: 
+		-1: "non-stocked"
+		-2: "yes"
+		-3: "unknown"
+		-4: "RFQ"  
+		'''
 		self.inventory = inv
+		self.is_authorized = authorized	# Boolean
+		self.is_brokered = brokered	# Boolean
+		self.clickthrough_url = clickthrough
+		self.buynow_url = buynow
+		self.sendrfq_url = rfq
 		self.packaging = pkg	# Cut Tape, Tape/Reel, Tray, Tube, etc.
 		self.reel_fee = reel	# Flat per-order reeling fee (Digi-reel, MouseReel, etc)
-		self.category = cat	# "Capacitors"
-		self.family = fam	# "Ceramic"
-		self.series = ser	# "C" (TDK series C)
+		self.update_ts = updated	# A datetime object (UTC)
+		''' 
+		Old prices format: prices[break] = unit_price
+		New format: Sorted list of (break, unit price, currency) tuples 
+		'''
+		self.prices = prices
 	
 	def show(self):
 		''' A verbose print method. '''
