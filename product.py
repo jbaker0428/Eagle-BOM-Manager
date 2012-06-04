@@ -92,6 +92,11 @@ class Brand(OctopartBrand):
 		return brand
 	
 	@staticmethod
+	def promote_octopart_brand(octo_brand):
+		''' Given an OctopartBrand instance, returns a corresponding Brand instance. '''
+		return Brand(octo_brand.id, octo_brand.displayname, octo_brand.homepage_url)
+	
+	@staticmethod
 	def select_by_name(displayname, connection):
 		''' Return the Brand of given displayname. '''
 		try:
@@ -164,6 +169,14 @@ class Category(OctopartCategory):
 			ancestors = None
 		category = Category(row[0], row[1], row[2], images, children_ids, ancestor_ids, ancestors, row[3])
 		return category
+	
+	@staticmethod
+	def promote_octopart_category(oc):
+		''' Given an OctopartCategory instance, returns a corresponding Category instance. '''
+		cat = Category(oc.id, oc.parent_id, oc.nodename, oc.images, oc.children_ids, oc.ancestor_ids, oc.ancestors, oc.num_parts)
+		for ancestor in cat.ancestors:
+			ancestor = Category.promote_octopart_category(ancestor)
+		return cat
 	
 	@staticmethod
 	def fetch_images(id, connection):
@@ -535,6 +548,11 @@ class ProductAttribute(OctopartPartAttribute):
 		return attrib
 	
 	@staticmethod
+	def promote_octopart_part_attribute(attrib):
+		''' Given an OctopartPartAttribute instance, returns a corresponding ProductAttribute instance. '''
+		return ProductAttribute(attrib.fieldname, attrib.displayname, attrib.type, attrib.metadata)
+	
+	@staticmethod
 	def select_by_fieldname(fieldname, connection):
 		''' Return the ProductAttribute of given field fieldname. '''
 		try:
@@ -613,6 +631,11 @@ class Product(OctopartPart):
 		part_dict['specs'] = Product.fetch_specs(part_dict['mpn'], connection)
 		prod = Product(part_dict)
 		return prod
+	
+	@staticmethod
+	def promote_octopart_part(part):
+		''' Given an OctopartPart instance, returns a corresponding Product instance. '''
+		return Product(part.__dict__)
 	
 	@staticmethod
 	def fetch_category_ids(mpn, connection):
@@ -768,6 +791,10 @@ class Product(OctopartPart):
 		
 	def __init__(self, part_dict):
 		OctopartPart.__init__(self, part_dict)
+		self.manufacturer = Brand.promote_octopart_brand(self.manufacturer)
+		# TODO: Promote offers
+		for spec in self.specs:
+			spec['attribute'] = ProductAttribute.promote_octopart_part_attribute(spec['attribute'])
 	
 	def show(self, show_offers=False):
 		''' A detailed print method. '''
