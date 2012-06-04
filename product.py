@@ -451,38 +451,47 @@ class Offer:
 		print self.key()
 		print 'Prices: ', self.prices.items()
 	
-	def equals(self, vp):
-		''' Compares the Listing to another Listing.'''
-		if type(vp) != type(self):
+	def equals(self, offer):
+		''' Compares the Offer to another Offer.'''
+		if type(offer) != type(self):
 			return False
 		eq = True
-		if self.source != vp.source:
+		if self.manufacturer_pn != offer.manufacturer_pn:
 			eq = False
-		if self.vendor_pn != vp.vendor_pn:
+		if self.sku != offer.sku:
 			eq = False
-		if self.manufacturer_pn != vp.manufacturer_pn:
+		if self.supplier != offer.supplier:
 			eq = False
-		for p in self.prices.items():
-			if p not in vp.prices.items():
+		if self.inventory != offer.inventory:
+			eq = False
+		if self.is_authorized != offer.is_authorized:
+			eq = False
+		if self.is_brokered != offer.is_brokered:
+			eq = False
+		if self.clickthrough_url != offer.clickthrough_url:
+			eq = False
+		if self.buynow_url != offer.buynow_url:
+			eq = False
+		if self.sendrfq_url != offer.sendrfq_url:
+			eq = False
+		if self.packaging != offer.packaging:
+			eq = False
+		if self.reel_fee != offer.reel_fee:
+			eq = False
+		if self.update_ts != offer.update_ts:
+			eq = False
+		for p in self.prices:
+			if p not in offer.prices:
 				eq = False
-		if self.inventory != vp.inventory:
-			eq = False
-		if self.packaging != vp.packaging:
-			eq = False
-		if self.reel_fee != vp.reel_fee:
-			eq = False
-		if self.category != vp.category:
-			eq = False
-		if self.family != vp.family:
-			eq = False
-		if self.series != vp.series:
-			eq = False
 		return eq
 	
+	def __eq__(self, o):
+		return self.equals(o)
+	
 	def key(self):
-		''' Return a dictionary key as used by the GUI for this Listing.
-		Format: key = source + ': ' + vendor_pn + ' (' + packaging + ')' '''
-		key = self.source + ': ' + self.vendor_pn + ' (' + self.packaging + ')'
+		''' Return a dictionary key as used by the GUI for this Offer.
+		Format: key = supplier + ': ' + sku + ' (' + packaging + ')' '''
+		key = self.supplier + ': ' + self.sku + ' (' + self.packaging + ')'
 		return key
 	
 	def update(self, connection):
