@@ -549,17 +549,42 @@ class Offer:
 		else:
 			return True
 	
-	def fetch_price_breaks(self, connection):
-		''' Fetch price breaks dictionary for this Listing. 
-		Clears and sets the self.prices dictionary directly. '''
-		#print 'self.prices: ', type(self.prices), self.prices
+	def fetch_price_breaks(self, connection, currency=None):
+		''' Fetch tne price breaks tuples list for this Offer. 
+		Clears and sets the self.prices list directly. 
+		@param currency: Optional sequence of currency strings to filter by.
+		If no currency filter strings are passed, fetches price breaks for all available currencies. '''
+		
 		self.prices.clear()
 		try:
 			cur = connection.cursor()
 			
-			params = (self.vendor_pn,)
-			for row in cur.execute('SELECT qty, unit FROM pricebreaks WHERE pn=? ORDER BY qty', params):
-				self.prices[row[0]] = row[1]
+			if currency is None:
+				sql = 'SELECT qty, unit, currency FROM prices WHERE sku=? ORDER BY currency ASC, qty ASC'
+				params = (self.sku,)
+			
+			else:
+				def currency_filter_expr(param_number):
+					return 'currency=?%s' % param_number
+				
+				filter_args = {1: self.sku}
+				currency_exprs = []
+				for filter in currency:
+					greatest_param = max(filter_args.keys())
+					new_key = greatest_param + 1
+					filter_args[new_key] = filter
+					currency_exprs.append(currency_filter_expr(new_key))
+				
+				full_currency_expr = ' AND (' + ' OR '.join(currency_exprs) + ') '
+					
+				sql = 'SELECT qty, unit, currency FROM prices WHERE sku=?1' + full_currency_expr + 'ORDER BY currency ASC, qty ASC'
+				params = []
+				for key in sorted(filter_args.keys()):
+					params.append(filter_args[key])
+				params = tuple(params)
+				
+			for row in cur.execute(sql, params):
+				self.prices.append(row)
 
 		finally:
 			cur.close()
