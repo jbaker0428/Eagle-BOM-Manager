@@ -542,8 +542,8 @@ class Offer:
 			cur.close()
 	
 	def is_in_db(self, connection):
-		''' Check if this Listing is in the database. '''
-		result = Listing.select_by_vendor_pn(self.vendor_pn, connection)
+		''' Check if this Offer is in the database. '''
+		result = Offer.select_by_sku(self.sku, connection)
 		if len(result) == 0:
 			return False
 		else:
