@@ -329,7 +329,7 @@ class Category(OctopartCategory):
 		finally:
 			cur.close()
 
-class Offer:
+class Offer(object):
 	''' A distributor's offer for a Product object. '''
 	
 	# Known flat reeling fees

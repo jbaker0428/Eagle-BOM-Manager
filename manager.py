@@ -8,7 +8,7 @@ import apsw
 import types
 import gobject
 
-class Workspace:
+class Workspace(object):
 	''' Each Workspace has its own persistent database file. '''
 	db0 = os.path.join(os.getcwd(), 'workspace.sqlite')
 	

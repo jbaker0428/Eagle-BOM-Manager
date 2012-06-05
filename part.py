@@ -3,7 +3,7 @@ import apsw
 from manager import Workspace
 from product import Product
 
-class Part:
+class Part(object):
 	''' A self in the BOM exported from Eagle. '''
 	
 	@staticmethod

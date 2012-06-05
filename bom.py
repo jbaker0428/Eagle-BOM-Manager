@@ -18,7 +18,7 @@ class NullProductInProjectException(Exception):
 	def __str__(self):
 		return repr(self.text)
 	
-class BOM:
+class BOM(object):
 	'''For determining the name of a project's Part table.'''
 	
 	@staticmethod
