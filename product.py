@@ -594,24 +594,23 @@ class Offer(object):
 		finally:
 			cur.close()
 		
-	def get_price_break(self, qty):
-		''' Returns the (price break, unit price) list pair for the given purchase quantity.
+	def get_price_break(self, qty, currency):
+		''' Returns the (price break, unit price, currency) tuple for 
+		the given purchase quantity and currency.
 		If qty is below the lowest break, the lowest is returned.
 		TODO : Raise some kind of error/warning if not ordering enough PCBs to make the lowest break.'''
-		breaks = sorted(self.prices.keys())
-		#breaks.sort()
-		if breaks[0] > qty:
+		if self.prices[0][0] > qty:
 			print "Warning: Purchase quantity is below minimum!"
 			if ENFORCE_MIN_QTY:
 				return None
 			else:
-				return [breaks[0], self.prices[breaks[0]]]
-			# TODO : GUI warning
-		for i in range(len(breaks)):
-			if breaks[i] == qty or breaks[i] == max(breaks):
-				return [breaks[i], self.prices[breaks[i]]]
-			elif  breaks[i] > qty:
-				return [breaks[i-1], self.prices[breaks[i-1]]]		
+				return self.prices[0]
+			# TODO : GUI warning, maybe by raising an exception?
+		for i in range(len(self.prices)):
+			if self.prices[i][0] == qty or self.prices[i][0] == max(self.prices):
+				return self.prices[i]
+			elif self.prices[i][0] > qty:
+				return self.prices[i-1]
 
 class ProductAttribute(OctopartPartAttribute):
 	'''Database methods for the OctopartPartAttribute class. '''
