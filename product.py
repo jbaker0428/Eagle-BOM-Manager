@@ -944,6 +944,39 @@ class Product(OctopartPart):
 	def __eq__(self, p):
 		return self.equals(p)
 	
+	def __contains__(self, item):
+		''' Type-checks the passed item and performs a membership test on the 
+		relevant Product sequence attribute. '''
+		
+		# An Offer instance
+		if type(item) == Offer:
+			return item in self.offers
+		# A ProductAttribute instance (no associated attribute values)
+		elif type(item) == ProductAttribute:
+			return item in [spec['attribute'] for spec in self.specs]
+		# A full spec dictionary (ProductAttribute and values)
+		elif type(item) == dict and 'attribute' in item and 'values' in item:
+			return item in self.specs
+		# An images dictionary
+		elif type(item) == dict and len(item) == 7 and 'url' in item:
+			return item in self.images
+		# A datasheet dictionary
+		elif type(item) == dict and len(item) == 2 and 'url' in item and 'score' in item:
+			return item in self.datasheets
+		# A description dictionary
+		elif type(item) == dict and len(item) == 1 and 'text' in item:
+			return item in self.descriptions
+		# A Category instance
+		elif type(item) == Category:
+			return item.id in self.category_ids
+		# An integer: Most likely a category ID (there are no other sequences of just ints)
+		elif type(item) == int:
+			return item in self.category_ids
+		else:
+			return False
+		
+			
+	
 	def update(self, connection):
 		''' Update an existing Product record in the DB. '''
 		try:
