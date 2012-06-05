@@ -810,9 +810,8 @@ class Product(OctopartPart):
 			sql = 'SELECT * FROM offers WHERE mpn=? ORDER BY supplier'
 			params = (mpn,)
 			for row in cur.execute(sql, params):
-				# TODO: Revise this line when the Listing class is revamped
-				listing = Listing.new_from_row(row, connection)
-				offers.append(listing)
+				offer = Offer.new_from_row(row, connection)
+				offers.append(offer)
 			
 		finally:
 			cur.close()
@@ -850,16 +849,13 @@ class Product(OctopartPart):
 	
 	@staticmethod
 	def select_all(connection):
-		''' Return the entire product table except the 'NULL' placeholder row. '''
+		''' Return the entire product table. '''
 		prods = []
 		try:
 			cur = connection.cursor()
 			
 			for row in cur.execute('SELECT * FROM products'):
-				if row[1] == 'NULL':
-					continue
-				else:
-					prods.append(Product.new_from_row(row, connection))
+				prods.append(Product.new_from_row(row, connection))
 			
 		finally:
 			cur.close()
@@ -883,7 +879,8 @@ class Product(OctopartPart):
 	def __init__(self, part_dict):
 		OctopartPart.__init__(self, part_dict)
 		self.manufacturer = Brand.promote_octopart_brand(self.manufacturer)
-		# TODO: Promote offers
+		for offer in self.offers:
+			offer = Offer.new_from_octopart(self.mpn, offer)
 		for spec in self.specs:
 			spec['attribute'] = ProductAttribute.promote_octopart_part_attribute(spec['attribute'])
 	
@@ -1181,83 +1178,77 @@ class Product(OctopartPart):
 		finally:
 			cur.close()
 	
-	def fetch_listings(self, connection):
-		''' Fetch offers dictionary for this Product. 
-		Clears and sets the self.offers dictionary directly. '''
+	def fetch_offers(self, connection):
+		''' Fetch offers list for this Product. 
+		Clears and sets the self.offers list directly. '''
 		self.offers.clear()
 		try:
 			cur = connection.cursor()
 			
 			params = (self.mpn,)
-			for row in cur.execute('SELECT * FROM offers WHERE mpn=? ORDER BY vendor', params):
-				listing = Listing.new_from_row(row, connection)
-				self.offers[listing.key()] = listing
-				#print 'Setting offers[%s] = ' % listing.key()
-				#listing.show()
+			for row in cur.execute('SELECT * FROM offers WHERE mpn=? ORDER BY supplier', params):
+				offer = Offer.new_from_row(row, connection)
+				self.offers.append(offer)
 			
 		finally:
 			cur.close()
 		
-	def best_listing(self, qty):
-		''' Return the Listing with the best price for the given order quantity. 
+	def best_offer(self, qty):
+		''' Return the Offer with the best price for the given order quantity. 
 		
 		If the "enforce minimum quantities" option is checked in the program config,
 		only returns offers where the order quantity meets/exceeds the minimum
-		order quantity for the listing.'''
-		print 'Entering %s.best_listing(%s)' % (self.mpn, str(qty))
+		order quantity for the offer.'''
+		print 'Entering %s.best_offer(%s)' % (self.mpn, str(qty))
 		best = None
 		lowest_price = float("inf")
-		for listing in self.offers.values():
-			listing.show_brief()
-			price_break = listing.get_price_break(qty)
-			print 'price_break from listing.get_price_break( %s ) = ' % str(qty)
+		for offer in self.offers:
+			offer.show_brief()
+			price_break = offer.get_price_break(qty)
+			print 'price_break from offer.get_price_break( %s ) = ' % str(qty)
 			print price_break
 			if price_break == None or (price_break[0] > qty and ENFORCE_MIN_QTY):
 				pass
 			else:
-				if (price_break[1]*qty) + listing.reel_fee < lowest_price:
-					lowest_price = (price_break[1]*qty) + listing.reel_fee
-					best = listing
-					print 'Set best listing: ', best.show_brief()
+				if (price_break[1]*qty) + offer.reel_fee < lowest_price:
+					lowest_price = (price_break[1]*qty) + offer.reel_fee
+					best = offer
+					print 'Set best offer: ', best.show_brief()
 		return best
 	
-	def get_preferred_listing(self, project, connection):
-		'''Get a project's preferred Listing for this Product. '''
+	def get_preferred_offer(self, project, connection):
+		'''Get a project's preferred Offer for this Product. '''
 		try:
-			listing = None
+			offer = None
 			cur = connection.cursor()
 			
 			params = (project.name, self.mpn,)
-			rows = list(cur.execute('SELECT listing FROM preferred_listings WHERE project=? AND product=?', params))
+			rows = list(cur.execute('SELECT offer FROM preferred_offers WHERE project=? AND product=?', params))
 			if len(rows) > 0:
-				listing = Listing.select_by_vendor_pn(rows[0][0], connection)[0]
+				offer = Offer.select_by_sku(rows[0][0], connection)[0]
 			
 		finally:
 			cur.close()
-			return listing
+			return offer
 	
-	def set_preferred_listing(self, project, listing, connection):
-		'''Set a project's preferred Listing for this Product. '''
+	def set_preferred_offer(self, project, offer, connection):
+		'''Set a project's preferred Offer for this Product. '''
 		try:
 			cur = connection.cursor()
-			current_listing = self.get_preferred_listing(project, connection)
-			if current_listing is None:
-				params = (project.name, self.mpn, listing.vendor_pn,)
-				cur.execute('INSERT INTO preferred_listings VALUES (NULL,?,?,?)', params) 
+			current_offer = self.get_preferred_offer(project, connection)
+			if current_offer is None:
+				params = (project.name, self.mpn, offer.sku,)
+				cur.execute('INSERT INTO preferred_offers VALUES (NULL,?,?,?)', params) 
 			else:
-				params = (listing.vendor_pn, project.name, self.mpn,)
-				cur.execute('UPDATE preferred_listings SET listing=? WHERE project=? AND product=?', params)
+				params = (offer.sku, project.name, self.mpn,)
+				cur.execute('UPDATE preferred_offers SET offer=? WHERE project=? AND product=?', params)
 			
 		finally:
 			cur.close()
 	
 	def in_stock(self):
-		''' Returns true if any Listings have inventory > 0. '''
-		stocked = False
-		for listing in self.offers.values():
-			if listing.inventory > 0:
-				stocked = True
-				break
+		''' Returns true if any Offers have inventory > 0 or == -2 ("yes"). '''
+		return True in [x > 0 or x == -2 for x in [offer.inventory for offer in self.offers]]
 	
 	def search_octopart(self):
 		''' Multi-vendor search using Octopart.
@@ -1266,7 +1257,7 @@ class Product(OctopartPart):
 	
 	def scrape_dk(self):
 		''' Scrape method for Digikey. '''
-		# Clear previous pricing data (in case price break keys change)
+		offer_dicts = []
 		search_url = 'http://search.digikey.com/us/en/products/' + self.mpn
 		search_page = urllib2.urlopen(search_url)
 		search_soup = BeautifulSoup(search_page)
@@ -1294,12 +1285,14 @@ class Product(OctopartPart):
 				#print 'Adding URL: ', 'http://search.digikey.com' + anchor['href']
 		
 		for url in prod_urls:
-		
+			offer_dict = {}
+			offer_dict['url'] = url
 			page = urllib2.urlopen(url)
 			soup = BeautifulSoup(page)
 			#print "URL: %s" % url
 			# Get prices
-			prices = {}
+			# TODO: Currency
+			prices = []
 			price_table = soup.body('table', id="pricing")
 			#print 'price_table: ', type(price_table), price_table
 			if len(price_table) == 0:
@@ -1323,9 +1316,10 @@ class Product(OctopartPart):
 						#print "new_break_str is: %s" % new_break_str					
 						new_break = int(new_break_str)
 						new_unit_price = float(row.contents[1].string)
-						prices[new_break] = new_unit_price
-						#print 'Adding break/price to pricing dict: ', (new_break, new_unit_price)
-					
+						prices.append(new_break, new_unit_price,)
+						#print 'Adding break/price to prices list: ', (new_break, new_unit_price)
+			offer_dict['prices'] = prices
+			
 			# Get inventory
 			# If the item is out of stock, the <td> that normally holds the
 			# quantity available will have a text input box that we need to
@@ -1344,43 +1338,45 @@ class Product(OctopartPart):
 				inventory = int(inv_str)
 				#print 'inventory: ', type(inventory), inventory
 			
-			vendor_pn = soup.body("th", text="Digi-Key Part Number")[0].parent.nextSibling.contents[0].string.__str__()
+			offer_dict['inventory'] = inventory 
+			offer_dict['sku'] = soup.body("th", text="Digi-Key Part Number")[0].parent.nextSibling.contents[0].string.__str__()
 			# Get manufacturer and PN
-			self.manufacturer = soup.body("th", text="Manufacturer")[0].parent.nextSibling.contents[0].contents[0].string.__str__()
-			#print "manufacturer is: %s" % self.manufacturer
-			self.mpn = soup.body('th', text="Manufacturer Part Number")[0].parent.nextSibling.contents[0].string.__str__()
-			#print "mpn is: %s" % self.mpn
+			offer_dict['manufacturer'] = soup.body("th", text="Manufacturer")[0].parent.nextSibling.contents[0].contents[0].string.__str__()
+			#print "manufacturer is: %s" % manufacturer
+			offer_dict['mpn'] = soup.body('th', text="Manufacturer Part Number")[0].parent.nextSibling.contents[0].string.__str__()
+			#print "mpn is: %s" % mpn
 			
 			# Get datasheet filename and download
+			# TODO: This can only get one datasheet
 			datasheet_soup = soup.body('th', text="Datasheets")[0].parent.nextSibling
 			datasheet_anchor = datasheet_soup.findAllNext('a')[0]
 			#print "datasheet_soup is: %s" % datasheet_soup
 			#print "datasheet_anchor is: %s" % datasheet_anchor
-			self.datasheet_url = datasheet_anchor['href']
-			#print "self.datasheet_url is: %s" % self.datasheet_url
-			
-			row = urllib2.urlopen(urllib2.Request(self.datasheet_url))
+			datasheet_url = datasheet_anchor['href']
+			#print "datasheet_url is: %s" % datasheet_url
+			offer_dict['datasheet_url'] = datasheet_url
+			row = urllib2.urlopen(urllib2.Request(datasheet_url))
 			try:
 				file_name = get_filename(url,row)
-				self.datasheet = file_name;
+				offer_dict['datasheet'] = file_name;
 				# TODO: Do not re-download if already saved
 				if DOWNLOAD_DATASHEET:
 					with open(file_name, 'wb') as f:
 						shutil.copyfileobj(row,f)
 			finally:
 				row.close()
-			#print "datasheet is: %s" % self.datasheet
+			#print "datasheet is: %s" % datasheet
 			# Get remaining strings (desc, category, family, series, package)
-			self.description = soup.body('th', text="Description")[0].parent.nextSibling.contents[0].string.__str__()
-			#print "description is: %s" % self.description
-			category = soup.body('th', text="Category")[0].parent.nextSibling.contents[0].string.__str__()
+			offer_dict['description'] = soup.body('th', text="Description")[0].parent.nextSibling.contents[0].string.__str__()
+			#print "description is: %s" % description
+			offer_dict['category'] = soup.body('th', text="Category")[0].parent.nextSibling.contents[0].string.__str__()
 			#print "category is: %s" % category
-			family = soup.body('th', text="Family")[0].parent.nextSibling.contents[0].string.__str__()
+			offer_dict['family'] = soup.body('th', text="Family")[0].parent.nextSibling.contents[0].string.__str__()
 			#print "family is: %s" % family
-			series = soup.body('th', text="Series")[0].parent.nextSibling.contents[0].string.__str__()
+			offer_dict['series'] = soup.body('th', text="Series")[0].parent.nextSibling.contents[0].string.__str__()
 			#print "series is: %s" % series
-			self.package = soup.body('th', text="Package / Case")[0].parent.nextSibling.contents[0].string.__str__()
-			#print "package is: %s" % self.package
+			offer_dict['package'] = soup.body('th', text="Package / Case")[0].parent.nextSibling.contents[0].string.__str__()
+			#print "package is: %s" % package
 			
 			packaging_soup = soup.body('th', text="Packaging")[0].parent.parent.nextSibling.contents[0]
 			#print "packaging_soup: ", type(packaging_soup), packaging_soup
@@ -1394,14 +1390,14 @@ class Product(OctopartPart):
 				print 'Error: DK Packaging scrape failure!'
 			if "Digi-Reel" in packaging:
 				packaging = "Digi-Reel"	# Remove Restricted symbol
-			key = VENDOR_DK + ': ' + vendor_pn + ' (' + packaging + ')'
-			self.offers[key] = Listing(VENDOR_DK, vendor_pn, self.mpn, prices, inventory, packaging)
-			#v = Listing(VENDOR_DK, vendor_pn, self.mpn, prices, inventory, pkg, reel, cat, fam, ser)
-			self.offers[key].category = category
-			self.offers[key].family = family
-			self.offers[key].series = series
-			if "Digi-Reel" in packaging:
-				self.offers[key].reel_fee = 7
+			offer_dict['packaging'] = packaging
+			if packaging in Offer.REEL_FEES:
+				offer_dict['reel_fee'] = Offer.REEL_FEES[packaging]
+			else:
+				offer_dict['reel_fee'] = 0
+			offer_dicts.append(offer_dict)
+		
+		return offer_dicts
 	
 	def scrape_far(self):
 		''' Scrape method for Farnell. '''
@@ -1431,26 +1427,25 @@ class Product(OctopartPart):
 		''' Scrape method for Newark. '''
 		raise NotImplementedError("Newark scraping not yet implemented!")
 	
-	def scrape_sfe(self):
+	def scrape_sfe(self, sku):
 		''' Scrape method for Sparkfun. '''	
 		raise NotImplementedError("SparkFun scraping not yet implemented!")
 		# Clear previous pricing data (in case price break keys change)
-		self.prices.clear()
 		
 		# The URL contains the numeric portion of the part number, minus any leading zeroes
-		url = "http://www.sparkfun.com/products/" + str(int(self.pn.split("-")))
+		url = "http://www.sparkfun.com/products/" + str(int(sku.split("-")))
 		page = urllib2.urlopen(url)
 		soup = BeautifulSoup(page)
 			
 	def scrape(self, connection):
-		''' Scrape each source page to refresh product pricing info. '''
+		''' Scrape each supplier page to refresh product pricing info. '''
 		if no_vendors_enabled() == True:
 			if VENDOR_WARN_IF_NONE_EN == True:
 				raise ScrapeException(self.scrape.__name__, self.mpn, 3)
 		
 		else:
 			self.offers.clear()
-			# Proceed based on source config
+			# Proceed based on supplier config
 			if OCTOPART_EN:
 				self.search_octopart()
 			if VENDOR_DK_EN:
@@ -1478,12 +1473,12 @@ class Product(OctopartPart):
 				self.update(connection)
 			else:
 				self.insert(connection)
-			for listing in self.offers.values():
-				if listing.is_in_db(connection):
-					listing.update(connection)
+			for offer in self.offers:
+				if offer.is_in_db(connection):
+					offer.update(connection)
 				else:
-					listing.insert(connection)
-			if len(self.offers.values()) == 0:
+					offer.insert(connection)
+			if len(self.offers) == 0:
 				raise ScrapeException(self.scrape.__name__, self.mpn, 1)
 			if self.in_stock() == False:
 				raise ScrapeException(VENDOR_DK, self.mpn, 2)
@@ -1508,7 +1503,7 @@ class Product(OctopartPart):
 			self.datasheet = temp.datasheet
 			self.description = temp.description
 			self.package = temp.package
-			self.fetch_listings(connection)
+			self.fetch_offers(connection)
 		elif self.mpn != 'none' and self.mpn != 'NULL':
 			self.scrape(connection)
 
