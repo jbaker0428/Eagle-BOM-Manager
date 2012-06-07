@@ -190,6 +190,10 @@ class Part(object):
 							eq = False
 		return eq
 		
+	def __eq__(self, p):
+		"""Calls self.equals with all strict comparison options enabled."""
+		
+		return self.equals(p)
 
 	def findInFile(self, bom_file):
 		''' Check if a BOM self of this name is in the given CSV BOM. '''
