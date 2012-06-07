@@ -1507,6 +1507,6 @@ class Product(OctopartPart):
 			self.description = temp.description
 			self.package = temp.package
 			self.fetch_offers(connection)
-		elif self.mpn != 'none' and self.mpn != 'NULL':
+		elif self.mpn is not None and self.mpn != 'none' and self.mpn != 'NULL':
 			self.scrape(connection)
 
