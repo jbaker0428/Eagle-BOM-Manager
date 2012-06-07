@@ -342,23 +342,23 @@ class Manager(gobject.GObject):
 			self.part_info_datasheet_button.set_sensitive(True)
 			self.part_info_scrape_button.set_sensitive(True)
 			# Set class field for currently selected product
-			if len(self.selected_product.listings) == 0:
+			if len(self.selected_product.offers) == 0:
 				self.selected_product.scrape(wspace.memory)
 			self.set_part_info_labels(self.selected_product)
-			self.populate_part_info_listing_combo(self.selected_product)
+			self.populate_part_info_offer_combo(self.selected_product)
 			self.destroy_part_price_labels()
-			if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
-				#Set the active Listing selection if one has been set
-				assert len(self.selected_product.listings.keys()) > 0
-				preferred_listing = self.selected_product.get_preferred_listing(self.active_bom, wspace.memory)
-				if preferred_listing is not None:
-					set_combo(self.part_info_listing_combo, preferred_listing.key())
-				self.set_part_price_labels(self.selected_product.listings[self.part_info_listing_combo.get_active_text()])
+			if type(self.part_info_offer_combo.get_active_text()) is not types.NoneType and self.part_info_offer_combo.get_active_text() != '':
+				#Set the active Offer selection if one has been set
+				assert len(self.selected_product.offers.keys()) > 0
+				preferred_offer = self.selected_product.get_preferred_offer(self.active_bom, wspace.memory)
+				if preferred_offer is not None:
+					set_combo(self.part_info_offer_combo, preferred_offer.key())
+				self.set_part_price_labels(self.selected_product.offers[self.part_info_offer_combo.get_active_text()])
 		
 		else:
 			self.part_info_datasheet_button.set_sensitive(False)
 			self.part_info_scrape_button.set_sensitive(False)
-			self.populate_part_info_listing_combo()
+			self.populate_part_info_offer_combo()
 			self.destroy_part_price_labels()
 			self.clear_part_info_labels()
 	
@@ -498,7 +498,7 @@ class Manager(gobject.GObject):
 						newprod.insert(wspace.memory)
 						newprod.scrape(wspace.memory)
 						self.selected_bom_part.product = newprod
-				if len(self.selected_bom_part.product.listings) == 0:
+				if len(self.selected_bom_part.product.offers) == 0:
 					self.selected_bom_part.product.scrape(wspace.memory)
 			
 			self.selected_product = self.selected_bom_part.product
@@ -523,7 +523,7 @@ class Manager(gobject.GObject):
 			elif self.bom_group_product.get_active():
 				self.bom_store_populate_by_product()
 					
-			self.populate_part_info_listing_combo(self.selected_bom_part.product)
+			self.populate_part_info_offer_combo(self.selected_bom_part.product)
 			if self.selected_bom_part.product is None or self.selected_bom_part.product.manufacturer_pn == 'NULL' or self.selected_bom_part.product.manufacturer_pn == '':
 				self.clear_part_info_labels()
 			else:
@@ -545,29 +545,29 @@ class Manager(gobject.GObject):
 		''' Part info frame "Scrape" button callback. '''
 		self.selected_product.scrape(wspace.memory)
 		self.set_part_info_labels(self.selected_product)
-		self.populate_part_info_listing_combo(self.selected_product)
-		if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
-			self.set_part_price_labels(self.selected_product.listings[self.part_info_listing_combo.get_active_text()])
-			self.part_info_inventory_content_label.set_text(str(self.selected_product.listings[self.part_info_listing_combo.get_active_text()].inventory))
-			self.part_info_set_listing_button.set_sensitive(True)
+		self.populate_part_info_offer_combo(self.selected_product)
+		if type(self.part_info_offer_combo.get_active_text()) is not types.NoneType and self.part_info_offer_combo.get_active_text() != '':
+			self.set_part_price_labels(self.selected_product.offers[self.part_info_offer_combo.get_active_text()])
+			self.part_info_inventory_content_label.set_text(str(self.selected_product.offers[self.part_info_offer_combo.get_active_text()].inventory))
+			self.part_info_set_offer_button.set_sensitive(True)
 		else:
-			self.part_info_set_listing_button.set_sensitive(False)
+			self.part_info_set_offer_button.set_sensitive(False)
 		
 		self.window.show_all()
 	
-	def part_info_listing_combo_callback(self, widget, data=None):
+	def part_info_offer_combo_callback(self, widget, data=None):
 		self.destroy_part_price_labels()
-		if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
-			self.set_part_price_labels(self.selected_product.listings[self.part_info_listing_combo.get_active_text()])
-			self.part_info_inventory_content_label.set_text(str(self.selected_product.listings[self.part_info_listing_combo.get_active_text()].inventory))
-			self.part_info_set_listing_button.set_sensitive(True)
+		if type(self.part_info_offer_combo.get_active_text()) is not types.NoneType and self.part_info_offer_combo.get_active_text() != '':
+			self.set_part_price_labels(self.selected_product.offers[self.part_info_offer_combo.get_active_text()])
+			self.part_info_inventory_content_label.set_text(str(self.selected_product.offers[self.part_info_offer_combo.get_active_text()].inventory))
+			self.part_info_set_offer_button.set_sensitive(True)
 		else:
-			self.part_info_set_listing_button.set_sensitive(False)
+			self.part_info_set_offer_button.set_sensitive(False)
 	
-	def part_info_set_listing_button_callback(self, widget, data=None):
-		print 'Set preferred listing callback'
-		if type(self.part_info_listing_combo.get_active_text()) is not types.NoneType and self.part_info_listing_combo.get_active_text() != '':
-			self.selected_product.set_preferred_listing(self.active_bom, self.selected_product.listings[self.part_info_listing_combo.get_active_text()], wspace.memory)
+	def part_info_set_offer_button_callback(self, widget, data=None):
+		print 'Set preferred offer callback'
+		if type(self.part_info_offer_combo.get_active_text()) is not types.NoneType and self.part_info_offer_combo.get_active_text() != '':
+			self.selected_product.set_preferred_offer(self.active_bom, self.selected_product.offers[self.part_info_offer_combo.get_active_text()], wspace.memory)
 	
 	def order_size_spin_callback(self, widget):
 		''' Update the per-unit and total order prices when the order size
@@ -699,32 +699,35 @@ class Manager(gobject.GObject):
 		self.part_info_package_content_label.set_text("\t")
 		self.part_info_inventory_content_label.set_text("\t")
 	
-	def set_part_info_listing_combo_to_preferred(self, prod):
-		'''Sets the active selection of self.part_info_listing_combo to a 
-		preferred listing for the active project (if one exists). '''
-		preferred_listing = None
+	def set_part_info_offer_combo_to_preferred(self, prod):
+		"""Sets the active selection of self.part_info_offer_combo to the preferred offer for the active project.
+		
+		If none exists, selects the first item in the combo.
+		"""
+		
+		preferred_offer = None
 		if type(prod) is not types.NoneType and prod.manufacturer_pn != 'NULL':
-			preferred_listing = prod.get_preferred_listing(self.active_bom, wspace.memory)
-		if preferred_listing is not None:
-			set_combo(self.part_info_listing_combo, preferred_listing.key())
+			preferred_offer = prod.get_preferred_offer(self.active_bom, wspace.memory)
+		if preferred_offer is not None:
+			set_combo(self.part_info_offer_combo, preferred_offer.key())
 		else:
-			self.part_info_listing_combo.set_active(0)
+			self.part_info_offer_combo.set_active(0)
 	
-	def populate_part_info_listing_combo(self, prod=None):
-		''' Populates self.part_info_listing_combo with listings
-		for the selected Product. '''
-		#print 'Setting Listing combo...'
-		self.part_info_listing_combo.get_model().clear()
+	def populate_part_info_offer_combo(self, prod=None):
+		"""Populates self.part_info_offer_combo with offers for the selected Product."""
+		
+		#print 'Setting offer combo...'
+		self.part_info_offer_combo.get_model().clear()
 		
 		if type(prod) is not types.NoneType and prod.manufacturer_pn != 'NULL':
-			for listing in prod.listings.keys():
-				#print 'Listing: ', type(listing), listing
-				title = listing
+			for offer in prod.offers.keys():
+				#print 'Offer: ', type(offer), offer
+				title = offer
 				#print 'Appending combo title: ', title
-				self.part_info_listing_combo.append_text(title)
+				self.part_info_offer_combo.append_text(title)
 			
 		
-		self.set_part_info_listing_combo_to_preferred(prod)
+		self.set_part_info_offer_combo_to_preferred(prod)
 		
 		self.part_info_vbox.show_all()
 	
@@ -742,13 +745,14 @@ class Manager(gobject.GObject):
 		del self.unit_price_labels[:]
 		del self.ext_price_labels[:]
 		
-	def set_part_price_labels(self, listing):
-		''' Given a listing, sets the pricing table labels. '''
-		n = len(listing.prices)
+	def set_part_price_labels(self, offer):
+		"""Given an Offer, sets the pricing table labels."""
+		
+		n = len(offer.prices)
 		#print "n =", n
-		price_keys = sorted(listing.prices.keys())
-		#print "listing.prices = \n", listing.prices
-		#print "sorted(listing.prices.keys()) = \n", price_keys
+		price_keys = sorted(offer.prices.keys())
+		#print "offer.prices = \n", offer.prices
+		#print "sorted(offer.prices.keys()) = \n", price_keys
 		self.part_info_pricing_table.resize(n+1, 3)
 		self.destroy_part_price_labels()
 		
@@ -762,12 +766,12 @@ class Manager(gobject.GObject):
 		
 		row_num = 1
 		for i in range(n):
-			#price_keys[i] is a key of listing.prices()
+			#price_keys[i] is a key of offer.prices()
 			self.price_break_labels.append(gtk.Label(str(price_keys[i]) + '   '))
 			self.price_break_labels[row_num].set_alignment(0.5, 0.5)
-			self.unit_price_labels.append(gtk.Label(str(listing.prices[price_keys[i]]) + '   '))
+			self.unit_price_labels.append(gtk.Label(str(offer.prices[price_keys[i]]) + '   '))
 			self.unit_price_labels[row_num].set_alignment(1.0, 0.5)
-			self.ext_price_labels.append(gtk.Label(str( price_keys[i] *  listing.prices[price_keys[i]]) + '   '))
+			self.ext_price_labels.append(gtk.Label(str( price_keys[i] *  offer.prices[price_keys[i]]) + '   '))
 			self.ext_price_labels[row_num].set_alignment(1.0, 0.5)
 			
 			self.part_info_pricing_table.attach(self.price_break_labels[row_num],  0, 1, row_num, row_num+1)
@@ -916,9 +920,9 @@ class Manager(gobject.GObject):
 		self.part_info_scrape_button = gtk.Button("Scrape")
 		self.part_info_datasheet_button = gtk.Button("Datasheet")
 		
-		self.part_info_listing_label = gtk.Label("Product source: ")
-		self.part_info_listing_combo = gtk.combo_box_new_text()
-		self.part_info_set_listing_button = gtk.Button("Use this listing")
+		self.part_info_offer_label = gtk.Label("Product source: ")
+		self.part_info_offer_combo = gtk.combo_box_new_text()
+		self.part_info_set_offer_button = gtk.Button("Use this offer")
 		
 		self.part_info_inventory_hbox = gtk.HBox(False, 5)
 		self.part_info_inventory_label = gtk.Label("Inventory: ")
@@ -1121,9 +1125,9 @@ class Manager(gobject.GObject):
 		self.part_info_package_label.set_alignment(0.0, 0.5)
 		self.part_info_package_content_label.set_alignment(0.0, 0.5)
 		self.part_info_scrape_button.connect("clicked", self.part_info_scrape_button_callback)
-		self.part_info_listing_label.set_alignment(0.0, 0.5)
-		self.part_info_listing_combo.connect("changed", self.part_info_listing_combo_callback)
-		self.part_info_set_listing_button.connect("clicked", self.part_info_set_listing_button_callback)
+		self.part_info_offer_label.set_alignment(0.0, 0.5)
+		self.part_info_offer_combo.connect("changed", self.part_info_offer_combo_callback)
+		self.part_info_set_offer_button.connect("clicked", self.part_info_set_offer_button_callback)
 		
 		# --- Pricing frame ---
 		self.run_size_pin_label.set_alignment(0.0, 0.5)
@@ -1323,9 +1327,9 @@ class Manager(gobject.GObject):
 		self.part_info_vbox.pack_start(self.part_info_button_hbox, True, True, 5)
 		self.part_info_button_hbox.pack_start(self.part_info_scrape_button, True, True, 5)
 		self.part_info_button_hbox.pack_start(self.part_info_datasheet_button, True, True, 5)
-		self.part_info_vbox.pack_start(self.part_info_listing_label, False, False, 0)
-		self.part_info_vbox.pack_start(self.part_info_listing_combo, False, False, 0)
-		self.part_info_vbox.pack_start(self.part_info_set_listing_button, False, False, 0)
+		self.part_info_vbox.pack_start(self.part_info_offer_label, False, False, 0)
+		self.part_info_vbox.pack_start(self.part_info_offer_combo, False, False, 0)
+		self.part_info_vbox.pack_start(self.part_info_set_offer_button, False, False, 0)
 		self.part_info_inventory_hbox.pack_start(self.part_info_inventory_label, False, False, 0)
 		self.part_info_inventory_hbox.pack_start(self.part_info_inventory_content_label, False, False, 0)
 		self.part_info_vbox.pack_start(self.part_info_inventory_hbox, False, False, 0)
