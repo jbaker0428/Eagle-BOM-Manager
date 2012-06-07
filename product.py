@@ -1,12 +1,15 @@
 import urllib2
-from BeautifulSoup import BeautifulSoup, Tag, NavigableString
-from octopart import *
+import datetime
 import shutil
 import os
 import urlparse
+
 import apsw
+from BeautifulSoup import BeautifulSoup, Tag, NavigableString
+from octopart import *
+
 from manager import Workspace
-import datetime
+
 
 def get_filename(url,openUrl):
 	if 'Content-Disposition' in openUrl.info():

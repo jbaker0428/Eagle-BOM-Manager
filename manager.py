@@ -1,11 +1,12 @@
 import csv
+import types
+import shutil
+import os
+
 import pygtk
 pygtk.require('2.0')
 import gtk
-import shutil
-import os
 import apsw
-import types
 import gobject
 
 class Workspace(object):

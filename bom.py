@@ -3,7 +3,9 @@ import shutil
 import os
 import urlparse
 from operator import itemgetter
+
 import apsw
+
 from manager import Workspace
 from part import Part
 from product import Product

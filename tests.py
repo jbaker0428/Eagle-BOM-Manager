@@ -1,6 +1,8 @@
 import os
 import unittest
+
 import apsw
+
 from manager import Workspace
 
 class EagleManagerTestCase(unittest.TestCase):

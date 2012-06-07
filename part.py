@@ -1,5 +1,7 @@
 import types
+
 import apsw
+
 from manager import Workspace
 from product import Product
 
