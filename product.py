@@ -827,7 +827,7 @@ class Product(OctopartPart):
 		try:
 			cur = connection.cursor()
 			
-			sql = 'SELECT attribute, name, value FROM specs WHERE product=? ORDER BY attribute'
+			sql = 'SELECT attribute, name, value FROM product_specs WHERE product=? ORDER BY attribute'
 			params = (mpn,)
 			for attribute, name, value in cur.execute(sql, params):
 				if previous_fieldname == '':
@@ -1072,7 +1072,7 @@ class Product(OctopartPart):
 					for name, value in vals_dict.items():
 						new_specs.add((spec['attribute'].fieldname, name, value,))
 			
-			for id, fieldname, name, value in cur.execute('SELECT id, attribute, name, value FROM descriptions WHERE product=?', (self.mpn,)):
+			for id, fieldname, name, value in cur.execute('SELECT id, attribute, name, value FROM product_specs WHERE product=?', (self.mpn,)):
 				old_specs.add((fieldname, name, value,))
 				old_ids[fieldname + '.' + name] = id
 				
@@ -1084,13 +1084,13 @@ class Product(OctopartPart):
 				for vals_dict in spec['values']:
 					for name, value in vals_dict.items():
 						params = (self.mpn, spec['attribute'].fieldname, name, value, old_ids[spec['attribute'].fieldname + '.' + name],)
-						cur.execute('UPDATE specs SET product=?, attribute=?, name=?, value=? WHERE id=?', params)
+						cur.execute('UPDATE product_specs SET product=?, attribute=?, name=?, value=? WHERE id=?', params)
 			
 			for spec in to_insert:
 				for vals_dict in spec['values']:
 					for name, value in vals_dict.items():
 						params = (self.mpn, spec['attribute'].fieldname, name, value,)
-						sql = 'INSERT INTO specs VALUES (NULL,?,?,?,?)' 
+						sql = 'INSERT INTO product_specs VALUES (NULL,?,?,?,?)' 
 						# Try and catch a FK violation here
 						# Can't actually tell what kind of constraint is being violated
 						# Attempt to correct FK violation by writing the ProductAttribute 
@@ -1105,7 +1105,7 @@ class Product(OctopartPart):
 				for vals_dict in spec['values']:
 					for name, value in vals_dict.items():
 						params = (old_ids[spec['attribute'].fieldname + '.' + name],)
-						cur.execute('DELETE FROM specs WHERE id=?', params)
+						cur.execute('DELETE FROM product_specs WHERE id=?', params)
 			
 		finally:
 			cur.close()
@@ -1153,7 +1153,7 @@ class Product(OctopartPart):
 				for vals_dict in spec['values']:
 					for name, value in vals_dict.items():
 						params = (self.mpn, spec['attribute'].fieldname, name, value,)
-						sql = 'INSERT INTO specs VALUES (NULL,?,?,?,?)' 
+						sql = 'INSERT INTO product_specs VALUES (NULL,?,?,?,?)' 
 						# Try and catch a FK violation here
 						# Can't actually tell what kind of constraint is being violated
 						# Attempt to correct FK violation by writing the ProductAttribute 

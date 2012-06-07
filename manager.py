@@ -73,14 +73,19 @@ class Workspace(object):
 			product TEXT REFERENCES products(manufacturer_pn) ON DELETE SET NULL ON UPDATE CASCADE, 
 			PRIMARY KEY(name, project))''')
 			
-			cur.execute('''CREATE TABLE IF NOT EXISTS part_attributes 
+			cur.execute('''CREATE TABLE IF NOT EXISTS part_specs 
 			(id INTEGER PRIMARY KEY, 
 			part TEXT NOT NULL, 
 			project TEXT NOT NULL, 
-			name TEXT NOT NULL, 
+			name TEXT NOT NULL REFERENCES part_attributes(name) ON DELETE RESTRICT ON UPDATE CASCADE, 
 			value TEXT NOT NULL, 
 			FOREIGN KEY(part, project) REFERENCES parts(name, project) ON DELETE CASCADE ON UPDATE CASCADE, 
-			UNIQUE(part ASC, project ASC, name) ON CONFLICT REPLACE)''')
+			UNIQUE(project ASC, part ASC, name ASC) ON CONFLICT REPLACE)''')
+			
+			cur.execute('''CREATE TABLE IF NOT EXISTS part_attributes 
+			(id INTEGER PRIMARY KEY, 
+			name TEXT NOT NULL, 
+			attribute TEXT NOT NULL REFERENCES product_attributes(fieldname) ON DELETE RESTRICT ON UPDATE CASCADE, )''')
 			
 			cur.execute('''CREATE TABLE IF NOT EXISTS brands 
 			(id INTEGER PRIMARY KEY,
@@ -187,7 +192,7 @@ class Workspace(object):
 			
 			# Values in JSON can either be a "name": value pair or just a string
 			# The latter can be a blank value column with the string in the name column
-			cur.execute('''CREATE TABLE IF NOT EXISTS specs 
+			cur.execute('''CREATE TABLE IF NOT EXISTS product_specs 
 			(id INTEGER PRIMARY KEY, 
 			product TEXT NOT NULL REFERENCES products(mpn) ON DELETE CASCADE ON UPDATE CASCADE, 
 			attribute TEXT NOT NULL REFERENCES product_attributes(fieldname) ON DELETE RESTRICT ON UPDATE CASCADE, 

@@ -28,7 +28,7 @@ class Part(object):
 			else:
 				project = known_project
 		part = Part(row[0], project, row[2], row[3], row[4], row[5], product)
-		part.fetch_attributes(connection)
+		part.fetch_specs(connection)
 		return part
 	
 	@staticmethod
@@ -107,7 +107,7 @@ class Part(object):
 			cur.close()
 			return parts
 	
-	def __init__(self, name, project, value, device, package, description=None, product=None, attributes=None):
+	def __init__(self, name, project, value, device, package, description=None, product=None, specs=None):
 		self.name = name
 		self.project = project	# A BOM object
 		self.value = value
@@ -115,16 +115,16 @@ class Part(object):
 		self.package = package
 		self.description = description
 		self.product = product	# A Product object
-		if attributes is None:
-			self.attributes = dict()
+		if specs is None:
+			self.specs = dict()
 		else:
-			self.attributes = attributes
+			self.specs = specs
 
 	def __str__(self):
 		if self.product is None:
-			return '%s.%s (%s, %s, %s): No product, Attribs: %s' % (self.project.name, self.name, self.value, self.device, self.package, self.attributes)
+			return '%s.%s (%s, %s, %s): No product, Attribs: %s' % (self.project.name, self.name, self.value, self.device, self.package, self.specs)
 		else:
-			return '%s.%s (%s, %s, %s): PN: %s, Attribs: %s' % (self.project.name, self.name, self.value, self.device, self.package, self.product.manufacturer_pn, self.attributes)
+			return '%s.%s (%s, %s, %s): PN: %s, Attribs: %s' % (self.project.name, self.name, self.value, self.device, self.package, self.product.manufacturer_pn, self.specs)
 
 	def show(self):
 		''' A simple print method. '''
@@ -137,15 +137,15 @@ class Part(object):
 		print 'Description: ', self.description, type(self.description)
 		if self.product is not None:
 			print 'Product PN: ', self.product.manufacturer_pn, type(self.product.manufacturer_pn)
-		print 'Attributes: '
-		for attrib in self.attributes.items():
-			print attrib[0], ': ', attrib[1]
+		print 'Specs: '
+		for spec in self.specs.items():
+			print spec[0], ': ', spec[1]
 		print '============================'
 		
-	def equals(self, p, check_foreign_attribs=True, same_name=True, same_project=True, same_product=True):
+	def equals(self, p, check_foreign_specs=True, same_name=True, same_project=True, same_product=True):
 		''' Compares the Part to another Part.
-		The check_foreign_attribs argument (default True) controls whether or not
-		p.attributes.keys() is checked for members not in self.attributes.keys().
+		The check_foreign_specs argument (default True) controls whether or not
+		p.specs.keys() is checked for members not in self.specs.keys().
 		The reverse is always checked. '''
 		if type(p) != type(self):
 			return False
@@ -168,23 +168,23 @@ class Part(object):
 					eq = False
 			elif self.product.manufacturer_pn != p.product.manufacturer_pn:
 				eq = False
-		if self.attributes is not None:
-			for k in self.attributes.keys():
-				if self.attributes[k] != "":
-					if k not in p.attributes.keys():
+		if self.specs is not None:
+			for k in self.specs.keys():
+				if self.specs[k] != "":
+					if k not in p.specs.keys():
 						eq = False
-					elif self.attributes[k] != p.attributes[k]:
+					elif self.specs[k] != p.specs[k]:
 						eq = False
 					
-		if check_foreign_attribs is True:
-			if p.attributes is None and self.attributes is not None:
+		if check_foreign_specs is True:
+			if p.specs is None and self.specs is not None:
 				eq = False
 			else:
-				for k in p.attributes.keys():
-					if p.attributes[k] != "":
-						if k not in self.attributes.keys():
+				for k in p.specs.keys():
+					if p.specs[k] != "":
+						if k not in self.specs.keys():
 							eq = False
-						elif p.attributes[k] != self.attributes[k]:
+						elif p.specs[k] != self.specs[k]:
 							eq = False
 		return eq
 		
@@ -206,47 +206,48 @@ class Part(object):
 		If wspace_scope == True, queries other projects in the workspace. 
 		Returns a pair: The query string and the parameters tuple. '''
 		
+		# TODO: These helper functions have extraneous arguments
 		# self.name is always ?1, self.project.name is always ?2
-		def project_attribute_expr(attrib_name, attrib_value, name_param_number, value_param_number):
+		def project_spec_expr(attrib_name, attrib_value, name_param_number, value_param_number):
 			''' Generates an SQL expression to match a single attribute for the project query. '''
-			name_expr = '?%s IN (SELECT name FROM part_attributes WHERE part!=?1 AND project=?2)' % name_param_number
-			value_expr = '?%s IN (SELECT value FROM part_attributes WHERE part!=?1 AND project=?2 AND name=?%s)' % (value_param_number, name_param_number)
+			name_expr = '?%s IN (SELECT name FROM part_specs WHERE part!=?1 AND project=?2)' % name_param_number
+			value_expr = '?%s IN (SELECT value FROM part_specs WHERE part!=?1 AND project=?2 AND name=?%s)' % (value_param_number, name_param_number)
 			return '(' + name_expr + ' AND ' + value_expr + ')'
 		
-		def workspace_attribute_expr(attrib_name, attrib_value, name_param_number, value_param_number):
+		def workspace_spec_expr(attrib_name, attrib_value, name_param_number, value_param_number):
 			''' Generates an SQL expression to match a single attribute for the workspace query. '''
-			name_expr = '?%s IN (SELECT name FROM part_attributes WHERE project!=?2)' % name_param_number
-			value_expr = '?%s IN (SELECT value FROM part_attributes WHERE project=!?2 AND name=?%s)' % (value_param_number, name_param_number)
+			name_expr = '?%s IN (SELECT name FROM part_specs WHERE project!=?2)' % name_param_number
+			value_expr = '?%s IN (SELECT value FROM part_specs WHERE project=!?2 AND name=?%s)' % (value_param_number, name_param_number)
 			return '(' + name_expr + ' AND ' + value_expr + ')'
 		
 		params_dict = {1 : self.name, 2 : self.project.name, 3 : self.value, 4 : self.device, 5 : self.package}
-		if len(self.attributes.keys()) > 0:
-			attribute_exprs = []
-			for attr in self.attributes.items():
+		if len(self.specs.keys()) > 0:
+			spec_exprs = []
+			for spec in self.specs.items():
 				greatest_param = max(params_dict.keys())
 				name_key = greatest_param + 1
 				val_key = greatest_param + 2
-				params_dict[name_key] = attr[0]
-				params_dict[val_key] = attr[1]
+				params_dict[name_key] = spec[0]
+				params_dict[val_key] = spec[1]
 				if wspace_scope == True:
-					attribute_exprs.append(workspace_attribute_expr(attr[0], attr[1], name_key, val_key))
+					spec_exprs.append(workspace_spec_expr(spec[0], spec[1], name_key, val_key))
 				else:
-					attribute_exprs.append(project_attribute_expr(attr[0], attr[1], name_key, val_key))
+					spec_exprs.append(project_spec_expr(spec[0], spec[1], name_key, val_key))
 			
-			full_attribs_expr = ' AND ' + ' AND '.join(attribute_exprs)
+			full_specs_expr = ' AND ' + ' AND '.join(spec_exprs)
 		else:
-			full_attribs_expr = ''
+			full_specs_expr = ''
 			
 		if wspace_scope == True:
-			if len(full_attribs_expr) > 0:
-				attributes_clause = 'SELECT DISTINCT part FROM part_attributes WHERE project!=?2' + full_attribs_expr
-				query = 'SELECT * FROM parts WHERE value=?3 AND device=?4 AND package=?5 AND project!=?2 AND name IN (%s)' % attributes_clause
+			if len(full_specs_expr) > 0:
+				specs_clause = 'SELECT DISTINCT part FROM part_specs WHERE project!=?2' + full_specs_expr
+				query = 'SELECT * FROM parts WHERE value=?3 AND device=?4 AND package=?5 AND project!=?2 AND name IN (%s)' % specs_clause
 			else:
 				query = 'SELECT * FROM parts WHERE value=?3 AND device=?4 AND package=?5 AND project!=?2'
 		else:
-			if len(full_attribs_expr) > 0:
-				attributes_clause = 'SELECT DISTINCT part FROM part_attributes WHERE part!=?1 AND project=?2' + full_attribs_expr
-				query = 'SELECT * FROM parts WHERE value=?3 AND device=?4 AND package=?5 AND project=?2 AND name IN (%s)' % attributes_clause
+			if len(full_specs_expr) > 0:
+				specs_clause = 'SELECT DISTINCT part FROM part_specs WHERE part!=?1 AND project=?2' + full_specs_expr
+				query = 'SELECT * FROM parts WHERE value=?3 AND device=?4 AND package=?5 AND project=?2 AND name IN (%s)' % specs_clause
 			else:
 				query = 'SELECT * FROM parts WHERE value=?3 AND device=?4 AND package=?5 AND project=?2'
 		
@@ -258,11 +259,11 @@ class Part(object):
 		return query, tuple(params)
 	
 	def find_similar_parts(self, connection, check_wspace=True):
-		''' Search the project and optionally workspace for parts of matching value/device/package/attributes.
+		''' Search the project and optionally workspace for parts of matching value/device/package/specs.
 		If check_wspace = True, returns a pair of lists: (project_results, workspace_results).
 		If check_wspace = False, only returns the project_results list. 
 		This allows for parts in different projects that incidentally have the same name to be added.
-		Only returns parts that have all of the non-empty attributes in self.attributes
+		Only returns parts that have all of the non-empty specs in self.specs
 		(with equal values). This behavior is equivalent to self.equals(some_part, False). '''
 		project_results = []
 		workspace_results = []
@@ -403,7 +404,7 @@ class Part(object):
 			cur = connection.cursor()
 			
 			if self.product is None:
-				pn = 'NULL'
+				pn = None
 			else:
 				pn = self.product.manufacturer_pn
 			
@@ -411,7 +412,7 @@ class Part(object):
 			params = (self.name, self.project.name, self.value, self.device, self.package,  
 					self.description, pn, self.name, self.project.name,)
 			cur.execute(sql, params)
-			self.write_attributes(connection)
+			self.write_specs(connection)
 			
 		finally:
 			cur.close()
@@ -422,7 +423,7 @@ class Part(object):
 			cur = connection.cursor()
 			
 			if self.product is None:
-				pn = 'NULL'
+				pn = None
 			else:
 				pn = self.product.manufacturer_pn
 			
@@ -430,14 +431,14 @@ class Part(object):
 			params = (self.name, self.project.name, self.value, self.device, self.package,  
 					self.description, pn,)
 			cur.execute(sql, params)
-			self.write_attributes(connection)
+			self.write_specs(connection)
 			
 		finally:
 			cur.close()
 	
 	def delete(self, connection):
 		''' Delete the Part from the DB. 
-		Part attributes are deleted via foreign key constraint cascading. '''
+		Part specs are deleted via foreign key constraint cascading. '''
 		try:
 			cur = connection.cursor()
 			
@@ -448,30 +449,28 @@ class Part(object):
 		finally:
 			cur.close()
 	
-	def fetch_attributes(self, connection):
-		''' Fetch attributes dictionary for this Part. 
-		Clears and sets the self.attributes dictionary directly. '''
-		self.attributes.clear()
+	def fetch_specs(self, connection):
+		''' Fetch specs dictionary for this Part. 
+		Clears and sets the self.specs dictionary directly. '''
+		self.specs.clear()
 		try:
 			cur = connection.cursor()
 			
 			params = (self.name, self.project.name,)
-			#cur.execute('''SELECT name, value FROM part_attributes WHERE part=? INTERSECT 
-			#SELECT name, value FROM part_attributes WHERE project=?''', params)
-			for row in cur.execute('SELECT name, value FROM part_attributes WHERE part=? AND project=?', params):
-				self.attributes[row[0]] = row[1]
+			for row in cur.execute('SELECT name, value FROM part_specs WHERE part=? AND project=?', params):
+				self.specs[row[0]] = row[1]
 			
 		finally:
 			cur.close()
 	
-	def has_attribute(self, attrib, connection):
-		'''Check if this Part has an attribute of given name in the DB. 
-		Ignores value of the attribute. '''
+	def has_spec(self, spec, connection):
+		'''Check if this Part has an spec of given name in the DB. 
+		Ignores value of the spec. '''
 		results = []
 		try:
 			cur = connection.cursor()
-			sql = 'SELECT name FROM part_attributes WHERE part=? AND project=? AND name=?'
-			params = (self.name, self.project.name, attrib,)
+			sql = 'SELECT name FROM part_specs WHERE part=? AND project=? AND name=?'
+			params = (self.name, self.project.name, spec,)
 			for row in cur.execute(sql, params):
 				results.append(row[0])
 			
@@ -482,58 +481,64 @@ class Part(object):
 			else:
 				return True
 	
-	def add_attribute(self, name, value, connection):
-		''' Add a single attribute to this Part.
-		Adds the new attribute to the self.attributes dictionary in memory.
-		Writes the new attribute to the DB immediately. '''
+	def add_spec(self, name, value, connection):
+		''' Add a single spec to this Part.
+		Adds the new spec to the self.specs dictionary in memory.
+		Writes the new spec to the DB immediately. '''
 		try:
 			cur = connection.cursor()
 			
-			self.attributes[name] = value
+			self.specs[name] = value
 			params = (self.name, self.project.name, name, value,)
-			cur.execute('INSERT OR REPLACE INTO part_attributes VALUES (NULL,?,?,?,?)', params)
+			cur.execute('INSERT OR REPLACE INTO part_specs VALUES (NULL,?,?,?,?)', params)
 
 		finally:
 			cur.close()
 				
-	def remove_attribute(self, name, connection):
-		''' Removes a single attribute from this Part.
-		Deletes the attribute from the self.attributes dictionary in memory.
-		Deletes the attribute from the DB immediately. '''
+	def remove_spec(self, name, connection):
+		''' Removes a single spec from this Part.
+		Deletes the spec from the self.specs dictionary in memory.
+		Deletes the spec from the DB immediately. '''
 		try:
 			cur = connection.cursor()
 			
-			if name in self.attributes:
-				del self.attributes[name]
+			if name in self.specs:
+				del self.specs[name]
 			params = (self.name, self.project.name, name,)
-			cur.execute('DELETE FROM part_attributes WHERE part=? AND project=? AND name=?', params)
+			cur.execute('DELETE FROM part_specs WHERE part=? AND project=? AND name=?', params)
 
 		finally:
 			cur.close()
 
-	def write_attributes(self, connection):
-		''' Write all of this Part's attributes to the DB.
-		Checks attributes currently in DB and updates/inserts as appropriate. '''
-		# TODO: This does not remove any old attribs from the DB that are not in self.attributes
-		db_attribs = []
-		old_attribs = []
-		new_attribs = []
+	def write_specs(self, connection):
+		''' Write all of this Part's specs to the DB.
+		Checks specs currently in DB and updates/inserts/deletes as appropriate. '''
+		db_specs = []
+		update_specs = []
+		insert_specs = []
+		delete_specs = []
 		try:
 			cur = connection.cursor()
 			
 			params = (self.name, self.project.name,)
-			#cur.execute('''SELECT name FROM part_attributes WHERE part=? INTERSECT 
-			#SELECT name FROM part_attributes WHERE project=?''', params)
-			for row in cur.execute('SELECT name FROM part_attributes WHERE part=? AND project=?', params):
-				db_attribs.append(row[0])
-			for a in self.attributes.items():
-				if a[1] != "":
-					if a[0] in db_attribs:
-						old_attribs.append((a[1], self.name, self.project.name, a[0],))
-					else:
-						new_attribs.append((self.name, self.project.name, a[0], a[1],))
-			cur.executemany('INSERT OR REPLACE INTO part_attributes VALUES (NULL,?,?,?,?)', new_attribs)
-			cur.executemany('UPDATE part_attributes SET value=? WHERE part=? AND project=? AND name=?', old_attribs)
+			for row in cur.execute('SELECT name FROM part_specs WHERE part=? AND project=?', params):
+				db_specs.append(row[0])
+			
+			update_keys = db_specs & self.specs.keys()
+			insert_keys = self.specs.keys() - db_specs
+			delete_keys = db_specs - self.specs.keys()
+			
+			for k, v in self.specs.items():
+				if v != "":
+					if k in update_keys:
+						update_specs.append((self.name, self.project.name, k, v,))
+					elif k in insert_keys:
+						insert_specs.append((self.name, self.project.name, k, v,))
+					elif k in delete_keys:
+						delete_specs.append((self.name, self.project.name, k,))
+			cur.executemany('UPDATE part_specs SET value=? WHERE part=? AND project=? AND name=?', update_specs)
+			cur.executemany('INSERT INTO part_specs VALUES (NULL,?,?,?,?)', insert_specs)
+			cur.executemany('DELETE FROM part_specs WHERE part=? AND project=? AND name=?', delete_specs)
 		
 		finally:
 			cur.close()
