@@ -46,7 +46,8 @@ VENDOR_SFE_EN = False
 VENDOR_WARN_IF_NONE_EN = True
 
 def no_vendors_enabled():
-	''' Return True if all VENDOR_*_EN config vars are False. '''
+	"""Return True if all VENDOR_*_EN config vars are False."""
+	
 	ret = True
 	if OCTOPART_EN == True:
 		ret = False
@@ -70,7 +71,9 @@ DOWNLOAD_DATASHEET = False	# TODO : Set these from program config
 ENFORCE_MIN_QTY = True
 
 class ScrapeException(Exception):
-	''' Raised when something goes wrong scraping. '''
+	
+	"""Raised when something goes wrong scraping."""
+	
 	errors = {0: 'No offers found on supplier.', \
 			  1: 'No offers found across all vendors.', \
 			  2: 'Found no offers with inventory in stock.', \
@@ -87,22 +90,26 @@ class ScrapeException(Exception):
 		return repr(str)
 
 class Brand(OctopartBrand):
-	'''Database methods for the OctopartBrand class. '''
+	
+	"""Database methods for the OctopartBrand class."""
 	
 	@staticmethod
 	def new_from_row(row, connection):
-		''' Given a brands row from the DB, returns a Brand object. '''
+		"""Given a brands row from the DB, returns a Brand object."""
+		
 		brand = Brand(row[0], row[1], row[2])
 		return brand
 	
 	@staticmethod
 	def promote_octopart_brand(octo_brand):
-		''' Given an OctopartBrand instance, returns a corresponding Brand instance. '''
+		"""Given an OctopartBrand instance, returns a corresponding Brand instance."""
+		
 		return Brand(octo_brand.id, octo_brand.displayname, octo_brand.homepage_url)
 	
 	@staticmethod
 	def select_by_name(displayname, connection):
-		''' Return the Brand of given displayname. '''
+		"""Return the Brand of given displayname."""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -118,13 +125,15 @@ class Brand(OctopartBrand):
 		OctopartBrand.__init__(id, dispname, homepage)
 	
 	def show(self):
-		''' A detailed print method. '''
+		"""A detailed print method."""
+		
 		print 'Octopart ID: ', self.id
 		print 'Name: ', self.displayname
 		print 'Homepage: ', self.homepage_url
 	
 	def update(self, connection):
-		''' Update an existing Brand record in the DB. '''
+		"""Update an existing Brand record in the DB."""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -137,7 +146,8 @@ class Brand(OctopartBrand):
 			cur.close()
 	
 	def insert(self, connection):
-		''' Write the Brand to the DB. '''
+		"""Write the Brand to the DB."""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -148,7 +158,8 @@ class Brand(OctopartBrand):
 			cur.close()
 	
 	def delete(self, connection):
-		''' Delete the Brand from the DB. '''
+		"""Delete the Brand from the DB."""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -159,11 +170,13 @@ class Brand(OctopartBrand):
 			cur.close()
 
 class Category(OctopartCategory):
-	'''Database methods for the OctopartCategory class. '''
+	
+	"""Database methods for the OctopartCategory class."""
 	
 	@staticmethod
 	def new_from_row(row, connection, get_ancestors=True):
-		''' Given a categories row from the DB, returns a Category object. '''
+		"""Given a categories row from the DB, returns a Category object."""
+		
 		images = Category.fetch_images(row[0], connection)
 		children_ids = Category.fetch_children_ids(row[0], connection)
 		ancestor_ids = Category.fetch_ancestor_ids(row[1], connection)
@@ -176,7 +189,8 @@ class Category(OctopartCategory):
 	
 	@staticmethod
 	def promote_octopart_category(oc):
-		''' Given an OctopartCategory instance, returns a corresponding Category instance. '''
+		"""Given an OctopartCategory instance, returns a corresponding Category instance."""
+		
 		cat = Category(oc.id, oc.parent_id, oc.nodename, oc.images, oc.children_ids, oc.ancestor_ids, oc.ancestors, oc.num_parts)
 		for ancestor in cat.ancestors:
 			ancestor = Category.promote_octopart_category(ancestor)
@@ -184,7 +198,8 @@ class Category(OctopartCategory):
 	
 	@staticmethod
 	def fetch_images(id, connection):
-		''' Fetch the list of images for the Category of given ID. '''
+		"""Fetch the list of images for the Category of given ID."""
+		
 		images = []
 		try:
 			cur = connection.cursor()
@@ -204,7 +219,8 @@ class Category(OctopartCategory):
 	
 	@staticmethod
 	def fetch_children_ids(id, connection):
-		''' Fetch all immediate children IDs of the Category of given ID. '''
+		"""Fetch all immediate children IDs of the Category of given ID."""
+		
 		ids = []
 		try:
 			cur = connection.cursor()
@@ -219,7 +235,8 @@ class Category(OctopartCategory):
 	
 	@staticmethod
 	def fetch_ancestor_ids(parent_id, connection):
-		''' Fetch all ancestor IDs of the Category of given parent ID. '''
+		"""Fetch all ancestor IDs of the Category of given parent ID."""
+		
 		ids = []
 		try:
 			cur = connection.cursor()
@@ -238,7 +255,8 @@ class Category(OctopartCategory):
 	
 	@staticmethod
 	def fetch_ancestors(parent_id, connection):
-		''' Fetch all ancestors of the Category of given parent ID. '''
+		"""Fetch all ancestors of the Category of given parent ID."""
+		
 		ancestor_ids = Category.fetch_ancestor_ids(parent_id, connection)
 		ancestors = []
 		try:
@@ -258,7 +276,8 @@ class Category(OctopartCategory):
 	
 	@staticmethod
 	def select_by_id(id, connection):
-		''' Return the Category of given ID. '''
+		"""Return the Category of given ID."""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -272,7 +291,8 @@ class Category(OctopartCategory):
 	
 	@staticmethod
 	def select_by_name(nodename, connection):
-		''' Return the Category of given node name. '''
+		"""Return the Category of given node name."""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -288,7 +308,8 @@ class Category(OctopartCategory):
 		OctopartCategory.__init__(id, parent_id, nodename, images, children_ids, ancestor_ids, ancestors, num_parts)
 	
 	def show(self):
-		''' A detailed print method. '''
+		"""A detailed print method."""
+		
 		print 'Octopart ID: ', self.id
 		print 'Parent ID: ', self.parent_id
 		print 'Name: ', self.nodename
@@ -298,7 +319,8 @@ class Category(OctopartCategory):
 		print 'Number of parts: ', self.num_parts
 	
 	def update(self, connection):
-		''' Update an existing Category record in the DB. '''
+		"""Update an existing Category record in the DB."""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -311,7 +333,8 @@ class Category(OctopartCategory):
 			cur.close()
 	
 	def insert(self, connection):
-		''' Write the Category to the DB. '''
+		"""Write the Category to the DB."""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -322,7 +345,8 @@ class Category(OctopartCategory):
 			cur.close()
 	
 	def delete(self, connection):
-		''' Delete the Category from the DB. '''
+		"""Delete the Category from the DB."""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -333,17 +357,19 @@ class Category(OctopartCategory):
 			cur.close()
 
 class Offer(object):
-	''' A distributor's offer for a Product object. '''
+	
+	"""A supplier's offer for a Product object."""
 	
 	# Known flat reeling fees
 	REEL_FEES = {"Digi-Reel" : 7, "MouseReel" : 7}
 	
 	@staticmethod
 	def new_from_octopart(mpn, odict):
-		''' Given an Offfer dictionary from Octopart API JSON data,
-		returns an Offer instance. 
+		"""Return an Offer from an Octopart API JSON dictionary.
+		
 		@param mpn: Manufacturer part number string of parent Product instance.
-		@param odict: JSON dictionary of offer data from Octopart. '''
+		@param odict: JSON dictionary of offer data from Octopart.
+		"""
 		
 		supplier = Brand.promote_octopart_brand(odict['supplier'])
 		if 'packaging' in odict and odict['packaging'] is not None:
@@ -372,14 +398,16 @@ class Offer(object):
 	
 	@staticmethod
 	def new_from_row(row, connection):
-		''' Given a offer row from the DB, returns a Offer object. '''
+		"""Given a offer row from the DB, returns a Offer object."""
+		
 		offer = Offer(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], [])
 		offer.fetch_price_breaks(connection)
 		return offer
 		
 	@staticmethod
 	def select_by_sku(pn, connection):
-		''' Return the Offer(s) of given supplier part number in a list. '''
+		"""Return the Offer(s) of given supplier part number in a list."""
+		
 		offers = []
 		try:
 			cur = connection.cursor()
@@ -394,7 +422,8 @@ class Offer(object):
 	
 	@staticmethod
 	def select_by_manufacturer_pn(pn, connection):
-		''' Return the Offer(s) of given manufacturer part number in a list. '''
+		"""Return the Offer(s) of given manufacturer part number in a list."""
+		
 		offers = []
 		try:
 			cur = connection.cursor()
@@ -411,13 +440,13 @@ class Offer(object):
 		self.manufacturer_pn = manufacturer_pn
 		self.sku = sku
 		self.supplier = supplier	# A Brand instance
-		''' 
+		""" 
 		From the Octopart API documentation regarding special inventory values: 
 		-1: "non-stocked"
 		-2: "yes"
 		-3: "unknown"
 		-4: "RFQ"  
-		'''
+		"""
 		self.inventory = inv
 		self.is_authorized = authorized	# Boolean
 		self.is_brokered = brokered	# Boolean
@@ -427,14 +456,18 @@ class Offer(object):
 		self.packaging = pkg	# Cut Tape, Tape/Reel, Tray, Tube, etc.
 		self.reel_fee = reel	# Flat per-order reeling fee (Digi-reel, MouseReel, etc)
 		self.update_ts = updated	# A datetime object (UTC)
-		''' 
+		"""
 		Old prices format: prices[break] = unit_price
 		New format: Sorted list of (break, unit price, currency) tuples 
-		'''
+		"""
 		self.prices = prices
 	
 	def show(self):
-		''' A verbose print method. Mainly intended for debugging purposes. '''
+		"""A verbose print method.
+		
+		Mainly intended for debugging purposes.
+		"""
+		
 		print 'Manufacturer PN: ', self.manufacturer_pn, type(self.manufacturer_pn)
 		print 'SKU: ', self.sku, type(self.sku)
 		print 'Supplier: ', self.supplier, type(self.supplier)
@@ -450,12 +483,14 @@ class Offer(object):
 		print 'Prices: ', self.prices, type(self.prices)
 	
 	def show_brief(self):
-		''' A less verbose print method for debugging. '''
+		"""A less verbose print method for debugging."""
+		
 		print self.key()
 		print 'Prices: ', self.prices.items()
 	
 	def equals(self, offer):
-		''' Compares the Offer to another Offer.'''
+		"""Compares the Offer to another Offer."""
+		
 		if type(offer) != type(self):
 			return False
 		eq = True
@@ -492,13 +527,17 @@ class Offer(object):
 		return self.equals(o)
 	
 	def key(self):
-		''' Return a dictionary key as used by the GUI for this Offer.
-		Format: key = supplier + ': ' + sku + ' (' + packaging + ')' '''
+		"""Return a dictionary key as used by the GUI for this Offer.
+		
+		Format: key = 'supplier: sku (packaging)'.
+		"""
+		
 		key = self.supplier + ': ' + self.sku + ' (' + self.packaging + ')'
 		return key
 	
 	def update(self, connection):
-		''' Update an existing Offer record in the DB. '''
+		"""Update an existing Offer record in the DB."""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -520,7 +559,8 @@ class Offer(object):
 			cur.close()
 	
 	def insert(self, connection):
-		''' Write the Offer to the DB. '''
+		"""Write the Offer to the DB."""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -539,7 +579,8 @@ class Offer(object):
 			cur.close()
 	
 	def delete(self, connection):
-		''' Delete the Offer from the DB. '''
+		"""Delete the Offer from the DB."""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -550,7 +591,8 @@ class Offer(object):
 			cur.close()
 	
 	def is_in_db(self, connection):
-		''' Check if this Offer is in the database. '''
+		"""Check if this Offer is in the database."""
+		
 		result = Offer.select_by_sku(self.sku, connection)
 		if len(result) == 0:
 			return False
@@ -558,10 +600,12 @@ class Offer(object):
 			return True
 	
 	def fetch_price_breaks(self, connection, currency=None):
-		''' Fetch tne price breaks tuples list for this Offer. 
+		"""Fetch tne price breaks tuples list for this Offer. 
+		
 		Clears and sets the self.prices list directly. 
 		@param currency: Optional sequence of currency strings to filter by.
-		If no currency filter strings are passed, fetches price breaks for all available currencies. '''
+		If no currency filter strings are passed, fetches price breaks for all available currencies.
+		"""
 		
 		self.prices.clear()
 		try:
@@ -598,10 +642,12 @@ class Offer(object):
 			cur.close()
 		
 	def get_price_break(self, qty, currency):
-		''' Returns the (price break, unit price, currency) tuple for 
-		the given purchase quantity and currency.
+		"""Returns the prices tuple for the given purchase quantity and currency.
+		
 		If qty is below the lowest break, the lowest is returned.
-		TODO : Raise some kind of error/warning if not ordering enough PCBs to make the lowest break.'''
+		TODO : Raise some kind of error/warning if not ordering enough PCBs to make the lowest break.
+		"""
+		
 		if self.prices[0][0] > qty:
 			print "Warning: Purchase quantity is below minimum!"
 			if ENFORCE_MIN_QTY:
@@ -616,11 +662,13 @@ class Offer(object):
 				return self.prices[i-1]
 
 class ProductAttribute(OctopartPartAttribute):
-	'''Database methods for the OctopartPartAttribute class. '''
+	
+	"""Database methods for the OctopartPartAttribute class."""
 	
 	@staticmethod
 	def fetch_unit(fieldname, connection):
-		''' Fetch the units table entry for a ProductAttribute of given fieldname. '''
+		"""Fetch the units table entry for a ProductAttribute of given fieldname."""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -635,7 +683,8 @@ class ProductAttribute(OctopartPartAttribute):
 	
 	@staticmethod
 	def new_from_row(row, connection):
-		''' Given a product_attributes row from the DB, returns a ProductAttribute object. '''
+		"""Given a product_attributes row from the DB, returns a ProductAttribute object."""
+		
 		unit = ProductAttribute.fetch_unit(row[0], connection)
 		metadata = {'datatype' : row[3], 'unit' : unit}
 		attrib = ProductAttribute(row[0], row[1], row[2], metadata)
@@ -643,12 +692,14 @@ class ProductAttribute(OctopartPartAttribute):
 	
 	@staticmethod
 	def promote_octopart_part_attribute(attrib):
-		''' Given an OctopartPartAttribute instance, returns a corresponding ProductAttribute instance. '''
+		"""Given an OctopartPartAttribute instance, returns a corresponding ProductAttribute instance."""
+		
 		return ProductAttribute(attrib.fieldname, attrib.displayname, attrib.type, attrib.metadata)
 	
 	@staticmethod
 	def select_by_fieldname(fieldname, connection):
-		''' Return the ProductAttribute of given field fieldname. '''
+		"""Return the ProductAttribute of given field fieldname."""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -664,7 +715,8 @@ class ProductAttribute(OctopartPartAttribute):
 		OctopartPartAttribute.__init__(fieldname, displayname, type, metadata)
 	
 	def update(self, connection):
-		''' Update an existing ProductAttribute record in the DB. '''
+		"""Update an existing ProductAttribute record in the DB."""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -677,7 +729,8 @@ class ProductAttribute(OctopartPartAttribute):
 			cur.close()
 	
 	def insert(self, connection):
-		''' Write the ProductAttribute to the DB. '''
+		"""Write the ProductAttribute to the DB."""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -688,7 +741,8 @@ class ProductAttribute(OctopartPartAttribute):
 			cur.close()
 	
 	def delete(self, connection):
-		''' Delete the ProductAttribute from the DB. '''
+		"""Delete the ProductAttribute from the DB."""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -699,12 +753,16 @@ class ProductAttribute(OctopartPartAttribute):
 			cur.close()
 
 class Product(OctopartPart):
-	''' A physical product, independent of distributor.
-	The primary identifying key is the manufacturer PN. '''
+	
+	"""A physical product, independent of distributor.
+	
+	The primary identifying key is the manufacturer PN.
+	"""
 	
 	@staticmethod
 	def new_from_row(row, connection):
-		''' Given a product row from the DB, returns a Product object. '''
+		"""Given a product row from the DB, returns a Product object."""
+		
 		part_dict = {}
 		part_dict['uid'] = row[0]
 		part_dict['mpn'] = row[1]
@@ -728,12 +786,14 @@ class Product(OctopartPart):
 	
 	@staticmethod
 	def promote_octopart_part(part):
-		''' Given an OctopartPart instance, returns a corresponding Product instance. '''
+		"""Given an OctopartPart instance, returns a corresponding Product instance."""
+		
 		return Product(part.__dict__)
 	
 	@staticmethod
 	def fetch_category_ids(mpn, connection):
-		''' Fetch the list of category IDs for a given MPN. '''
+		"""Fetch the list of category IDs for a given MPN."""
+		
 		ids = []
 		try:
 			cur = connection.cursor()
@@ -749,7 +809,8 @@ class Product(OctopartPart):
 	
 	@staticmethod
 	def fetch_images(mpn, connection):
-		''' Fetch the list of images for a given MPN. '''
+		"""Fetch the list of images for a given MPN."""
+		
 		images = []
 		try:
 			cur = connection.cursor()
@@ -773,7 +834,8 @@ class Product(OctopartPart):
 	
 	@staticmethod
 	def fetch_datasheets(mpn, connection):
-		''' Fetch the list of datasheets for a given MPN. '''
+		"""Fetch the list of datasheets for a given MPN."""
+		
 		datasheets = []
 		try:
 			cur = connection.cursor()
@@ -789,7 +851,8 @@ class Product(OctopartPart):
 	
 	@staticmethod
 	def fetch_descriptions(mpn, connection):
-		''' Fetch the list of descriptions for a given MPN. '''
+		"""Fetch the list of descriptions for a given MPN."""
+		
 		descriptions = []
 		try:
 			cur = connection.cursor()
@@ -805,7 +868,8 @@ class Product(OctopartPart):
 	
 	@staticmethod
 	def fetch_offers(mpn, connection):
-		''' Fetch the list of offers for a given MPN. '''
+		"""Fetch the list of offers for a given MPN."""
+		
 		offers = []
 		try:
 			cur = connection.cursor()
@@ -822,7 +886,8 @@ class Product(OctopartPart):
 	
 	@staticmethod
 	def fetch_specs(mpn, connection):
-		''' Fetch the list of specs for a given MPN. '''
+		"""Fetch the list of specs for a given MPN."""
+		
 		specs = []
 		attrib = ProductAttribute('', '', 'text', None)
 		previous_fieldname = ''
@@ -852,7 +917,8 @@ class Product(OctopartPart):
 	
 	@staticmethod
 	def select_all(connection):
-		''' Return the entire product table. '''
+		"""Return the entire products table as Product instances."""
+		
 		prods = []
 		try:
 			cur = connection.cursor()
@@ -866,7 +932,8 @@ class Product(OctopartPart):
 	
 	@staticmethod
 	def select_by_pn(pn, connection):
-		''' Return the Product(s) of given part number in a list. '''
+		"""Return the Product(s) of given part number in a list."""
+		
 		prods = []
 		try:
 			cur = connection.cursor()
@@ -888,7 +955,8 @@ class Product(OctopartPart):
 			spec['attribute'] = ProductAttribute.promote_octopart_part_attribute(spec['attribute'])
 	
 	def show(self, show_offers=False):
-		''' A detailed print method. '''
+		"""A detailed print method."""
+		
 		print 'Octopart UID: ', self.uid, type(self.uid)
 		print 'Manufacturer PN: ', self.mpn, type(self.mpn)
 		print 'Manufacturer: ', self.manufacturer.show(), type(self.manufacturer.show())
@@ -908,7 +976,8 @@ class Product(OctopartPart):
 				offer.show()
 	
 	def equals(self, p):
-		''' Compares the Product to another Product.'''
+		"""Compares the Product to another Product."""
+		
 		if type(p) != type(self):
 			return False
 		eq = True
@@ -944,8 +1013,7 @@ class Product(OctopartPart):
 		return self.equals(p)
 	
 	def __contains__(self, item):
-		''' Type-checks the passed item and performs a membership test on the 
-		relevant Product sequence attribute. '''
+		"""Type-checks the passed item and performs a membership test on the relevant Product sequence attribute."""
 		
 		# An Offer instance
 		if type(item) == Offer:
@@ -977,7 +1045,8 @@ class Product(OctopartPart):
 			
 	
 	def update(self, connection):
-		''' Update an existing Product record in the DB. '''
+		"""Update an existing Product record in the DB."""
+		
 		try:
 			cur = connection.cursor()
 			sql = '''UPDATE products 
@@ -1114,7 +1183,8 @@ class Product(OctopartPart):
 			cur.close()
 	
 	def insert(self, connection):
-		''' Write the Product to the DB. '''
+		"""Write the Product to the DB."""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -1171,7 +1241,8 @@ class Product(OctopartPart):
 			cur.close()
 	
 	def delete(self, connection):
-		''' Delete the Product from the DB. '''
+		"""Delete the Product from the DB."""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -1182,8 +1253,11 @@ class Product(OctopartPart):
 			cur.close()
 	
 	def fetch_offers(self, connection):
-		''' Fetch offers list for this Product. 
-		Clears and sets the self.offers list directly. '''
+		"""Fetch offers list for this Product.
+		
+		Clears and sets the self.offers list directly.
+		"""
+		
 		self.offers.clear()
 		try:
 			cur = connection.cursor()
@@ -1197,11 +1271,12 @@ class Product(OctopartPart):
 			cur.close()
 		
 	def best_offer(self, qty):
-		''' Return the Offer with the best price for the given order quantity. 
+		"""Return the Offer with the best price for the given order quantity. 
 		
 		If the "enforce minimum quantities" option is checked in the program config,
 		only returns offers where the order quantity meets/exceeds the minimum
-		order quantity for the offer.'''
+		order quantity for the offer.
+		"""
 		print 'Entering %s.best_offer(%s)' % (self.mpn, str(qty))
 		best = None
 		lowest_price = float("inf")
@@ -1220,7 +1295,8 @@ class Product(OctopartPart):
 		return best
 	
 	def get_preferred_offer(self, project, connection):
-		'''Get a project's preferred Offer for this Product. '''
+		"""Get a project's preferred Offer for this Product."""
+		
 		try:
 			offer = None
 			cur = connection.cursor()
@@ -1235,7 +1311,8 @@ class Product(OctopartPart):
 			return offer
 	
 	def set_preferred_offer(self, project, offer, connection):
-		'''Set a project's preferred Offer for this Product. '''
+		"""Set a project's preferred Offer for this Product."""
+		
 		try:
 			cur = connection.cursor()
 			current_offer = self.get_preferred_offer(project, connection)
@@ -1250,16 +1327,21 @@ class Product(OctopartPart):
 			cur.close()
 	
 	def in_stock(self):
-		''' Returns true if any Offers have inventory > 0 or == -2 ("yes"). '''
+		"""Returns true if any Offers have inventory > 0 or == -2 ("yes")."""
+		
 		return True in [x > 0 or x == -2 for x in [offer.inventory for offer in self.offers]]
 	
 	def search_octopart(self):
-		''' Multi-vendor search using Octopart.
-		Uses the Octopart API instead of HTML scraping. '''
+		"""Multi-vendor search using Octopart.
+		
+		Uses the Octopart REST API instead of HTML scraping.
+		"""
+		
 		octo = Octopart(OCTOPART_API_KEY)
 	
 	def scrape_dk(self):
-		''' Scrape method for Digikey. '''
+		"""HTML scrape method for Digi-Key."""
+		
 		offer_dicts = []
 		search_url = 'http://search.digikey.com/us/en/products/' + self.mpn
 		search_page = urllib2.urlopen(search_url)
@@ -1403,19 +1485,23 @@ class Product(OctopartPart):
 		return offer_dicts
 	
 	def scrape_far(self):
-		''' Scrape method for Farnell. '''
+		"""Scrape method for Farnell."""
+		
 		raise NotImplementedError("Farnell scraping not yet implemented!")
 	
 	def scrape_fue(self):
-		''' Scrape method for Future Electronics. '''
+		"""Scrape method for Future Electronics."""
+		
 		raise NotImplementedError("Future scraping not yet implemented!")
 		
 	def scrape_jam(self):
-		''' Scrape method for Jameco. '''
+		"""Scrape method for Jameco."""
+		
 		raise NotImplementedError("Jameco scraping not yet implemented!")
 		
 	def scrape_me(self):
-		''' Scrape method for Mouser Electronics. '''
+		"""Scrape method for Mouser Electronics."""
+		
 		raise NotImplementedError("Mouser scraping not yet implemented!")
 		
 		search_url = 'http://www.mouser.com/Search/Refine.aspx?Keyword=' + self.mpn
@@ -1427,11 +1513,13 @@ class Product(OctopartPart):
 		# Check "Mouser Part #" column in table -- ignore any rows where that cell says "Not Assigned"
 	
 	def scrape_new(self):
-		''' Scrape method for Newark. '''
+		"""Scrape method for Newark."""
+		
 		raise NotImplementedError("Newark scraping not yet implemented!")
 	
 	def scrape_sfe(self, sku):
-		''' Scrape method for Sparkfun. '''	
+		"""Scrape method for Sparkfun."""
+		
 		raise NotImplementedError("SparkFun scraping not yet implemented!")
 		# Clear previous pricing data (in case price break keys change)
 		
@@ -1441,7 +1529,8 @@ class Product(OctopartPart):
 		soup = BeautifulSoup(page)
 			
 	def scrape(self, connection):
-		''' Scrape each supplier page to refresh product pricing info. '''
+		"""Scrape each supplier page to refresh product pricing info."""
+		
 		if no_vendors_enabled() == True:
 			if VENDOR_WARN_IF_NONE_EN == True:
 				raise ScrapeException(self.scrape.__name__, self.mpn, 3)
@@ -1489,7 +1578,8 @@ class Product(OctopartPart):
 				
 
 	def is_in_db(self, connection):
-		''' Check if this Product is in the database. '''
+		"""Check if this Product is in the database."""
+		
 		result = Product.select_by_pn(self.mpn, connection)
 		if len(result) == 0:
 			return False
@@ -1497,8 +1587,7 @@ class Product(OctopartPart):
 			return True
 
 	def select_or_scrape(self, connection):
-		''' Sets the product fields, pulling from the local DB if possible.
-		Passing an open connection to this method is recommended. '''	
+		"""Sets the Product fields, pulling from the local DB if possible."""
 		if(self.is_in_db(connection)):
 			temp = Product.select_by_pn(self.mpn, connection)[0]
 			self.manufacturer = temp.manufacturer

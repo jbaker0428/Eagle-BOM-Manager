@@ -12,8 +12,11 @@ from product import Product
 
 
 class NullProductInProjectException(Exception):
-	''' Raised in situations where correct results require all Parts in the project
-	to have a non-NULL Product for correct results, but a NULL product is found. '''
+	
+	"""Raised in situations where correct results require all Parts in the project
+	to have a non-NULL Product for correct results, but a NULL product is found.
+	"""
+	
 	def __init__(self, source, text):
 		self.source = source
 		self.text = text
@@ -21,11 +24,13 @@ class NullProductInProjectException(Exception):
 		return repr(self.text)
 	
 class BOM(object):
-	'''For determining the name of a project's Part table.'''
+	
+	"""A project in the workspace."""
 	
 	@staticmethod
 	def read_from_db(name, connection):
-		''' Return any BOM object from a DB based on its table name. '''
+		"""Return any BOM object from the DB based on its name."""
+		
 		boms = []
 		try:
 			cur = connection.cursor()
@@ -41,9 +46,12 @@ class BOM(object):
 	
 	@staticmethod
 	def new_project(name, desc, infile, connection):
-		''' Create a new BOM object and its part table.
+		"""Create a new BOM object and its part table.
+		
 		Add the BOM to the Workspace's projects table.
-		Returns the created BOM object. '''
+		Returns the created BOM object.
+		"""
+		
 		new = BOM(name, desc, infile)
 		try:
 			cur = connection.cursor()
@@ -56,7 +64,7 @@ class BOM(object):
 			return new
 	
 	def __init__(self, name, desc, input_file="bom.csv"):
-		self.name = name	# Table name
+		self.name = name	# Table name, only rename by calling self.rename()
 		self.description = desc # Longer description string
 		self.input = input_file
 		self.parts = [] # List of 3-element lists of part name, value, and product.name
@@ -65,7 +73,12 @@ class BOM(object):
 		self.prod_counts = {}
 	
 	def delete(self, connection):
-		''' Delete the BOM table for a project from the given Workspace. '''
+		"""Delete the BOM from the database.
+		
+		Deletes the projects table entry for the BOM.
+		All Parts in the DB (and their specs) are deleted via foreign key constraint cascading. 
+		"""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -76,7 +89,8 @@ class BOM(object):
 			cur.close()
 	
 	def rename(self, new_name, connection):
-		''' Rename the project. '''
+		"""Rename the project."""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -140,8 +154,11 @@ class BOM(object):
 			cur.close()
 	
 	def get_cost(self, connection, run_size=1):
-		''' Get the total project BOM cost and unit price for a given production run size.
-		Returns a pair (unit_price, total_cost).'''
+		"""Get the total project BOM cost and unit price for a given production run size.
+		
+		@return:  A (unit_price, total_cost) pair.
+		"""
+		
 		self.set_prod_counts(connection)
 		project_prod_counts = self.prod_counts.copy()
 		unit_price = 0
@@ -166,7 +183,8 @@ class BOM(object):
 		return (unit_price, total_cost)
 	
 	def update_parts_list(self, part):
-		''' Take in a Part, find it in self.parts, update product.name entry'''
+		"""Take in a Part, find it in self.parts, update product.name entry."""
+		
 		# Find p in self.parts by name
 		for p in self.parts:
 			if p[0] == part.name:
@@ -194,8 +212,8 @@ class BOM(object):
 			return new_parts
 		
 	def read_from_file(self, connection):
-		''' Parses a BOM spreadsheet in CSV format and writes it to the DB.
-		Passing an open connection to this method is HIGHLY recommended.  '''
+		"""Parses a BOM spreadsheet in CSV format and writes it to the DB."""
+		
 		# TODO: product_updater calls are hardcoded to always check wspace
 		print "BOM.read_from_file"
 		# Clear self.parts
@@ -317,12 +335,12 @@ class BOM(object):
 		#print "Parts list: ", self.parts
 	
 	def select_parts_by_name(self, name, connection):
-		''' Return the Part(s) of given name. '''
+		"""Return the Part of given name in this projct from the DB."""
+		
 		parts = []
 		try:
 			cur = connection.cursor()
 			
-			#sql = 'SELECT * FROM parts WHERE name=? INTERSECT SELECT * FROM parts WHERE project=?'
 			sql = 'SELECT * FROM parts WHERE name=? AND project=?'
 			params = (name, self.name)
 			for row in cur.execute(sql, params):
@@ -333,7 +351,8 @@ class BOM(object):
 			return parts
 	
 	def select_parts_by_value(self, val, connection):
-		''' Return the Part(s) of given value in a list. '''
+		"""Return the Part(s) in this project of given value in a list."""
+		
 		parts = []
 		try:
 			cur = connection.cursor()
@@ -348,7 +367,8 @@ class BOM(object):
 			return parts
 	
 	def select_parts_by_product(self, prod, connection):
-		''' Return the Part(s) of given product in a list. '''
+		"""Return the Part(s) in this project of given product PN in a list."""
+		
 		parts = []
 		try:
 			cur = connection.cursor()

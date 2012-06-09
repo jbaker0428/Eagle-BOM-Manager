@@ -10,7 +10,11 @@ import apsw
 import gobject
 
 class Workspace(object):
-	''' Each Workspace has its own persistent database file. '''
+	
+	"""Defines the data model used by the BOM manager and related database methods.
+	
+	Each Workspace has its own persistent database file."""
+	
 	db0 = os.path.join(os.getcwd(), 'workspace.sqlite')
 	
 	def __init__(self, name='Workspace', db_file=db0):
@@ -20,8 +24,8 @@ class Workspace(object):
 		self.memory = self.connect(":memory:")
 	
 	def connect(self, db):
-		''' Connect to the DB, enable foreign keys, set autocommit mode,  
-		and return the open connection object. '''
+		"""Connect to the DB, enable foreign keys, and return the opened connection."""
+		
 		con = apsw.Connection(db)
 		cur = con.cursor()
 		cur.execute('PRAGMA foreign_keys = ON')
@@ -29,7 +33,8 @@ class Workspace(object):
 		return con
 		
 	def list_projects(self):
-		''' Returns a list of BOM project tables in the DB. '''
+		"""Returns a list of BOM projects in the DB."""
+		
 		projects = []
 		try:
 			cur = self.memory.cursor()
@@ -42,7 +47,8 @@ class Workspace(object):
 			return projects
 	
 	def open(self):
-		''' Loads the workspace into memory from disk. '''	
+		"""Loads the workspace into memory from disk."""
+		
 		bkup = self.memory.backup("main", self.connect(self.disk_db), "main")
 		try:
 			while not bkup.done:
@@ -53,13 +59,15 @@ class Workspace(object):
 			bkup.finish()
 				
 	def save(self):
-		''' Saves the in-memory workspace to disk. '''
+		"""Saves the in-memory workspace to disk."""
+		
 		with self.connect(self.disk_db).backup("main", self.memory, "main") as bkup:
 			while not bkup.done:
 				bkup.step(100)
 	
 	def create_tables(self):
-		''' Create the workspace-wide database tables. '''		
+		"""Create the workspace-wide database tables."""
+		
 		try:
 			cur = self.memory.cursor()
 			cur.execute('CREATE TABLE IF NOT EXISTS projects(name TEXT PRIMARY KEY, description TEXT, infile TEXT)')
@@ -211,9 +219,12 @@ input_file = os.path.join(os.getcwd(), "test.csv")	# TODO: Test dummy
 #active_bom = BOM("test1", 'Test BOM 1', wspace, os.path.join(os.getcwd(), "test.csv"))
 
 def set_combo(combo_box, iter_text):
-	'''Sets the active index of a gtk.ComboBox to the index with given string.
+	"""Sets the active index of a gtk.ComboBox to the index with given string.
+	
 	iter_text must be an exact match to the string in combo_box.get_model().
-	Returns True if the desired row was found and activated.'''
+	@return True if the desired row was found and activated.
+	"""
+	
 	model = combo_box.get_model()
 	iter = model.get_iter_root()
 	success = False
@@ -227,7 +238,9 @@ def set_combo(combo_box, iter_text):
 	return success
 
 class Manager(gobject.GObject):
-	'''Main GUI class'''
+	
+	"""Main GUI class for the BOM manager."""
+	
 	def delete_event(self, widget, event, data=None):
 		print "delete event occurred"
 		return False
@@ -237,11 +250,13 @@ class Manager(gobject.GObject):
 
 	# -------- CALLBACK METHODS --------
 	def file_save_callback(self, widget):
-		''' Callback for the Save button in the File menu. '''
+		"""Callback for the Save button in the File menu."""
+		
 		wspace.save()
 	
 	def new_project_input_file_callback(self, widget, data=None):
-		''' Callback for the input file Open dialog in the New Project dialog. '''
+		"""Callback for the input file Open dialog in the New Project dialog."""
+		
 		self.input_file_dialog.run()
 		self.input_file_dialog.hide()
 		if self.input_file_dialog.get_filename() is None:
@@ -250,7 +265,8 @@ class Manager(gobject.GObject):
 			self.new_project_input_file_entry.set_text(self.input_file_dialog.get_filename())
 	
 	def project_new_callback(self, widget, data=None):
-		'''Callback for the New Project button. '''
+		"""Callback for the New Project button."""
+		
 		response = self.new_project_dialog.run()
 		self.new_project_dialog.hide()
 		new_name = self.new_project_name_entry.get_text()
@@ -270,7 +286,8 @@ class Manager(gobject.GObject):
 		self.new_project_input_file_entry.set_text('')
 		
 	def project_open_callback(self, widget, data=None):
-		''' Callback for the Open Project button. '''
+		"""Callback for the Open Project button."""
+		
 		(model, row_iter) = self.project_tree_view.get_selection().get_selected()
 		self.active_bom = BOM.read_from_db(model.get(row_iter,0)[0], wspace.memory)[0]
 		self.active_project_name = model.get(row_iter,0)[0]
@@ -292,7 +309,8 @@ class Manager(gobject.GObject):
 		self.window.show_all()
 	
 	def project_delete_callback(self, widget, data=None):
-		''' Callback for the Delete Project button. '''
+		"""Callback for the Delete Project button."""
+		
 		(model, row_iter) = self.project_tree_view.get_selection().get_selected()
 		selected_bom = BOM.read_from_db(model.get(row_iter,0)[0], wspace.memory)[0]
 		if selected_bom.name == self.active_bom.name:
@@ -300,8 +318,9 @@ class Manager(gobject.GObject):
 		selected_bom.delete(wspace.memory)
 		self.project_store_populate(wspace.memory)
 		
-	'''Callback for the "Read CSV" button on the BOM tab.'''
 	def read_input_callback(self, widget, data=None):
+		"""Callback for the "Read CSV" button on the BOM tab."""
+		
 		self.active_bom.read_from_file(wspace.memory)
 		if self.bom_group_name.get_active():
 			self.bom_store_populate_by_name()
@@ -311,8 +330,9 @@ class Manager(gobject.GObject):
 			self.bom_store_populate_by_product()
 		self.window.show_all()
 	
-	'''Callback for the "Read DB" button on the BOM tab.'''
 	def bom_read_db_callback(self, widget, data=None):
+		"""Callback for the "Read DB" button on the BOM tab."""
+		
 		#print "BOM Read DB callback"
 		#print 'Parts list = ', self.active_bom.parts
 		if self.bom_group_name.get_active():
@@ -323,8 +343,9 @@ class Manager(gobject.GObject):
 			self.bom_store_populate_by_product()
 		self.window.show_all()
 	
-	'''Callback method triggered when a BOM line item is selected.'''
 	def bom_selection_callback(self, widget, data=None):
+		"""Callback method triggered when a BOM line item is selected."""
+		
 		# Set class fields for currently selected item
 		(model, row_iter) = self.bom_tree_view.get_selection().get_selected()
 		#print 'row_iter is: ', row_iter, '\n'
@@ -362,9 +383,12 @@ class Manager(gobject.GObject):
 			self.destroy_part_price_labels()
 			self.clear_part_info_labels()
 	
-	'''Callback method activated by the BOM grouping radio buttons.
-	Redraws the BOM TreeView with the approporiate goruping for the selected radio.'''
 	def bom_group_callback(self, widget, data=None):
+		"""Callback method activated by the BOM grouping radio buttons.
+	
+		Redraws the BOM TreeView with the approporiate goruping for the selected radio.
+		"""
+		
 		#print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
 		# Figure out which button is now selected
 		if widget.get_active():
@@ -379,17 +403,24 @@ class Manager(gobject.GObject):
 			
 			self.window.show_all()
 	
-	'''Callback method activated by clicking a BOM column header.
-	Sorts the BOM TreeView by the values in the clicked column.'''
 	def bom_sort_callback(self, widget):
+		"""Callback method activated by clicking a BOM column header.
+	
+		Sorts the BOM TreeView by the values in the clicked column.
+		"""
+		
 		print widget.get_sort_order()
 		widget.set_sort_column_id(0)
 		# TODO: On sorting by a different column, the indicator does not go away
 		# This may be because with the current test set, the other columns are still technically sorted
 	
-	'''Callback method for the "Edit Part" button in the BOM tab.
-	Opens a dialog window with form fields for each BOM Part object field.'''
+	
 	def bom_edit_part_callback(self, widget, data=None):
+		"""Callback method for the "Edit Part" button in the BOM tab.
+	
+		Opens a dialog window with form fields for each BOM Part object field.
+		"""
+		
 		# Open a text input prompt window
 		edit_part_dialog = gtk.Dialog("Edit part", self.window, 
 						gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
@@ -532,7 +563,8 @@ class Manager(gobject.GObject):
 				self.part_info_scrape_button.set_sensitive(True)
 			
 	def bom_find_prod_callback(self, widget, data=None):
-		''' Calls bom.product_updater on selected part. '''
+		"""Calls bom.product_updater on selected part."""
+		
 		self.selected_bom_part.product_updater(wspace.memory)
 		if self.bom_group_name.get_active():
 			self.bom_store_populate_by_name()
@@ -542,7 +574,8 @@ class Manager(gobject.GObject):
 			self.bom_store_populate_by_product()
 	
 	def part_info_scrape_button_callback(self, widget):
-		''' Part info frame "Scrape" button callback. '''
+		"""Part info frame "Scrape" button callback."""
+		
 		self.selected_product.scrape(wspace.memory)
 		self.set_part_info_labels(self.selected_product)
 		self.populate_part_info_offer_combo(self.selected_product)
@@ -570,15 +603,19 @@ class Manager(gobject.GObject):
 			self.selected_product.set_preferred_offer(self.active_bom, self.selected_product.offers[self.part_info_offer_combo.get_active_text()], wspace.memory)
 	
 	def order_size_spin_callback(self, widget):
-		''' Update the per-unit and total order prices when the order size
-		spin button is changed. '''
+		"""Update the per-unit and total order prices.
+		
+		Called when the order size spin button is changed.
+		"""
+		
 		qty = self.run_size_spin.get_value_as_int()
 		(unit_price, total_cost) = self.active_bom.get_cost(wspace.memory, qty)
 		self.run_unit_price_content_label.set_text('$'+str(unit_price))
 		self.run_total_cost_content_label.set_text('$'+str(total_cost))
 	
 	def db_store_populate(self):
-		''' Clear self.db_product_store and repopulate it. '''
+		"""Clear self.db_product_store and repopulate it."""
+		
 		self.db_product_store.clear()
 		prods = Product.select_all(wspace.memory)
 		for p in prods:
@@ -586,19 +623,24 @@ class Manager(gobject.GObject):
 		self.db_tree_view.columns_autosize()
 	
 	def db_read_database_callback(self, widget, data=None):
-		'''Callback for the "Read DB" button on the product DB tab.'''
+		"""Callback for the 'Read DB' button on the product DB tab."""
+		
 		print "Read DB callback"
 		self.db_store_populate()
 	
 	def db_selection_callback(self, widget, data=None):
-		'''Callback method triggered when a product DB item is selected.'''
+		"""Callback method triggered when a product DB item is selected."""
+		
 		# Set class fields for currently selected item
 		(model, row_iter) = self.db_tree_view.get_selection().get_selected()
 		self.db_selected_product = Product.select_by_pn(model.get(row_iter,1)[0], wspace.memory)[0]
 	
 	def db_sort_callback(self, widget):
-		'''Callback method activated by clicking a DB column header.
-		Sorts the DB TreeView by the values in the clicked column.'''
+		"""Callback method activated by clicking a DB column header.
+		
+		Sorts the DB TreeView by the values in the clicked column.
+		"""
+		
 		widget.set_sort_column_id(0)
 	 
 	# -------- HELPER METHODS --------
@@ -618,7 +660,8 @@ class Manager(gobject.GObject):
 		self.project_tree_view.columns_autosize()
 	
 	def bom_store_populate_by_name(self):
-		''' Clear self.bom_store and repopulate it, grouped by name. '''
+		"""Clear self.bom_store and repopulate it, grouped by name."""
+		
 		self.bom_store.clear()
 		for p in self.active_bom.parts:
 			try:
@@ -637,7 +680,8 @@ class Manager(gobject.GObject):
 		self.bom_tree_view.columns_autosize()
 	
 	def bom_store_populate_by_value(self):
-		''' Clear self.bom_store and repopulate it, grouped by value. '''
+		"""Clear self.bom_store and repopulate it, grouped by value."""
+		
 		self.bom_store.clear()
 		self.active_bom.sort_by_val()
 		self.active_bom.set_val_counts(wspace.memory)
@@ -659,7 +703,8 @@ class Manager(gobject.GObject):
 		self.bom_tree_view.columns_autosize()
 	
 	def bom_store_populate_by_product(self):
-		''' Clear self.bom_store and repopulate it, grouped by part number. '''	
+		"""Clear self.bom_store and repopulate it, grouped by part number."""
+		
 		self.bom_store.clear()
 		
 		self.active_bom.sort_by_prod()
@@ -681,8 +726,8 @@ class Manager(gobject.GObject):
 		self.bom_tree_view.columns_autosize()
 	
 	def set_part_info_labels(self, prod):
-		'''Set the Part Information pane fields based on the fields of a given 
-		product object.'''	
+		"""Set the Part Information pane fields to the fields of a given Product object."""
+		
 		self.part_info_manufacturer_content_label.set_text(prod.manufacturer)
 		self.part_info_manufacturer_pn_content_label.set_text(prod.manufacturer_pn)
 		self.part_info_description_content_label.set_text(prod.description)
@@ -690,8 +735,11 @@ class Manager(gobject.GObject):
 		self.part_info_package_content_label.set_text(prod.package)
 
 	def clear_part_info_labels(self):
-		'''Clears the Part Information pane fields, setting the text of each Label
-		object to a tab character.'''
+		"""Clears the Part Information pane fields, 
+		
+		The text of each Label object is set to a tab character.
+		"""
+		
 		self.part_info_manufacturer_content_label.set_text("\t")
 		self.part_info_manufacturer_pn_content_label.set_text("\t")
 		self.part_info_description_content_label.set_text("\t")

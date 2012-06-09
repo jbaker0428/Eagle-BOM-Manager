@@ -6,11 +6,13 @@ from manager import Workspace
 from product import Product
 
 class Part(object):
-	''' A self in the BOM exported from Eagle. '''
+	
+	"""A component in the BOM exported from Eagle."""
 	
 	@staticmethod
 	def new_from_row(row, connection, known_project=None):
-		''' Given a part row from the DB, returns a Part object. '''
+		"""Given a parts table row from the DB, returns a Part object."""
+		
 		from bom import BOM
 		#print 'new_from_row: row param: ', row
 		if row[6] is None or row[6] == 'NULL' or row[6] == '':
@@ -35,8 +37,9 @@ class Part(object):
 	
 	@staticmethod
 	def select_all(connection):
-		''' Returns the entire parts table. '''
-		print 'Entered Part.select_all'
+		"""Returns the entire parts table as Parts instances."""
+		
+		#print 'Entered Part.select_all'
 		parts = []
 		try:
 			cur = connection.cursor()
@@ -51,7 +54,8 @@ class Part(object):
 	
 	@staticmethod
 	def select_by_name(name, connection, project=None):
-		''' Return the Part(s) of given name. '''
+		"""Return the Part(s) of given name."""
+		
 		parts = []
 		try:
 			cur = connection.cursor()
@@ -71,7 +75,8 @@ class Part(object):
 	
 	@staticmethod
 	def select_by_value(val, connection, project=None):
-		''' Return the Part(s) of given value in a list. '''
+		"""Return the Part(s) of given value in a list."""
+		
 		parts = []
 		try:
 			cur = connection.cursor()
@@ -91,7 +96,8 @@ class Part(object):
 		
 	@staticmethod
 	def select_by_product(prod, connection, project=None):
-		''' Return the Part(s) of given product in a list. '''
+		"""Return the Part(s) of given product in a list."""
+		
 		parts = []
 		try:
 			cur = connection.cursor()
@@ -129,7 +135,8 @@ class Part(object):
 			return '%s.%s (%s, %s, %s): PN: %s, Attribs: %s' % (self.project.name, self.name, self.value, self.device, self.package, self.product.manufacturer_pn, self.specs)
 
 	def show(self):
-		''' A simple print method. '''
+		"""A simple print method."""
+		
 		print '============================'
 		print 'Name: ', self.name, type(self.name)
 		print 'Project name: ', self.project.name, type(self.project)
@@ -145,10 +152,12 @@ class Part(object):
 		print '============================'
 		
 	def equals(self, p, check_foreign_specs=True, same_name=True, same_project=True, same_product=True):
-		''' Compares the Part to another Part.
+		"""Compares the Part to another Part.
+		
 		The check_foreign_specs argument (default True) controls whether or not
 		p.specs.keys() is checked for members not in self.specs.keys().
-		The reverse is always checked. '''
+		The reverse is always checked.
+		"""
 		if type(p) != type(self):
 			return False
 		eq = True
@@ -196,7 +205,8 @@ class Part(object):
 		return self.equals(p)
 
 	def findInFile(self, bom_file):
-		''' Check if a BOM self of this name is in the given CSV BOM. '''
+		"""Check if a BOM self of this name is in the given CSV BOM."""
+		
 		with open(bom_file, 'rb') as f:
 			db = csv.reader(f, delimiter=',', quotechar = '"', quoting=csv.QUOTE_ALL)
 			rownum = 0
@@ -207,21 +217,25 @@ class Part(object):
 			return -1
 	
 	def part_query_constructor(self, wspace_scope):
-		''' Helper method to construct the SQL queries for find_similar_parts.
+		"""Helper method to construct the SQL queries for find_similar_parts.
+		
 		If wspace_scope == False, queries within the project scope.
 		If wspace_scope == True, queries other projects in the workspace. 
-		Returns a pair: The query string and the parameters tuple. '''
+		Returns a pair: The query string and the parameters tuple.
+		"""
 		
 		# TODO: These helper functions have extraneous arguments
 		# self.name is always ?1, self.project.name is always ?2
 		def project_spec_expr(attrib_name, attrib_value, name_param_number, value_param_number):
-			''' Generates an SQL expression to match a single attribute for the project query. '''
+			"""Generates an SQL expression to match a single attribute for the project query."""
+			
 			name_expr = '?%s IN (SELECT name FROM part_specs WHERE part!=?1 AND project=?2)' % name_param_number
 			value_expr = '?%s IN (SELECT value FROM part_specs WHERE part!=?1 AND project=?2 AND name=?%s)' % (value_param_number, name_param_number)
 			return '(' + name_expr + ' AND ' + value_expr + ')'
 		
 		def workspace_spec_expr(attrib_name, attrib_value, name_param_number, value_param_number):
-			''' Generates an SQL expression to match a single attribute for the workspace query. '''
+			"""Generates an SQL expression to match a single attribute for the workspace query."""
+			
 			name_expr = '?%s IN (SELECT name FROM part_specs WHERE project!=?2)' % name_param_number
 			value_expr = '?%s IN (SELECT value FROM part_specs WHERE project=!?2 AND name=?%s)' % (value_param_number, name_param_number)
 			return '(' + name_expr + ' AND ' + value_expr + ')'
@@ -265,12 +279,14 @@ class Part(object):
 		return query, tuple(params)
 	
 	def find_similar_parts(self, connection, check_wspace=True):
-		''' Search the project and optionally workspace for parts of matching value/device/package/specs.
+		"""Search the project and optionally workspace for parts of matching value/device/package/specs.
+		
 		If check_wspace = True, returns a pair of lists: (project_results, workspace_results).
 		If check_wspace = False, only returns the project_results list. 
 		This allows for parts in different projects that incidentally have the same name to be added.
 		Only returns parts that have all of the non-empty specs in self.specs
-		(with equal values). This behavior is equivalent to self.equals(some_part, False). '''
+		(with equal values). This behavior is equivalent to self.equals(some_part, False).
+		"""
 		project_results = []
 		workspace_results = []
 		try:
@@ -292,8 +308,8 @@ class Part(object):
 			return (project_results, workspace_results)
 	
 	def find_matching_products(self, proj_parts, wspace_parts, connection):
-		''' Takes in the output of self.find_similar_parts. 
-		Returns a list of Product objects.'''
+		"""Given the output of self.find_similar_parts,	returns a list of Product objects."""
+		
 		# TODO : Find more results by searching the product_attributes table
 		products = set()
 		part_nums = set()
@@ -316,7 +332,8 @@ class Part(object):
 		return list(products)
 	
 	def is_in_db(self, connection):
-		''' Check if a BOM self of this name is in the project's database. '''
+		"""Check if a BOM self of this name is in the project's database."""
+		
 		result = Part.select_by_name(self.name, connection, self.project)
 		if len(result) == 0:
 			return False
@@ -324,12 +341,13 @@ class Part(object):
 			return True
 	
 	def product_updater(self, connection, check_wspace=True):
-		''' Checks if the Part is already in the DB. 
+		"""Checks if the Part is already in the DB.
+		
 		Inserts/updates self into DB depending on:
-		- The presence of a matching Part in the DB
-		- The value of self.product.manufacturer_pn
-		- The product of the matching Part in the DB
-		Passing an open connection to this method is recommended. '''
+			- The presence of a matching Part in the DB.
+			- The value of self.product.manufacturer_pn.
+			- The product of the matching Part in the DB.
+		"""
 		unset_pn = ('', 'NULL', 'none', None, [])
 		if(self.is_in_db(connection)):
 			#print "Part of same name already in DB"
@@ -405,7 +423,8 @@ class Part(object):
 			self.insert(connection)
 		
 	def update(self, connection):
-		''' Update an existing Part record in the DB. '''
+		"""Update an existing Part record in the DB."""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -424,7 +443,8 @@ class Part(object):
 			cur.close()
 	
 	def insert(self, connection):
-		''' Write the Part to the DB. '''
+		"""Write the Part to the DB."""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -443,8 +463,11 @@ class Part(object):
 			cur.close()
 	
 	def delete(self, connection):
-		''' Delete the Part from the DB. 
-		Part specs are deleted via foreign key constraint cascading. '''
+		"""Delete the Part from the DB.
+		 
+		Part specs are deleted via foreign key constraint cascading.
+		"""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -456,8 +479,11 @@ class Part(object):
 			cur.close()
 	
 	def fetch_specs(self, connection):
-		''' Fetch specs dictionary for this Part. 
-		Clears and sets the self.specs dictionary directly. '''
+		"""Fetch specs dictionary for this Part.
+		
+		Clears and sets the self.specs dictionary directly.
+		"""
+		
 		self.specs.clear()
 		try:
 			cur = connection.cursor()
@@ -470,8 +496,11 @@ class Part(object):
 			cur.close()
 	
 	def has_spec(self, spec, connection):
-		'''Check if this Part has an spec of given name in the DB. 
-		Ignores value of the spec. '''
+		"""Check if this Part has an spec of given name in the DB.
+		
+		Ignores value of the spec.
+		"""
+		
 		results = []
 		try:
 			cur = connection.cursor()
@@ -488,9 +517,12 @@ class Part(object):
 				return True
 	
 	def add_spec(self, name, value, connection):
-		''' Add a single spec to this Part.
+		"""Add a single spec to this Part.
+		
 		Adds the new spec to the self.specs dictionary in memory.
-		Writes the new spec to the DB immediately. '''
+		Writes the new spec to the DB immediately.
+		"""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -502,9 +534,12 @@ class Part(object):
 			cur.close()
 				
 	def remove_spec(self, name, connection):
-		''' Removes a single spec from this Part.
+		"""Removes a single spec from this Part.
+		
 		Deletes the spec from the self.specs dictionary in memory.
-		Deletes the spec from the DB immediately. '''
+		Deletes the spec from the DB immediately.
+		"""
+		
 		try:
 			cur = connection.cursor()
 			
@@ -517,8 +552,11 @@ class Part(object):
 			cur.close()
 
 	def write_specs(self, connection):
-		''' Write all of this Part's specs to the DB.
-		Checks specs currently in DB and updates/inserts/deletes as appropriate. '''
+		"""Write all of this Part's specs to the DB.
+		
+		Checks specs currently in DB and updates/inserts/deletes as appropriate.
+		"""
+		
 		db_specs = []
 		update_specs = []
 		insert_specs = []
