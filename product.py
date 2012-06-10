@@ -675,7 +675,11 @@ class ProductAttribute(OctopartPartAttribute):
 			sql = 'SELECT name, symbol FROM units WHERE name IN (SELECT unit FROM product_attributes WHERE fieldname=?)'
 			params = (fieldname,)
 			for row in cur.execute(sql, params):
-				unit = {'name' : row[0], 'symbol' : row[1]}
+				if 'ohm' in row[0].lower() and row[0] != 'Ohm':
+					name = manager.ohm_standardizer(row[0])
+				else:
+					name = row[0]
+				unit = {'name' : name, 'symbol' : row[1]}
 		
 		finally:
 			cur.close()
@@ -694,6 +698,8 @@ class ProductAttribute(OctopartPartAttribute):
 	def promote_octopart_part_attribute(attrib):
 		"""Given an OctopartPartAttribute instance, returns a corresponding ProductAttribute instance."""
 		
+		if 'ohm' in attrib.metadata['unit']['name'].lower() and attrib.metadata['unit']['name'] != 'Ohm':
+			attrib.metadata['unit']['name'] = manager.ohm_standardizer(attrib.metadata['unit']['name'])
 		return ProductAttribute(attrib.fieldname, attrib.displayname, attrib.type, attrib.metadata)
 	
 	@staticmethod
@@ -712,6 +718,8 @@ class ProductAttribute(OctopartPartAttribute):
 			return attrib
 	
 	def __init__(self, fieldname, displayname, type, metadata):
+		if 'ohm' in metadata['unit']['name'].lower() and metadata['unit']['name'] != 'Ohm':
+			metadata['unit']['name'] = manager.ohm_standardizer(metadata['unit']['name'])
 		OctopartPartAttribute.__init__(fieldname, displayname, type, metadata)
 	
 	def update(self, connection):
@@ -719,7 +727,8 @@ class ProductAttribute(OctopartPartAttribute):
 		
 		try:
 			cur = connection.cursor()
-			
+			if 'ohm' in self.metadata['unit']['name'].lower() and self.metadata['unit']['name'] != 'Ohm':
+				self.metadata['unit']['name'] = manager.ohm_standardizer(self.metadata['unit']['name'])
 			params = (self.fieldname, self.displayname, self.type, self.metadata['datatype'], self.metadata['unit'].name,)
 			cur.execute('''UPDATE product_attributes 
 			SET fieldname=?1, displayname=?2, type=?3, datatype=?4, unit=?5 
@@ -733,7 +742,8 @@ class ProductAttribute(OctopartPartAttribute):
 		
 		try:
 			cur = connection.cursor()
-			
+			if 'ohm' in self.metadata['unit']['name'].lower() and self.metadata['unit']['name'] != 'Ohm':
+				self.metadata['unit']['name'] = manager.ohm_standardizer(self.metadata['unit']['name'])
 			params = (self.fieldname, self.displayname, self.type, self.metadata['datatype'], self.metadata['unit'].name,)
 			cur.execute('INSERT OR REPLACE INTO product_attributes VALUES (?,?,?,?,?)', params)
 				

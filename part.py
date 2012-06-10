@@ -1,9 +1,25 @@
 import types
 
 import apsw
+from units import unit, named_unit
+import units.predefined
+from units.quantity import Quantity
+from units.registry import REGISTRY
+import units.si
 
 from manager import Workspace
 from product import Product
+
+def setup_units():
+	"""Pre-register units for Quantity objects."""
+	
+	define_units()
+	
+	# Register all SI prefix units
+	for key, val in REGISTRY.items():
+		if val.is_si():
+			for prefix in units.si.PREFIXES.keys():
+				unit(prefix + key)
 
 class Part(object):
 	
@@ -490,7 +506,11 @@ class Part(object):
 			
 			params = (self.name, self.project.name,)
 			for row in cur.execute('SELECT name, value FROM part_specs WHERE part=? AND project=?', params):
-				self.specs[row[0]] = row[1]
+				if 'ohm' in row[1].lower():
+					val = manager.ohm_standardizer(row[1])
+				else:
+					val = row[1]
+				self.specs[row[0]] = val
 			
 		finally:
 			cur.close()
@@ -526,6 +546,8 @@ class Part(object):
 		try:
 			cur = connection.cursor()
 			
+			if 'ohm' in value.lower():
+				value = manager.ohm_standardizer(value)
 			self.specs[name] = value
 			params = (self.name, self.project.name, name, value,)
 			cur.execute('INSERT OR REPLACE INTO part_specs VALUES (NULL,?,?,?,?)', params)

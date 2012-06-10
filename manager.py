@@ -218,6 +218,21 @@ wspace = Workspace()
 input_file = os.path.join(os.getcwd(), "test.csv")	# TODO: Test dummy
 #active_bom = BOM("test1", 'Test BOM 1', wspace, os.path.join(os.getcwd(), "test.csv"))
 
+def ohm_standardizer(ohmic_string):
+	"""Standardizes the capitalization/pluralization of resistance unit notation.
+	
+	Octopart gives resistance units as 'ohms'.
+	The units module uses the more correct 'Ohm'.
+	This replaces any variation of the capitalizatio/pluralization of 'ohm' with 'Ohm'.
+	"""
+	
+	bad_formats = ('Ohms', 'ohms', 'ohm')
+	for bad in bad_formats:
+		if bad in ohmic_string:
+			return ohmic_string.replace(bad, 'Ohm')
+	else:
+		return ohmic_string
+
 def set_combo(combo_box, iter_text):
 	"""Sets the active index of a gtk.ComboBox to the index with given string.
 	
