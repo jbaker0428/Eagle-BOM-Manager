@@ -720,7 +720,7 @@ class ProductAttribute(OctopartPartAttribute):
 		try:
 			cur = connection.cursor()
 			
-			params = (self.fieldname, self.displayname, self.type, self.metadata['datatype'], self.metadata['unit'].name,)
+			params = (self.fieldname, self.displayname, self.type, self.metadata['datatype'], self.metadata['unit']['name'],)
 			cur.execute('''UPDATE product_attributes 
 			SET fieldname=?1, displayname=?2, type=?3, datatype=?4, unit=?5 
 			WHERE fieldname=?1''', params)
@@ -734,7 +734,7 @@ class ProductAttribute(OctopartPartAttribute):
 		try:
 			cur = connection.cursor()
 			
-			params = (self.fieldname, self.displayname, self.type, self.metadata['datatype'], self.metadata['unit'].name,)
+			params = (self.fieldname, self.displayname, self.type, self.metadata['datatype'], self.metadata['unit']['name'],)
 			cur.execute('INSERT OR REPLACE INTO product_attributes VALUES (?,?,?,?,?)', params)
 				
 		finally:
