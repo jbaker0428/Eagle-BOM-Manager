@@ -1,3 +1,4 @@
+import re
 import types
 
 import apsw
@@ -20,6 +21,46 @@ def setup_units():
 		if val.is_si():
 			for prefix in units.si.PREFIXES.keys():
 				unit(prefix + key)
+
+def part_attribute_parser(name, value):
+	"""Parses a part attribute name/value string pair.
+	
+	@param name: Attribute name string.
+	@param value: Attribute value string.
+	@raise ValueError(qty, unit_str): A unit dimension cannot be determined from the value string.
+	@return: If the value string contains a numeric value, a Quantity instance.
+	@return: If no numeric value is found, returns None.
+	"""
+	
+	# Start by checking if value contains digits
+	numeric = re.compile('^[0-9.]*')
+	m = numeric.match(value)
+	if m:
+		qty_str = value[m.start() : m.end()-1]
+		if '.' in qty_str:
+			qty = float(qty_str)
+		else:
+			qty = int(qty_str)
+		
+		unit_str = value[m.end():].strip()
+		if len(unit_str) > 0:
+			if 'ohm' in unit_str.lower():	# Definitely a resistor
+				unit_str = manager.ohm_standardizer(unit_str)
+			
+			elif unit_str == 'k' or (unit_str == 'K' and 'temp' not in name.lower()):
+				# Likely a poorly labeled resistor rather than Kelvin
+				# Most temperature data for electronics is in Celsius
+				unit_str = 'kOhm'
+			
+			# Remove any space between a potential SI prefix and the unit
+			unit_str = unit_str.replace(' ', '')
+			
+			if REGISTRY.get(unit_str):
+				return Quantity(qty, REGISTRY[unit_str])
+			else:
+				raise ValueError(qty, unit_str)
+	
+	return None		
 
 class Part(object):
 	
